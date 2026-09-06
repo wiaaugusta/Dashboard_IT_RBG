@@ -35,6 +35,10 @@ let currentPage = 1;
 let currentSearch = "";
 let cctvRequestId = 0;
 let cctvSearchTimer = null;
+/* TOTAL TOKO = jumlah seluruh toko milik user (tanpa filter pencarian).
+   Di-cache saat list dimuat TANPA search; angka ini tidak berubah-ubah
+   walau user mengetik filter. */
+let cctvTotalAll = null;
 
 export async function renderCctvPage(container) {
   const session = getSession();
@@ -42,6 +46,7 @@ export async function renderCctvPage(container) {
 
   currentPage = 1;
   currentSearch = "";
+  cctvTotalAll = null;
 
   const contentHtml = `
     <div class="cctv-page">
@@ -176,6 +181,13 @@ function renderCctvList(contentEl, session, payload) {
   const totalPages = payload.totalPages || 1;
   const page = payload.page || 1;
 
+  /* Cache total keseluruhan HANYA saat dimuat tanpa filter pencarian,
+     supaya label TOTAL TOKO tidak terpengaruh filter. */
+  if (!currentSearch) {
+    cctvTotalAll = totalRecords;
+  }
+  const totalForPagination = cctvTotalAll !== null ? cctvTotalAll : totalRecords;
+
   countEl.textContent = totalRecords > 0 ? `${totalRecords} toko` : "";
 
   if (totalRecords === 0) {
@@ -186,7 +198,7 @@ function renderCctvList(contentEl, session, payload) {
         <p class="state-card__subtitle">Coba ubah kata kunci pencarian.</p>
       </div>
     `;
-    paginationArea.innerHTML = "";
+    paginationArea.innerHTML = renderPagination(page, 0, 0, 0, totalForPagination);
     return;
   }
 
@@ -222,7 +234,7 @@ function renderCctvList(contentEl, session, payload) {
 
   bindCctvUrlMarquee(listArea);
 
-  paginationArea.innerHTML = renderPagination(page, totalPages, startIndex, items.length, totalRecords);
+  paginationArea.innerHTML = renderPagination(page, totalPages, startIndex, items.length, totalForPagination);
   bindPagination(contentEl, session, totalPages);
 }
 
@@ -556,14 +568,8 @@ function renderCctvForm(contentEl, detail) {
 function bindUrlSuggestion(modal) {
   const urlInput = modal.querySelector("#cctvUrlInput");
   const popover = modal.querySelector("#cctvUrlPopover");
-  // Supaya list tidak kebuka ulang saat focus() dipanggil setelah pilih.
-  let suppressOpen = false;
 
   urlInput.addEventListener("focus", () => {
-    if (suppressOpen) {
-      suppressOpen = false;
-      return;
-    }
     popover.classList.add("is-visible");
   });
 
@@ -581,8 +587,8 @@ function bindUrlSuggestion(modal) {
     btn.addEventListener("click", () => {
       urlInput.value = btn.getAttribute("data-url-preset");
       popover.classList.remove("is-visible");
-      suppressOpen = true;
-      urlInput.focus();
+      // Keyboard di mobile otomatis turun setelah URL dipilih (blur, bukan focus).
+      urlInput.blur();
     });
   });
 }
