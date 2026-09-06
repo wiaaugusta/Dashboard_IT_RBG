@@ -447,14 +447,20 @@ function renderCctvForm(contentEl, detail) {
     </div>
     <form id="cctvEditForm" class="modal__body">
       <div class="form-group">
-        <label class="form-label" for="cctvStatusInput">Status</label>
-        <div class="status-select-wrapper">
-          <select id="cctvStatusInput" class="input status-select">
-            ${STATUS_OPTIONS.map(
-              (opt) => `<option value="${escapeAttr(opt)}" ${opt === detail.status ? "selected" : ""}>${escapeHtml(opt)}</option>`
-            ).join("")}
-          </select>
-          ${icon("chevron", { size: 14 })}
+        <label class="form-label" for="cctvStatusTrigger">Status</label>
+        <div class="status-dropdown">
+          <input type="hidden" id="cctvStatusInput" value="${escapeAttr(detail.status)}" />
+          <button type="button" class="input status-dropdown__trigger" id="cctvStatusTrigger">
+            <span id="cctvStatusValue">${escapeHtml(detail.status)}</span>
+            ${icon("chevron", { size: 14 })}
+          </button>
+          <div class="status-dropdown__popover" id="cctvStatusPopover">
+            ${STATUS_OPTIONS.map((opt) => `
+              <button type="button" class="status-dropdown__item ${opt === detail.status ? "is-selected" : ""}" data-status-value="${escapeAttr(opt)}">
+                ${escapeHtml(opt)}
+              </button>
+            `).join("")}
+          </div>
         </div>
       </div>
 
@@ -500,7 +506,38 @@ function renderCctvForm(contentEl, detail) {
     bindGeneratePasswordButtons(credentialFieldsContainer, groupKey, detail.kdStore);
   }
 
-  statusInput.addEventListener("change", renderCredentialFieldsForStatus);
+  // Status dropdown custom: popover yang tampil PERSIS dengan popover URL.
+  const statusPopover = modal.querySelector("#cctvStatusPopover");
+  const statusValueEl = modal.querySelector("#cctvStatusValue");
+
+  modal.querySelector("#cctvStatusTrigger").addEventListener("click", () => {
+    statusPopover.classList.toggle("is-visible");
+  });
+
+  document.addEventListener("click", function outsideStatusClick(event) {
+    if (!modal.isConnected) {
+      document.removeEventListener("click", outsideStatusClick);
+      return;
+    }
+    if (!event.target.closest(".status-dropdown")) {
+      statusPopover.classList.remove("is-visible");
+    }
+  });
+
+  modal.querySelectorAll("[data-status-value]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      statusInput.value = btn.getAttribute("data-status-value");
+      statusValueEl.textContent = btn.textContent;
+      statusPopover.classList.remove("is-visible");
+
+      modal.querySelectorAll("[data-status-value]").forEach((b) => {
+        b.classList.toggle("is-selected", b === btn);
+      });
+
+      renderCredentialFieldsForStatus();
+    });
+  });
+
   renderCredentialFieldsForStatus();
 
   modal.querySelector("#cctvCancelBtn").addEventListener("click", () => closeCctvModal(contentEl));

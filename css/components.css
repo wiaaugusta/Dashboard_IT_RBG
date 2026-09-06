@@ -712,6 +712,19 @@
 
 .url-suggest-popover.is-visible {
   display: block;
+  animation: popoverDropIn .18s ease-out;
+}
+
+/* Dropdown turun smooth: fade + slide ke bawah, bukan kaku tampil. */
+@keyframes popoverDropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .url-suggest-item {
@@ -1484,14 +1497,23 @@
     0 18px 40px rgba(15, 23, 42, .08),
     0 2px 10px rgba(30, 58, 138, .05);
 }
-/* ---------- STATUS SELECT (konsisten dengan input URL) ---------- */
-.status-select-wrapper {
+/* ---------- STATUS DROPDOWN (persis dengan popover URL) ---------- */
+.status-dropdown {
   position: relative;
-  display: flex;
-  align-items: center;
 }
 
-.status-select-wrapper > .icon {
+/* Trigger: kotak sama persis dengan input URL (class .input),
+   teks di kiri + chevron di kanan. */
+.status-dropdown__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+
+  cursor: pointer;
+}
+
+.status-dropdown__trigger > .icon {
   position: absolute;
   right: 14px;
   top: 50%;
@@ -1501,15 +1523,52 @@
   pointer-events: none;
 }
 
-#cctvStatusInput.status-select {
-  appearance: none;
-  -webkit-appearance: none;
-
-  padding-right: 46px;
-
+/* Popover list: atribut sama PERSIS dengan .url-suggest-popover
+   (border tipis, sudut lengkung, shadow, background putih). */
+.status-dropdown__popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
   background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-popover);
+  overflow: hidden;
+}
 
+.status-dropdown__popover.is-visible {
+  display: block;
+  animation: popoverDropIn .18s ease-out;
+}
+
+.status-dropdown__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  background: none;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
   cursor: pointer;
+}
+
+.status-dropdown__item:hover {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+}
+
+.status-dropdown__item.is-selected {
+  background-color: var(--color-primary-soft);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.status-dropdown__item + .status-dropdown__item {
+  border-top: 1px solid var(--color-border);
 }
 
 /* =========================================================
@@ -1585,6 +1644,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cctv-loading-spinner {
+    animation: none;
+  }
+
+  .url-suggest-popover.is-visible,
+  .status-dropdown__popover.is-visible {
     animation: none;
   }
 }
