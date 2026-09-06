@@ -182,7 +182,7 @@ function renderCctvList(contentEl, session, payload) {
             <th>No</th>
             <th>Kode Toko</th>
             <th>Nama Toko</th>
-            <th>Area</th>
+            <th>IT AREA</th>
             <th>Status</th>
             <th>URL</th>
             <th>Terakhir Update</th>
@@ -317,9 +317,41 @@ function bindCctvUrlMarquee(scopeEl) {
   });
 }
 
+function getStatusClass(statusLabel) {
+  if (statusLabel.indexOf("BARU") !== -1) return "success";   // DVR BARU -> hijau
+  if (statusLabel.indexOf("LAMA") !== -1) return "info";      // DVR LAMA -> biru tipis
+  if (statusLabel.indexOf("OWNER") !== -1) return "danger";   // CCTV OWNER -> merah tipis
+  if (statusLabel.indexOf("APP") !== -1) return "orange";     // APP -> orange
+  return "info";
+}
+
+/**
+ * Format kolom "Terakhir Update" -> "NAMA - dd/MM/yyyy HH:mm"
+ * Contoh: "JALIL - 27/08/2026 16:45".
+ * Backend menulis "Diupdate oleh <NIK> - <dd/MM/yyyy HH:mm>" di kolom S.
+ */
+function formatUpdatedInfo(raw) {
+  const value = (raw == null ? "" : String(raw)).trim();
+  if (!value) return "-";
+
+  // Format backend: "Diupdate oleh JALIL - 27/08/2026 16:45"
+  let match = value.match(/Diupdate oleh\s+(.+?)\s*-\s*(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})/i);
+  if (match) {
+    return `${match[1].trim()} - ${match[2].trim()}`;
+  }
+
+  // Format lain yang sudah "NAMA - tanggal jam"
+  match = value.match(/^(.+?)\s*-\s*(\d{2}\/\d{2}\/\d{4}\s+\d{2}:\d{2})$/);
+  if (match) {
+    return `${match[1].trim()} - ${match[2].trim()}`;
+  }
+
+  return value;
+}
+
 function renderCctvRow(item, rowNumber) {
   const statusLabel = (item.status || "").toUpperCase();
-  const statusClass = statusLabel.indexOf("BARU") !== -1 ? "success" : "info";
+  const statusClass = getStatusClass(statusLabel);
   const storeCode = escapeHtml(item.kdStore);
   const storeName = escapeHtml(item.namaStore || "-");
   const area = escapeHtml(item.itArea || "-");
@@ -333,16 +365,16 @@ function renderCctvRow(item, rowNumber) {
           <span class="cctv-store-cell__name">${storeName}</span>
         </div>
       </td>
-      <td data-label="Area"><span class="cctv-area-chip">${area}</span></td>
+      <td data-label="IT AREA"><span class="cctv-area-chip">${area}</span></td>
       <td data-label="Status">
         <span class="badge badge-${statusClass} cctv-status-badge"><i></i>${escapeHtml(statusLabel)}</span>
       </td>
       <td data-label="URL">
         ${item.url
-          ? `<span class="cctv-url-cell"><a href="${escapeAttr(item.url)}" target="_blank" rel="noopener" class="cctv-url-link">${escapeHtml(item.url)}</a></span>`
+          ? `<span class="cctv-url-cell"><span class="cctv-url-link">${escapeHtml(item.url)}</span></span>`
           : '<span class="cctv-table__muted">-</span>'}
       </td>
-      <td data-label="Terakhir Update" class="cctv-table__muted">${escapeHtml(item.updatedInfo || "-")}</td>
+      <td data-label="Terakhir Update" class="cctv-table__muted">${escapeHtml(formatUpdatedInfo(item.updatedInfo))}</td>
       <td data-label="">
         <button type="button" class="cctv-edit-btn" aria-label="Edit ${escapeAttr(item.kdStore)}" data-edit-kdstore="${escapeAttr(item.kdStore)}">
           ${icon("edit", { size: 15 })}
@@ -394,7 +426,7 @@ function renderCctvForm(contentEl, detail) {
     <div class="modal__header cctv-edit-header">
       <div class="cctv-edit-header__icon">${icon("edit", { size: 18 })}</div>
       <div class="cctv-edit-header__text">
-        <h3>Edit Data CCTV Toko</h3>
+        <h3>EDIT DATA CCTV</h3>
         <span class="cctv-edit-header__sub">${escapeHtml(detail.kdStore)} - ${escapeHtml(detail.namaStore || "-")}</span>
       </div>
       <button type="button" class="cctv-modal-close" id="cctvHeaderCloseBtn" aria-label="Tutup edit">

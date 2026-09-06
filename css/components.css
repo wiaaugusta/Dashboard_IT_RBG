@@ -192,6 +192,7 @@
 .badge-warning { background-color: var(--color-warning-soft); color: var(--color-warning); }
 .badge-danger { background-color: var(--color-danger-soft); color: var(--color-danger); }
 .badge-info { background-color: var(--color-info-soft); color: var(--color-info); }
+.badge-orange { background-color: #ffedd5; color: #c2410c; }
 
 /* ---------- SUMMARY CARD (Dashboard, docs/UI_AND_DESIGN.md #9) ---------- */
 /* UPDATE (moodboard "Nexus/Vektora"): kartu mengambang saat hover (translateY
@@ -480,7 +481,7 @@
 }
 
 .cctv-table th {
-  text-align: left;
+  text-align: center;
   padding: 11px var(--space-4);
   color: #27579c;
   background: #e6f1fd;
@@ -520,6 +521,7 @@
 .cctv-table__index {
   color: var(--color-text-muted);
   width: 40px;
+  text-align: center;
 }
 
 /* ---------- CCTV TOOLBAR ---------- */
@@ -962,7 +964,7 @@
   padding: 4px 9px;
 
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 999px;
 
   color: #475569;
   font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
@@ -986,7 +988,7 @@
   padding: 4px 9px;
 
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 999px;
 
   color: #475569;
   font-size: 12px;
@@ -1002,12 +1004,12 @@
 .cctv-area-chip {
   display: inline-flex;
 
-  padding: 4px 11px;
+  padding: 4px 12px;
 
   border-radius: 999px;
 
   color: #52607a;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 
   background: #eef2f7;
@@ -1027,11 +1029,6 @@
   color: #2563eb;
   font-family: ui-monospace, "Cascadia Code", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 11.5px;
-  text-decoration: none;
-}
-
-.cctv-url-link:hover {
-  text-decoration: underline;
 }
 
 /* URL terlalu panjang -> "berjalan" (marquee) HANYA saat mouse
@@ -1136,10 +1133,19 @@
     overflow: hidden;
   }
 
-  /* Kolom Edit di kanan */
-  .cctv-table th:last-child {
-    text-align: right;
-    padding-right: var(--space-6);
+  /* Kolom Edit di kanan - header & data rata tengah */
+  .cctv-table th:last-child,
+  .cctv-table td:last-child {
+    text-align: center;
+  }
+
+  /* Chip/badge/kode & edit rata tengah; URL & updated tetap kiri */
+  .cctv-table td:nth-child(1),
+  .cctv-table td:nth-child(2),
+  .cctv-table td:nth-child(3),
+  .cctv-table td:nth-child(4),
+  .cctv-table td:nth-child(5) {
+    text-align: center;
   }
 
   .cctv-table tbody tr:nth-child(even) {
