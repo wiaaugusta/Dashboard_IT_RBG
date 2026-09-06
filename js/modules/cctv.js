@@ -44,6 +44,8 @@ export async function renderCctvPage(container) {
   currentSearch = "";
 
   const contentHtml = `
+    <div class="cctv-page">
+
     <div class="cctv-hero">
       <div class="cctv-hero__content">
         <div class="cctv-hero__icon">${icon("cctv", { size: 26 })}</div>
@@ -76,8 +78,12 @@ export async function renderCctvPage(container) {
       </button>
     </div>
 
-    <div id="cctvListArea">${renderTableSkeleton()}</div>
-    <div id="cctvPaginationArea"></div>
+    <div class="cctv-page-grid">
+      <div id="cctvListArea">${renderTableSkeleton()}</div>
+      <div id="cctvPaginationArea"></div>
+    </div>
+
+    </div>
 
     <div class="modal-overlay" id="cctvModalOverlay"></div>
     <div class="modal" id="cctvModal" role="dialog" aria-modal="true"></div>

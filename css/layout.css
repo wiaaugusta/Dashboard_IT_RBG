@@ -1509,6 +1509,14 @@ html, body {
   margin-bottom: var(--space-6);
 }
 
+/* Mobile: gutter kiri-kanan kuruk supaya konten (mis. list CCTV)
+   lebih mepet layar, tetap saat scroll vertical pas ke bawah. */
+@media (max-width: 768px) {
+  .app-content {
+    padding: var(--space-3) var(--space-2);
+  }
+}
+
 .page-header__subtitle {
   color: var(--color-text-secondary);
   font-size: var(--font-size-small);

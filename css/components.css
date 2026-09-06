@@ -701,7 +701,11 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  right: 0;
+  /* Area klik batasi hanya pada kolom field: popover tidak melebar
+     seluruh modal, selebar content (max = lebar input/kolom). */
+  width: max-content;
+  min-width: 220px;
+  max-width: 100%;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -738,11 +742,18 @@
   color: var(--color-text);
   cursor: pointer;
   font-family: monospace;
+  white-space: nowrap;
 }
 
 .url-suggest-item:hover {
   background-color: var(--color-primary-soft);
   color: var(--color-primary);
+}
+
+/* Ketika content lebih panjang dari kolom: terpotong halus, bukan wrap */
+.url-suggest-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .url-suggest-item + .url-suggest-item {
@@ -1530,7 +1541,11 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  right: 0;
+  /* Area klik batasi hanya pada kolom field: popover tidak melebar
+     seluruh modal, selebar content (max = lebar input/kolom). */
+  width: max-content;
+  min-width: 220px;
+  max-width: 100%;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -1554,6 +1569,7 @@
   font-size: var(--font-size-small);
   color: var(--color-text);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .status-dropdown__item:hover {
@@ -1650,5 +1666,117 @@
   .url-suggest-popover.is-visible,
   .status-dropdown__popover.is-visible {
     animation: none;
+  }
+}
+/* =========================================================
+   CCTV MOBILE (max-width 768px)
+   Semua aturan di-scope @media - desktop TIDAK disentuh.
+   ========================================================= */
+@media (max-width: 768px) {
+
+  /* ---------- HERO: compact, tanpa badge Monitoring Live ---------- */
+  .cctv-hero {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .cctv-hero__badge {
+    display: none;
+  }
+
+  .cctv-hero__icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+  }
+
+  .cctv-hero h2 {
+    font-size: 19px;
+  }
+
+  /* ---------- TOOLBAR: search full + refresh icon-only di kanan ---------- */
+  .cctv-toolbar {
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+
+  .cctv-search {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .cctv-search .cctv-search-input {
+    width: 100%;
+    max-width: none;
+  }
+
+  .cctv-toolbar__spacer,
+  .cctv-toolbar__count {
+    display: none;
+  }
+
+  #cctvRefreshBtn {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    font-size: 0;            /* hanya icon refresh, tanpa teks */
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Pagination DIATAS list (soft profesional) ---------- */
+  .cctv-page-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  #cctvPaginationArea { order: 1; }
+  #cctvListArea { order: 2; }
+
+  .pagination__info {
+    color: var(--color-text-muted);
+  }
+
+  .pagination__controls {
+    gap: 6px;
+  }
+
+  .pagination__btn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 var(--space-2);
+    border: 1px solid #dbe3ee;
+    border-radius: 999px;
+    background-color: #f8fafc;
+    color: #52607a;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .06);
+  }
+
+  .pagination__btn:hover:not(:disabled) {
+    background-color: #e6f1fd;
+    color: #27579c;
+  }
+
+  .pagination__btn.is-active {
+    border-color: transparent;
+    background: linear-gradient(135deg, #1d4ed8, #0284c7);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, .22);
+  }
+
+  /* ---------- List CCTV: kartu mendatar full-width, mepet layar ---------- */
+  .cctv-table-wrapper {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+  }
+
+  .cctv-table tr {
+    padding: 10px 12px;
+  }
+
+  .cctv-table td {
+    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 8px;
   }
 }
