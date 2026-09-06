@@ -186,7 +186,7 @@ function renderCctvList(contentEl, session, payload) {
             <th>Status</th>
             <th>URL</th>
             <th>Terakhir Update</th>
-            <th></th>
+            <th>Edit</th>
           </tr>
         </thead>
         <tbody>
@@ -201,6 +201,8 @@ function renderCctvList(contentEl, session, payload) {
       openCctvModal(contentEl, btn.getAttribute("data-edit-kdstore"));
     });
   });
+
+  bindCctvUrlMarquee(listArea);
 
   paginationArea.innerHTML = renderPagination(page, totalPages, startIndex, items.length, totalRecords);
   bindPagination(contentEl, session, totalPages);
@@ -293,6 +295,28 @@ function renderTableSkeleton() {
   return `<div class="cctv-table-wrapper">${rows}</div>`;
 }
 
+/**
+ * URL yang terlalu panjang otomatis "berjalan" (marquee) saat hover.
+ * Hanya teks yang melebihi lebar kolom yang mendapat animasi.
+ */
+function bindCctvUrlMarquee(scopeEl) {
+  scopeEl.querySelectorAll(".cctv-url-cell").forEach((cell) => {
+    const link = cell.querySelector(".cctv-url-link");
+    if (!link) return;
+
+    link.classList.remove("is-overflow");
+    link.style.removeProperty("--marquee-dist");
+    link.style.removeProperty("--marquee-dur");
+
+    if (link.scrollWidth > cell.clientWidth + 4) {
+      link.classList.add("is-overflow");
+      const dist = (link.scrollWidth - cell.clientWidth) + 28;
+      link.style.setProperty("--marquee-dist", dist + "px");
+      link.style.setProperty("--marquee-dur", Math.max(3, (dist / 48).toFixed(2)) + "s");
+    }
+  });
+}
+
 function renderCctvRow(item, rowNumber) {
   const statusLabel = (item.status || "").toUpperCase();
   const statusClass = statusLabel.indexOf("BARU") !== -1 ? "success" : "info";
@@ -316,7 +340,7 @@ function renderCctvRow(item, rowNumber) {
       </td>
       <td data-label="URL">
         ${item.url
-          ? `<a href="${escapeAttr(item.url)}" target="_blank" rel="noopener" class="cctv-url-pill">${icon("cctv", { size: 13 })} Buka</a>`
+          ? `<span class="cctv-url-cell"><a href="${escapeAttr(item.url)}" target="_blank" rel="noopener" class="cctv-url-link">${escapeHtml(item.url)}</a></span>`
           : '<span class="cctv-table__muted">-</span>'}
       </td>
       <td data-label="Terakhir Update" class="cctv-table__muted">${escapeHtml(item.updatedInfo || "-")}</td>
