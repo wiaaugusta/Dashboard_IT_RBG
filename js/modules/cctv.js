@@ -330,7 +330,6 @@ function renderCctvRow(item, rowNumber) {
       <td data-label="Kode Toko"><span class="cctv-store-code">${storeCode}</span></td>
       <td data-label="Nama Toko">
         <div class="cctv-store-cell">
-          <span class="cctv-store-cell__avatar">${escapeHtml(String(item.namaStore || "?").charAt(0).toUpperCase())}</span>
           <span class="cctv-store-cell__name">${storeName}</span>
         </div>
       </td>
