@@ -375,6 +375,12 @@ function bindLoginForm(container) {
 
     event.preventDefault();
 
+    // Cegah submit ganda (mis. Enter ditekan berulang saat request
+    // masih berjalan) karena kolom input tetap bisa diklik.
+    if (submitBtn.disabled) {
+      return;
+    }
+
     const nik = nikInput.value.trim();
     const password = passwordInput.value;
 

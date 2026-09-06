@@ -75,17 +75,10 @@ html, body {
 }
 
 .login-page.is-loading {
+  /* Tanpa overlay popup blur selama login: hanya spinner di tombol
+     (btn-spinner) yang tampil, form tetap interaktif dan kolom input
+     tetap bisa diklik. (docs/UI_AND_DESIGN.md #13 button loading) */
   cursor: progress;
-}
-
-.login-page.is-loading::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 20;
-  background: rgba(248, 250, 252, .62);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
 }
 
 /* ---------- MAIN SHELL ---------- */
