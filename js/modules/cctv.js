@@ -227,18 +227,21 @@ function renderCctvList(contentEl, session, payload) {
 }
 
 function renderPagination(page, totalPages, startIndex, pageCount, totalRecords) {
-  // Tekst "Menampilkan X-Y dari Z" dihapus - hanya konten kontrol pagination.
-  if (totalPages <= 1) {
-    return "";
-  }
+  // Bar pagination: label TOTAL TOKO di kiri + kontrol halaman di kanan.
+  // Label disembunyikan di desktop via CSS (display:none) supaya tampilan
+  // desktop tidak berubah; di mobile tampil di pojok kiri.
+  const controls = `
+    <div class="pagination__controls">
+      <button type="button" class="pagination__btn" data-page="prev" ${page === 1 ? "disabled" : ""}>&lsaquo;</button>
+      ${renderPageNumbers(page, totalPages)}
+      <button type="button" class="pagination__btn" data-page="next" ${page === totalPages ? "disabled" : ""}>&rsaquo;</button>
+    </div>
+  `;
 
   return `
     <div class="pagination">
-      <div class="pagination__controls">
-        <button type="button" class="pagination__btn" data-page="prev" ${page === 1 ? "disabled" : ""}>&lsaquo;</button>
-        ${renderPageNumbers(page, totalPages)}
-        <button type="button" class="pagination__btn" data-page="next" ${page === totalPages ? "disabled" : ""}>&rsaquo;</button>
-      </div>
+      <span class="pagination__total">TOTAL TOKO : ${totalRecords}</span>
+      ${totalPages > 1 ? controls : ""}
     </div>
   `;
 }

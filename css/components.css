@@ -594,6 +594,7 @@
   .cctv-table td {
     display: grid;
     grid-template-columns: 70px minmax(0, 1fr);
+    align-items: center;     /* isi baris rata tengah vertikal, tidak ketas */
     gap: 4px;
     padding: 2px 0;
     white-space: normal;
@@ -638,6 +639,12 @@
 .pagination__info {
   font-size: var(--font-size-caption);
   color: var(--color-text-muted);
+}
+
+/* Label TOTAL TOKO hanya untuk mobile (di mobile block display:inline-flex).
+   Desktop tetap seperti semula. */
+.pagination__total {
+  display: none;
 }
 
 .pagination__controls {
@@ -1699,7 +1706,7 @@
     border-left: none;
     border-right: none;
     border-top: none;
-    border-radius: 0 0 20px 20px;
+    border-radius: 0;
 
     box-shadow: 0 12px 26px rgba(9, 41, 95, .22);
   }
@@ -1744,23 +1751,71 @@
   }
 
   #cctvRefreshBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;                  /* gap base 7px membuat icon bergeser saat teks 0-width */
+
     width: 42px;
     height: 42px;
     padding: 0;
     font-size: 0;            /* hanya icon refresh, tanpa teks */
-    border-radius: 12px;
     flex-shrink: 0;
+
+    border: 1px solid #bfdbfe;
+    border-radius: 13px;
+
+    color: #1d4ed8;
+
+    background: linear-gradient(160deg, #eff6ff 0%, #dbeafe 100%);
+
+    box-shadow:
+      0 3px 10px rgba(37, 99, 235, .16),
+      inset 0 1px 0 rgba(255, 255, 255, .8);
+
+    transition: transform .15s ease, box-shadow .2s ease;
   }
 
-  /* ---------- Pagination DIATAS list (soft profesional) ---------- */
+  #cctvRefreshBtn:active {
+    transform: scale(.93);
+    box-shadow: 0 1px 4px rgba(37, 99, 235, .18);
+  }
+
+  /* ---------- Pagination DIBAWAH list: TOTAL TOKO kiri, tombol kanan ---------- */
   .cctv-page-grid {
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
   }
 
-  #cctvPaginationArea { order: 1; }
-  #cctvListArea { order: 2; }
+  #cctvListArea { order: 1; }
+  #cctvPaginationArea { order: 2; }
+
+  .pagination {
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2);
+    margin-top: 0;
+    flex-wrap: nowrap;
+  }
+
+  .pagination__total {
+    display: inline-flex;
+    align-items: center;
+
+    padding: 7px 12px;
+
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+
+    color: #52607a;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    white-space: nowrap;
+
+    background: #eef2f7;
+  }
 
   .pagination__info {
     color: var(--color-text-muted);
@@ -1768,6 +1823,8 @@
 
   .pagination__controls {
     gap: 6px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .pagination__btn {
@@ -1793,21 +1850,53 @@
     box-shadow: 0 6px 14px rgba(37, 99, 235, .22);
   }
 
-  /* ---------- List CCTV (kartu menurun): wrapper & chip lebih kecil ---------- */
+  /* ---------- List CCTV (kartu menurun): nilai full-kolom & rata kiri ---------- */
   .cctv-table-wrapper {
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
   }
 
+  /* Kode toko, nama toko, area: background full kolom, rata kiri, seragam */
   .cctv-table .cctv-store-code,
   .cctv-table .cctv-store-cell__name,
   .cctv-table .cctv-area-chip {
-    font-size: 11px;
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+
+    min-width: 0;
+    max-width: none;
     padding: 3px 8px;
+
+    border-radius: 8px;
+
+    font-size: 11px;
   }
 
-  .cctv-table .badge {
+  /* Kode toko: rata kiri (tidak center seperti desktop) */
+  .cctv-table .cctv-store-code {
+    min-width: 0;
+  }
+
+  /* Nama toko: wrap natural kalau panjang, tetap dalam kolom */
+  .cctv-table .cctv-store-cell {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cctv-table .cctv-store-cell__name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    word-break: break-word;
+  }
+
+  /* Status: full kolom juga supaya baris rata */
+  .cctv-table .cctv-status-badge {
+    width: 100%;
+    justify-content: flex-start;
+    border-radius: 8px;
     font-size: 10px;
     padding: 3px 8px;
   }
