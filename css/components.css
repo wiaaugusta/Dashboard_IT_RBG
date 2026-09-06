@@ -563,24 +563,65 @@
   }
 }
 
-/* ---------- CCTV TABLE (mobile: tetap MENDATAR seperti desktop,
-   scroll horizontal jika kolom melebihi layar) ---------- */
+/* ---------- CCTV TABLE (mobile: kartu menurun, KOMPAKT) ---------- */
 @media (max-width: 768px) {
   .cctv-table-wrapper {
-    overflow-x: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
   .cctv-table {
-    min-width: 920px;
+    min-width: 0;
   }
 
   .cctv-table thead {
-    display: table-header-group;
+    display: none;
+  }
+
+  .cctv-table,
+  .cctv-table tbody,
+  .cctv-table tr,
+  .cctv-table td {
+    display: block;
+    width: 100%;
   }
 
   .cctv-table tr {
-    padding: 9px var(--space-3);
+    padding: 6px 9px;
+    border-bottom: 1px solid #e5eaf1;
+  }
+
+  .cctv-table td {
+    display: grid;
+    grid-template-columns: 70px minmax(0, 1fr);
+    gap: 4px;
+    padding: 2px 0;
+    white-space: normal;
+    text-align: left;
+    font-size: 12px;
+  }
+
+  .cctv-table td::before {
+    content: attr(data-label);
+    color: var(--color-text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+
+  .cctv-table td:last-child {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 4px;
+  }
+
+  .cctv-table td:last-child::before {
+    display: none;
+  }
+
+  .cctv-table__index {
+    display: none !important;
   }
 }
 
@@ -1641,9 +1682,26 @@
    ========================================================= */
 @media (max-width: 768px) {
 
-  /* ---------- HERO: compact, tanpa badge Monitoring Live ---------- */
+  /* ---------- Page wrapper: mepet tepi layar (side padding mini) ---------- */
+  .cctv-page {
+    padding: 0 10px;
+  }
+
+  /* ---------- HERO: mepet ATAS (full-bleed), tanpa badge Monitoring Live ---------- */
   .cctv-hero {
-    padding: var(--space-4) var(--space-5);
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+
+    margin: 0 -10px var(--space-4);
+    padding: 13px 14px;
+
+    border-left: none;
+    border-right: none;
+    border-top: none;
+    border-radius: 0 0 20px 20px;
+
+    box-shadow: 0 12px 26px rgba(9, 41, 95, .22);
   }
 
   .cctv-hero__badge {
@@ -1651,13 +1709,17 @@
   }
 
   .cctv-hero__icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 13px;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
   }
 
   .cctv-hero h2 {
-    font-size: 19px;
+    font-size: 17px;
+  }
+
+  .cctv-hero__subtitle {
+    font-size: 11px;
   }
 
   /* ---------- TOOLBAR: search full + refresh icon-only di kanan ---------- */
@@ -1731,14 +1793,26 @@
     box-shadow: 0 6px 14px rgba(37, 99, 235, .22);
   }
 
-  /* ---------- List CCTV: tabel mendatar, kompakt, gambar proporsional ---------- */
+  /* ---------- List CCTV (kartu menurun): wrapper & chip lebih kecil ---------- */
   .cctv-table-wrapper {
     border: 1px solid #e2e8f0;
-    border-radius: 16px;
-    box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
   }
 
-  .cctv-table td {
-    padding: 8px var(--space-3);
+  .cctv-table .cctv-store-code,
+  .cctv-table .cctv-store-cell__name,
+  .cctv-table .cctv-area-chip {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .cctv-table .badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .cctv-table .cctv-url-link {
+    font-size: 11px;
   }
 }

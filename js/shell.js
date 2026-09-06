@@ -14,6 +14,7 @@ import { navigate } from "./router.js";
 import { icon } from "./icons.js";
 
 let expandedGroups = new Set();
+let bottomNavAutoHideCleanup = null;
 
 export function renderShell(container, options) {
   const session = getSession();
@@ -269,23 +270,53 @@ function bindShellEvents(container) {
     if (bottomLogoutBtn) bottomLogoutBtn.addEventListener("click", () => performLogout(bottomLogoutBtn));
 
     /* Auto-hide bottom nav saat scroll (mobile): ke bawah -> nav hilang,
-       ke atas / kembali top -> auto tampil ulang. */
-    const contentEl = container.querySelector("#appContent");
-    if (contentEl && window.innerWidth < 769) {
-      let lastScrollY = 0;
-
-      contentEl.addEventListener("scroll", () => {
-        const y = contentEl.scrollTop;
-        const delta = y - lastScrollY;
-        lastScrollY = y;
-
-        if (delta > 8) {
-          bottomNav.classList.add("is-hidden");
-        } else if (delta < -8 || y <= 2) {
-          bottomNav.classList.remove("is-hidden");
-        }
-      });
+       ke atas / kembali top -> auto tampil ulang.
+       Listener dipasang di window DAN #appContent karena elemen yang
+       men-scroll bisa berbeda (document vs container); aktif hanya
+       saat viewport mobile (dicek saat event, bukan saat bind). */
+    if (bottomNavAutoHideCleanup) {
+      bottomNavAutoHideCleanup();
+      bottomNavAutoHideCleanup = null;
     }
+
+    const contentEl = container.querySelector("#appContent");
+    const mobileQuery = window.matchMedia("(max-width: 768px)");
+    const winTracker = { last: 0 };
+    const contentTracker = { last: 0 };
+
+    const makeScrollHandler = (getSourceY, tracker) => () => {
+      if (!mobileQuery.matches) {
+        bottomNav.classList.remove("is-hidden");
+        return;
+      }
+
+      const y = getSourceY();
+      const delta = y - tracker.last;
+      tracker.last = y;
+
+      if (delta > 6) {
+        bottomNav.classList.add("is-hidden");
+      } else if (delta < -6 || y <= 2) {
+        bottomNav.classList.remove("is-hidden");
+      }
+    };
+
+    const onWindowScroll = makeScrollHandler(
+      () => window.scrollY || document.documentElement.scrollTop || 0,
+      winTracker
+    );
+    const onContentScroll = makeScrollHandler(
+      () => (contentEl ? contentEl.scrollTop : 0),
+      contentTracker
+    );
+
+    window.addEventListener("scroll", onWindowScroll, { passive: true });
+    if (contentEl) contentEl.addEventListener("scroll", onContentScroll, { passive: true });
+
+    bottomNavAutoHideCleanup = () => {
+      window.removeEventListener("scroll", onWindowScroll);
+      if (contentEl) contentEl.removeEventListener("scroll", onContentScroll);
+    };
   }
 
   container.querySelectorAll("[data-group-toggle]").forEach((btn) => {

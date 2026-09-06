@@ -1509,14 +1509,6 @@ html, body {
   margin-bottom: var(--space-6);
 }
 
-/* Mobile: gutter kiri-kanan kuruk supaya konten (mis. list CCTV)
-   lebih mepet layar, tetap saat scroll vertical pas ke bawah. */
-@media (max-width: 768px) {
-  .app-content {
-    padding: var(--space-3) var(--space-2);
-  }
-}
-
 .page-header__subtitle {
   color: var(--color-text-secondary);
   font-size: var(--font-size-small);
@@ -1630,9 +1622,16 @@ html, body {
   }
 
   .app-content {
-    padding: 12px;
+    /* Edge-to-edge pada mobile: konten mepet sekali dengan layar,
+       padding diberikan oleh komponen halaman masing-masing. */
+    padding: 0;
     /* Ruang supaya konten paling bawah tidak tertutup bottom nav */
-    padding-bottom: calc(var(--bottom-nav-height) + var(--space-6));
+    padding-bottom: calc(var(--bottom-nav-height) + var(--space-4));
+  }
+
+  .dashboard-page,
+  .page-header {
+    padding: 0 var(--space-3);
   }
 
   .dashboard-grid {
@@ -5089,4 +5088,17 @@ html, body {
 
   }
 
+}
+/* =========================================================
+   MOBILE EDGE-TO-EDGE (FINAL OVERRIDE)
+   Menang atas rule .app-content padding !important lainnya
+   (30px top-level & 18px max-width 820) supaya konten halaman
+   mepet sekali dengan layar pada mobile.
+   ========================================================= */
+@media (max-width: 768px) {
+  .app-content {
+    padding: 0 !important;
+    padding-bottom: calc(var(--bottom-nav-height) + var(--space-4)) !important;
+    overflow-x: hidden;
+  }
 }
