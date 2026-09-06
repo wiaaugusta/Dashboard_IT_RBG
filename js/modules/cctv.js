@@ -227,18 +227,13 @@ function renderCctvList(contentEl, session, payload) {
 }
 
 function renderPagination(page, totalPages, startIndex, pageCount, totalRecords) {
+  // Tekst "Menampilkan X-Y dari Z" dihapus - hanya konten kontrol pagination.
   if (totalPages <= 1) {
-    return `<div class="pagination__info">Menampilkan ${totalRecords} dari ${totalRecords} toko</div>`;
+    return "";
   }
-
-  const rangeStart = startIndex + 1;
-  const rangeEnd = startIndex + pageCount;
 
   return `
     <div class="pagination">
-      <div class="pagination__info">
-        Menampilkan ${rangeStart}-${rangeEnd} dari ${totalRecords} toko
-      </div>
       <div class="pagination__controls">
         <button type="button" class="pagination__btn" data-page="prev" ${page === 1 ? "disabled" : ""}>&lsaquo;</button>
         ${renderPageNumbers(page, totalPages)}

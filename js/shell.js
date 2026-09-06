@@ -267,6 +267,25 @@ function bindShellEvents(container) {
     if (moreBtn) moreBtn.addEventListener("click", openDrawer);
     const bottomLogoutBtn = bottomNav.querySelector('[data-bottom-nav-action="logout"]');
     if (bottomLogoutBtn) bottomLogoutBtn.addEventListener("click", () => performLogout(bottomLogoutBtn));
+
+    /* Auto-hide bottom nav saat scroll (mobile): ke bawah -> nav hilang,
+       ke atas / kembali top -> auto tampil ulang. */
+    const contentEl = container.querySelector("#appContent");
+    if (contentEl && window.innerWidth < 769) {
+      let lastScrollY = 0;
+
+      contentEl.addEventListener("scroll", () => {
+        const y = contentEl.scrollTop;
+        const delta = y - lastScrollY;
+        lastScrollY = y;
+
+        if (delta > 8) {
+          bottomNav.classList.add("is-hidden");
+        } else if (delta < -8 || y <= 2) {
+          bottomNav.classList.remove("is-hidden");
+        }
+      });
+    }
   }
 
   container.querySelectorAll("[data-group-toggle]").forEach((btn) => {

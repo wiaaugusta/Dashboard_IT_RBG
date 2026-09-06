@@ -563,7 +563,8 @@
   }
 }
 
-/* ---------- CCTV TABLE (mobile horizontal scroll) ---------- */
+/* ---------- CCTV TABLE (mobile: tetap MENDATAR seperti desktop,
+   scroll horizontal jika kolom melebihi layar) ---------- */
 @media (max-width: 768px) {
   .cctv-table-wrapper {
     overflow-x: auto;
@@ -571,56 +572,15 @@
   }
 
   .cctv-table {
-    min-width: 0;
+    min-width: 920px;
   }
 
   .cctv-table thead {
-    display: none;
-  }
-
-  .cctv-table,
-  .cctv-table tbody,
-  .cctv-table tr,
-  .cctv-table td {
-    display: block;
-    width: 100%;
+    display: table-header-group;
   }
 
   .cctv-table tr {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .cctv-table td {
-    display: grid;
-    grid-template-columns: 96px minmax(0, 1fr);
-    gap: 10px;
-    padding: 4px 0;
-    white-space: normal;
-    text-align: left;
-  }
-
-  .cctv-table td::before {
-    content: attr(data-label);
-    color: var(--color-text-muted);
-    font-size: 10px;
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
-  }
-
-  .cctv-table td:last-child {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 8px;
-  }
-
-  .cctv-table td:last-child::before {
-    display: none;
-  }
-
-  .cctv-table__index {
-    display: none !important;
+    padding: 9px var(--space-3);
   }
 }
 
@@ -927,6 +887,13 @@
   box-shadow: 0 -8px 24px rgba(15, 23, 42, .08);
   z-index: var(--z-bottom-nav);
   padding-bottom: env(safe-area-inset-bottom, 0);
+  transition: transform .25s ease;
+}
+
+/* Auto-hide: ketika layar digeser ke bawah, nav turun hilang;
+   ketika digeser ke atas / kembali top, auto tampil ulang. */
+.app-bottom-nav.is-hidden {
+  transform: translateY(100%);
 }
 
 @media (max-width: 768px) {
@@ -1764,19 +1731,14 @@
     box-shadow: 0 6px 14px rgba(37, 99, 235, .22);
   }
 
-  /* ---------- List CCTV: kartu mendatar full-width, mepet layar ---------- */
+  /* ---------- List CCTV: tabel mendatar, kompakt, gambar proporsional ---------- */
   .cctv-table-wrapper {
     border: 1px solid #e2e8f0;
     border-radius: 16px;
     box-shadow: 0 10px 26px rgba(15, 23, 42, .08);
   }
 
-  .cctv-table tr {
-    padding: 10px 12px;
-  }
-
   .cctv-table td {
-    grid-template-columns: 92px minmax(0, 1fr);
-    gap: 8px;
+    padding: 8px var(--space-3);
   }
 }
