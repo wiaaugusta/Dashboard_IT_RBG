@@ -44,21 +44,36 @@ export async function renderCctvPage(container) {
   currentSearch = "";
 
   const contentHtml = `
-    <div class="page-header">
-      <h2>CCTV Management</h2>
-      <p class="page-header__subtitle">Kelola URL dan credential DVR CCTV per toko.</p>
+    <div class="cctv-hero">
+      <div class="cctv-hero__content">
+        <div class="cctv-hero__icon">${icon("cctv", { size: 26 })}</div>
+        <div class="cctv-hero__text">
+          <h2>CCTV Management</h2>
+          <p class="cctv-hero__subtitle">Kelola URL dan credential DVR CCTV per toko.</p>
+        </div>
+      </div>
+      <div class="cctv-hero__badge">
+        <span class="cctv-hero__badge-dot"></span>
+        Monitoring Live
+      </div>
     </div>
 
     <div class="cctv-toolbar">
-      <input
-        type="text"
-        id="cctvSearchInput"
-        class="input cctv-search-input"
-        placeholder="Cari kode toko atau nama toko..."
-      />
+      <div class="cctv-search">
+        ${icon("search", { size: 16 })}
+        <input
+          type="text"
+          id="cctvSearchInput"
+          class="input cctv-search-input"
+          placeholder="Cari kode toko atau nama toko..."
+        />
+      </div>
       <div class="cctv-toolbar__spacer"></div>
       <span class="cctv-toolbar__count" id="cctvCount"></span>
-      <button type="button" class="btn btn-secondary" id="cctvRefreshBtn">Refresh</button>
+      <button type="button" class="btn btn-secondary" id="cctvRefreshBtn">
+        ${icon("refresh", { size: 15 })}
+        Refresh
+      </button>
     </div>
 
     <div id="cctvListArea">${renderTableSkeleton()}</div>
@@ -279,17 +294,37 @@ function renderTableSkeleton() {
 }
 
 function renderCctvRow(item, rowNumber) {
-  const statusClass = (item.status || "").toUpperCase().indexOf("BARU") !== -1 ? "success" : "info";
+  const statusLabel = (item.status || "").toUpperCase();
+  const statusClass = statusLabel.indexOf("BARU") !== -1 ? "success" : "info";
+  const storeCode = escapeHtml(item.kdStore);
+  const storeName = escapeHtml(item.namaStore || "-");
+  const area = escapeHtml(item.itArea || "-");
+
   return `
     <tr>
       <td data-label="No" class="cctv-table__index">${rowNumber}</td>
-      <td data-label="Kode Toko">${escapeHtml(item.kdStore)}</td>
-      <td data-label="Nama Toko">${escapeHtml(item.namaStore)}</td>
-      <td data-label="Area">${escapeHtml(item.itArea)}</td>
-      <td data-label="Status"><span class="badge badge-${statusClass}">${escapeHtml(item.status)}</span></td>
-      <td data-label="URL">${item.url ? `<a href="${escapeAttr(item.url)}" target="_blank" rel="noopener">Buka</a>` : "-"}</td>
+      <td data-label="Kode Toko"><span class="cctv-store-code">${storeCode}</span></td>
+      <td data-label="Nama Toko">
+        <div class="cctv-store-cell">
+          <span class="cctv-store-cell__avatar">${escapeHtml(String(item.namaStore || "?").charAt(0).toUpperCase())}</span>
+          <span class="cctv-store-cell__name">${storeName}</span>
+        </div>
+      </td>
+      <td data-label="Area"><span class="cctv-area-chip">${area}</span></td>
+      <td data-label="Status">
+        <span class="badge badge-${statusClass} cctv-status-badge"><i></i>${escapeHtml(statusLabel)}</span>
+      </td>
+      <td data-label="URL">
+        ${item.url
+          ? `<a href="${escapeAttr(item.url)}" target="_blank" rel="noopener" class="cctv-url-pill">${icon("cctv", { size: 13 })} Buka</a>`
+          : '<span class="cctv-table__muted">-</span>'}
+      </td>
       <td data-label="Terakhir Update" class="cctv-table__muted">${escapeHtml(item.updatedInfo || "-")}</td>
-      <td data-label=""><button type="button" class="btn btn-ghost btn-icon" aria-label="Edit ${escapeAttr(item.kdStore)}" data-edit-kdstore="${escapeAttr(item.kdStore)}">${icon("edit", { size: 16 })}</button></td>
+      <td data-label="">
+        <button type="button" class="cctv-edit-btn" aria-label="Edit ${escapeAttr(item.kdStore)}" data-edit-kdstore="${escapeAttr(item.kdStore)}">
+          ${icon("edit", { size: 15 })}
+        </button>
+      </td>
     </tr>
   `;
 }
@@ -334,12 +369,14 @@ function renderCctvForm(contentEl, detail) {
 
   modal.innerHTML = `
     <div class="modal__header cctv-edit-header">
-      <div>
-        <span class="modal__eyebrow">EDIT DATA TOKO</span>
-        <h3>${escapeHtml(detail.namaStore)}</h3>
-        <span class="modal__subtitle">${escapeHtml(detail.kdStore)} - ${escapeHtml(detail.itArea)}</span>
+      <div class="cctv-edit-header__icon">${icon("edit", { size: 18 })}</div>
+      <div class="cctv-edit-header__text">
+        <h3>Edit Data CCTV Toko</h3>
+        <span class="cctv-edit-header__sub">${escapeHtml(detail.kdStore)} - ${escapeHtml(detail.namaStore || "-")}</span>
       </div>
-      <button type="button" class="btn btn-ghost btn-icon" id="cctvHeaderCloseBtn" aria-label="Tutup edit">&times;</button>
+      <button type="button" class="cctv-modal-close" id="cctvHeaderCloseBtn" aria-label="Tutup edit">
+        ${icon("close", { size: 15 })}
+      </button>
     </div>
     <form id="cctvEditForm" class="modal__body">
       <div class="form-group">

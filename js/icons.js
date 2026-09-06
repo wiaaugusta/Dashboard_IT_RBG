@@ -30,7 +30,10 @@ const PATHS = {
   lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   users: '<circle cx="9" cy="8" r="3"/><path d="M3.2 19.5c0-3.1 2.6-5.3 5.8-5.3s5.8 2.2 5.8 5.3"/><circle cx="17.5" cy="9" r="2.3"/><path d="M15.3 19.5c.2-2.1 1.7-3.8 3.7-4.3"/>',
   "arrow-right": '<line x1="4" y1="12" x2="20" y2="12"/><polyline points="14 6 20 12 14 18"/>',
-  check: '<polyline points="5 13 10 18 19 7"/>'
+  check: '<polyline points="5 13 10 18 19 7"/>',
+  search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  close: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
 };
 
 /**
