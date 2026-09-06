@@ -20,7 +20,7 @@ import { getSession } from "../auth.js";
 import { showSuccess, showError } from "../ui.js";
 import { icon } from "../icons.js";
 
-const STATUS_OPTIONS = ["OK - DVR BARU", "OK - DVR LAMA"];
+const STATUS_OPTIONS = ["OK - DVR BARU", "OK - DVR LAMA", "CCTV OWNER", "APP"];
 const PAGE_SIZE = 10;
 const URL_PRESETS = [
   "http://10.234.234.8/doc/page/login.asp",
@@ -81,6 +81,18 @@ export async function renderCctvPage(container) {
 
     <div class="modal-overlay" id="cctvModalOverlay"></div>
     <div class="modal" id="cctvModal" role="dialog" aria-modal="true"></div>
+
+    <!-- Loading popup saat tombol Simpan diklik: kotak kecil ditengah,
+         area sekitar blur tipis. -->
+    <div class="cctv-loading-overlay" id="cctvSavingOverlay" aria-hidden="true">
+      <div class="cctv-loading-card" role="status">
+        <span class="cctv-loading-spinner"></span>
+        <div class="cctv-loading-card__text">
+          <strong>Menyimpan data...</strong>
+          <small>Sedang proses ke server</small>
+        </div>
+      </div>
+    </div>
   `;
 
   renderShell(container, {
@@ -436,11 +448,14 @@ function renderCctvForm(contentEl, detail) {
     <form id="cctvEditForm" class="modal__body">
       <div class="form-group">
         <label class="form-label" for="cctvStatusInput">Status</label>
-        <select id="cctvStatusInput" class="input">
-          ${STATUS_OPTIONS.map(
-            (opt) => `<option value="${escapeAttr(opt)}" ${opt === detail.status ? "selected" : ""}>${escapeHtml(opt)}</option>`
-          ).join("")}
-        </select>
+        <div class="status-select-wrapper">
+          <select id="cctvStatusInput" class="input status-select">
+            ${STATUS_OPTIONS.map(
+              (opt) => `<option value="${escapeAttr(opt)}" ${opt === detail.status ? "selected" : ""}>${escapeHtml(opt)}</option>`
+            ).join("")}
+          </select>
+          ${icon("chevron", { size: 14 })}
+        </div>
       </div>
 
       <div class="form-group">
@@ -500,8 +515,16 @@ function renderCctvForm(contentEl, detail) {
 function bindUrlSuggestion(modal) {
   const urlInput = modal.querySelector("#cctvUrlInput");
   const popover = modal.querySelector("#cctvUrlPopover");
+  // Supaya list tidak kebuka ulang saat focus() dipanggil setelah pilih.
+  let suppressOpen = false;
 
-  urlInput.addEventListener("focus", () => popover.classList.add("is-visible"));
+  urlInput.addEventListener("focus", () => {
+    if (suppressOpen) {
+      suppressOpen = false;
+      return;
+    }
+    popover.classList.add("is-visible");
+  });
 
   document.addEventListener("click", function outsideClick(event) {
     if (!modal.isConnected) {
@@ -517,6 +540,7 @@ function bindUrlSuggestion(modal) {
     btn.addEventListener("click", () => {
       urlInput.value = btn.getAttribute("data-url-preset");
       popover.classList.remove("is-visible");
+      suppressOpen = true;
       urlInput.focus();
     });
   });
@@ -643,6 +667,12 @@ async function submitCctvUpdate(contentEl, detail) {
   const modal = contentEl.querySelector("#cctvModal");
   const session = getSession();
   const saveBtn = modal.querySelector("#cctvSaveBtn");
+  const loadingOverlay = contentEl.querySelector("#cctvSavingOverlay");
+
+  // Cegah submit ganda saat request masih berjalan.
+  if (saveBtn.disabled) {
+    return;
+  }
 
   const statusValue = modal.querySelector("#cctvStatusInput").value;
   const urlValue = modal.querySelector("#cctvUrlInput").value.trim();
@@ -663,20 +693,29 @@ async function submitCctvUpdate(contentEl, detail) {
   };
   payload.data[groupKey] = credentialData;
 
+  // Tombol spinner + popup loading di tengah dengan blur ringan.
   saveBtn.disabled = true;
   saveBtn.innerHTML = `<span class="btn-spinner"></span> Menyimpan...`;
+  loadingOverlay.classList.add("is-visible");
+  loadingOverlay.setAttribute("aria-hidden", "false");
 
-  const result = await apiRequest("updateCCTV", payload, { sessionToken: session.sessionToken });
+  try {
+    const result = await apiRequest("updateCCTV", payload, { sessionToken: session.sessionToken });
 
-  saveBtn.disabled = false;
-  saveBtn.textContent = "Simpan";
-
-  if (result.success) {
-    showSuccess(result.message || "Data berhasil diperbarui.");
-    closeCctvModal(contentEl);
-    loadCctvList(contentEl, session);
-  } else {
-    showError(result.message || "Data gagal diperbarui.");
+    if (result.success) {
+      showSuccess(result.message || "Data berhasil diperbarui.");
+      closeCctvModal(contentEl);
+      loadCctvList(contentEl, session);
+    } else {
+      showError(result.message || "Data gagal diperbarui.");
+    }
+  } catch (error) {
+    showError("Data gagal diperbarui. Tidak dapat menghubungi server.");
+  } finally {
+    loadingOverlay.classList.remove("is-visible");
+    loadingOverlay.setAttribute("aria-hidden", "true");
+    saveBtn.disabled = false;
+    saveBtn.textContent = "Simpan";
   }
 }
 
