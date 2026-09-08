@@ -714,10 +714,10 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  /* Area klik batasi hanya pada kolom field: popover tidak melebar
-     seluruh modal, selebar content (max = lebar input/kolom). */
+  /* Area klik batasi hanya pada kolom field: popover selebar content
+     (max = lebar input/kolom), tidak melebar seluruh modal. */
   width: max-content;
-  min-width: 220px;
+  min-width: 0;
   max-width: 100%;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -1561,10 +1561,10 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  /* Area klik batasi hanya pada kolom field: popover tidak melebar
-     seluruh modal, selebar content (max = lebar input/kolom). */
+  /* Area klik hanya pada kolom field: width max-content, min 0,
+     max = lebar kolom (tidak melebar seluruh modal). */
   width: max-content;
-  min-width: 220px;
+  min-width: 0;
   max-width: 100%;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
