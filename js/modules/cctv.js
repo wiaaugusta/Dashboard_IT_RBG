@@ -480,6 +480,10 @@ async function openCctvModal(contentEl, kdStore) {
   const overlay = contentEl.querySelector("#cctvModalOverlay");
   const modal = contentEl.querySelector("#cctvModal");
 
+  // Modal WAJIB dibuka lebih dulu - berlaku untuk jalur cache maupun request.
+  overlay.classList.add("is-visible");
+  modal.classList.add("is-visible");
+
   /* CACHE-FIRST: request all:true mengirim data LENGKAP (termasuk kredensial),
      jadi detail toko sudah ada di cctvClientCache -> form edit terbuka INSTAN
      tanpa request ke server (round-trip Apps Script yang lama dihindari). */
@@ -492,8 +496,6 @@ async function openCctvModal(contentEl, kdStore) {
   }
 
   /* Fallback (cache belum terisi): request detail ke server seperti biasa. */
-  overlay.classList.add("is-visible");
-  modal.classList.add("is-visible");
   modal.innerHTML = `
     <div class="modal__body">
       <div class="skeleton skeleton-text" style="width:50%"></div>
