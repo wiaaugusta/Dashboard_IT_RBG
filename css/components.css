@@ -108,6 +108,11 @@
   font-size: var(--font-size-small);
   font-weight: 600;
   color: var(--color-text);
+
+  /* Label hanya teks penanda — klik label TIDAK diteruskan ke input/dropdown
+     (area klik hanya pada kotak field-nya sendiri, bukan area di atasnya). */
+  pointer-events: none;
+  user-select: none;
 }
 
 .input-wrapper {
