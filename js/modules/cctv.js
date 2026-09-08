@@ -610,7 +610,9 @@ function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, gr
         <div class="input-wrapper">
           <input type="password" id="${passwordId}" class="input" data-cred-field="${passwordKey}"
             value="${escapeAttr(group[passwordKey] || "")}" />
-          <button type="button" class="password-toggle-btn" data-toggle-for="${passwordId}">Show</button>
+          <button type="button" class="password-toggle-btn" data-toggle-for="${passwordId}">
+            ${icon("eye-off", { size: 16 })}
+          </button>
         </div>
       </div>
     </div>
@@ -683,7 +685,8 @@ function bindGeneratePasswordButtons(scopeEl, groupKey, kdStore) {
             targetInput.value = generatedPassword;
             targetInput.type = "text";
             const toggleBtn = scopeEl.querySelector(`[data-toggle-for="${targetInputId}"]`);
-            if (toggleBtn) toggleBtn.textContent = "Hide";
+            // Password sedang ditampilkan -> icon mata normal (tidak disilang).
+            if (toggleBtn) toggleBtn.innerHTML = icon("eye", { size: 16 });
           }
 
           let check = box.querySelector(".generated-password-box__check");
@@ -705,7 +708,9 @@ function bindPasswordToggles(scopeEl) {
       const input = scopeEl.querySelector("#" + btn.getAttribute("data-toggle-for"));
       const isHidden = input.type === "password";
       input.type = isHidden ? "text" : "password";
-      btn.textContent = isHidden ? "Hide" : "Show";
+      // Icon mata: disilang saat password disembunyikan,
+      // mata normal saat password sedang ditampilkan.
+      btn.innerHTML = icon(isHidden ? "eye" : "eye-off", { size: 16 });
     });
   });
 }

@@ -43,7 +43,8 @@ export function renderLoginPage(container) {
 
             <div class="login-live">
               <span class="login-live__dot"></span>
-              System Online
+              <span class="login-live__label login-live__label--desktop">System Online</span>
+              <span class="login-live__label login-live__label--mobile">Live Report</span>
             </div>
           </div>
 
@@ -288,7 +289,7 @@ export function renderLoginPage(container) {
                   class="password-toggle-btn"
                   id="togglePasswordBtn"
                   aria-label="Tampilkan password">
-                  Show
+                  ${icon("eye-off", { size: 16 })}
                 </button>
 
               </div>
@@ -357,9 +358,12 @@ function bindLoginForm(container) {
       ? "text"
       : "password";
 
-    toggleBtn.textContent = isHidden
-      ? "Hide"
-      : "Show";
+    // Icon mata: disilang saat password disembunyikan,
+    // mata normal saat password sedang ditampilkan.
+    toggleBtn.innerHTML = icon(
+      isHidden ? "eye" : "eye-off",
+      { size: 16 }
+    );
 
     toggleBtn.setAttribute(
       "aria-label",

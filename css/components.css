@@ -150,6 +150,11 @@
 .password-toggle-btn {
   position: absolute;
   right: var(--space-3);
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
   background: none;
   border: none;
   color: var(--color-text-secondary);

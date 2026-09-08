@@ -308,6 +308,17 @@ html, body {
     0 0 14px rgba(103,232,249,.8);
 }
 
+/* Label pill: desktop menampilkan "System Online",
+   mobile menampilkan "Live Report" (lihat media query). */
+.login-live__label--mobile {
+  display: none;
+}
+
+@keyframes loginLivePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.35); opacity: .65; }
+}
+
 
 /* ---------- HERO ---------- */
 
@@ -1134,6 +1145,25 @@ html, body {
     display: none;
   }
 
+  /* MOBILE: hero tidak lagi menampilkan eyebrow "SECURE IT MANAGEMENT".
+     Diganti pill "Live Report" (model System Online) dengan titik
+     berdenyut, sejajar dengan tulisan "Dashboard IT". */
+  .login-visual__eyebrow {
+    display: none;
+  }
+
+  .login-live__label--desktop {
+    display: none;
+  }
+
+  .login-live__label--mobile {
+    display: inline;
+  }
+
+  .login-live__dot {
+    animation: loginLivePulse 2.2s ease-in-out infinite;
+  }
+
 
   .login-card {
     align-self: stretch;
@@ -1177,7 +1207,9 @@ html, body {
 
 
   .login-live {
-    display: none;
+    display: inline-flex;
+    padding: 6px 9px;
+    font-size: 9px;
   }
 
 
