@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MODULES/CCTV.JS - HALAMAN CCTV
  * -----------------------------------
  * STAGE 2 UPDATE (docs/UI_AND_DESIGN.md #10-#19):
@@ -35,10 +35,16 @@ let currentPage = 1;
 let currentSearch = "";
 let cctvRequestId = 0;
 let cctvSearchTimer = null;
-/* TOTAL TOKO = jumlah seluruh toko milik user (tanpa filter pencarian).
+/* TOTAL TOKO = jumlah seluruh toko milik user (tanpa filter pencarian.
    Di-cache saat list dimuat TANPA search; angka ini tidak berubah-ubah
    walau user mengetik filter. */
 let cctvTotalAll = null;
+/* Client-side cache ringkasan SELURUH toko (dari all:true, dimuat SEKALI
+   per sesi/refresh). Pagination & pencarian dikerjakan LOKAL dari cache ini.
+let cctvClientCache = null;   // array ringkasan seluruh toko
+let cctvClientCacheOwner = null; // "role|nik" - cache dibuang kalau ganti user
+let cctvClientCacheLoadedAt =  0;
+let cctvHydrated = false;       // cache pernah dimuat sukses?
 
 export async function renderCctvPage(container) {
   const session = getSession();
@@ -129,7 +135,9 @@ function bindCctvPage(contentEl, session) {
   });
 
   refreshBtn.addEventListener("click", () => {
-    loadCctvList(contentEl, session);
+    // Refresh manual: bypass SEMUA cache (server & client) agar data
+    // langsung tersinkron dengan isi Google Sheet terbaru.
+    loadCctvList(contentEl, session, true);
   });
 
   contentEl.querySelector("#cctvModalOverlay").addEventListener("click", () => closeCctvModal(contentEl));
@@ -139,16 +147,33 @@ function bindCctvPage(contentEl, session) {
  * Muat satu halaman dari server. Backend menangani pencarian terhadap
  * seluruh dataset, sehingga page 2+ tetap cepat tanpa payload besar.
  */
-async function loadCctvList(contentEl, session) {
+/**
+ * Muat data CCTV. Strategi:
+ * - Panggilan PERTAMA / refresh -> minta SEMUA ringkasan sekali (all:true,
+ *   server pakai ScriptCache utk menghindari baca ulang sheet) lalu simpan
+ *   di cache client (cctvClientCache).
+ * - Pindah menu, ganti halaman, & pencarian -> layani LOKAL dari cache,
+ *   TANPA request ulang ke server (nol network) -> instan.
+ * @param {boolean} [forceRefresh] true = bypass semua cache (tombol Refresh).
+ */
+async function loadCctvList(contentEl, session, forceRefresh) {
   const listArea = contentEl.querySelector("#cctvListArea");
   const paginationArea = contentEl.querySelector("#cctvPaginationArea");
+  const owner = (session.role || "") + "|" + (session.nik || "");
+
+  // Cache client valid & bukan refresh -> render langsung, nol request.
+  if (cctvHydrated && cctvClientCacheOwner === owner && !forceRefresh) {
+    renderFromLocalCache(contentEl, session);
+    return;
+  }
+
   const requestId = ++cctvRequestId;
   listArea.innerHTML = renderTableSkeleton();
   paginationArea.innerHTML = "";
 
   const result = await apiRequest(
     "getCCTV",
-    { page: currentPage, limit: PAGE_SIZE, search: currentSearch },
+    { page: 1, limit: PAGE_SIZE, search: "", all: true, refresh: forceRefresh ? true : undefined },
     { sessionToken: session.sessionToken }
   );
 
@@ -163,11 +188,47 @@ async function loadCctvList(contentEl, session) {
         <button type="button" class="btn btn-secondary" id="cctvRetryBtn">Coba Lagi</button>
       </div>
     `;
-    listArea.querySelector("#cctvRetryBtn").addEventListener("click", () => loadCctvList(contentEl, session));
+    listArea.querySelector("#cctvRetryBtn").addEventListener("click", () => loadCctvList(contentEl, session, forceRefresh));
     return;
   }
 
-  renderCctvList(contentEl, session, result.data || {});
+  const data = result.data || {};
+  const items = Array.isArray(data.items) ? data.items : [];
+
+  // Simpan seluruh ringkasan di cache client untuk sesi ini.
+  cctvClientCache = items;
+  cctvClientCacheOwner = owner;
+  cctvClientCacheLoadedAt = Date.now();
+  cctvHydrated = true;
+
+  renderFromLocalCache(contentEl, session);
+}
+
+/**
+ * Filter + paginate dari cache client (tanpa menyentuh server).
+ */
+function renderFromLocalCache(contentEl, session) {
+  const all = cctvClientCache || [];
+  const filtered = currentSearch
+    ? all.filter((item) => {
+        const text = ((item.kdStore || "") + " " + (item.namaStore || "")).toUpperCase();
+        return text.indexOf(currentSearch) !== -1;
+      })
+    : all;
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const payload = {
+    items: filtered.slice(startIndex, startIndex + PAGE_SIZE),
+    total: total,
+    page: currentPage,
+    totalPages: totalPages
+  };
+
+  renderCctvList(contentEl, session, payload);
 }
 
 /** Stage 2: render 1 halaman hasil dari server + pagination + total count global. */
