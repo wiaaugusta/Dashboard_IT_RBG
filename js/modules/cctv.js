@@ -40,7 +40,7 @@ let cctvSearchTimer = null;
    walau user mengetik filter. */
 let cctvTotalAll = null;
 /* Client-side cache ringkasan SELURUH toko (dari all:true, dimuat SEKALI
-   per sesi/refresh). Pagination & pencarian dikerjakan LOKAL dari cache ini.
+   per sesi/refresh). Pagination & pencarian dikerjakan LOKAL dari cache ini. */
 let cctvClientCache = null;   // array ringkasan seluruh toko
 let cctvClientCacheOwner = null; // "role|nik" - cache dibuang kalau ganti user
 let cctvClientCacheLoadedAt =  0;
