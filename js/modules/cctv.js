@@ -416,8 +416,10 @@ function getStatusClass(statusLabel) {
 
 /**
  * Format kolom "Terakhir Update" -> "NAMA - dd/MM/yyyy HH:mm"
- * Contoh: "JALIL - 27/08/2026 16:45".
- * Backend menulis "Diupdate oleh <NIK> - <dd/MM/yyyy HH:mm>" di kolom S.
+ * Contoh: "ALI MUTOHA - 27/08/2026 16:45".
+ * Backend menulis "NAMA - <dd/MM/yyyy HH:mm>" di kolom S (tanpa
+ * "Diupdate oleh"). Baris lama berformat "Diupdate oleh <NIK> - ..."
+ * tetap dikenali untuk kompatibilitas.
  */
 function formatUpdatedInfo(raw) {
   const value = (raw == null ? "" : String(raw)).trim();
@@ -478,6 +480,18 @@ async function openCctvModal(contentEl, kdStore) {
   const overlay = contentEl.querySelector("#cctvModalOverlay");
   const modal = contentEl.querySelector("#cctvModal");
 
+  /* CACHE-FIRST: request all:true mengirim data LENGKAP (termasuk kredensial),
+     jadi detail toko sudah ada di cctvClientCache -> form edit terbuka INSTAN
+     tanpa request ke server (round-trip Apps Script yang lama dihindari). */
+  const cached = Array.isArray(cctvClientCache)
+    ? cctvClientCache.find((it) => String(it.kdStore) === String(kdStore))
+    : null;
+  if (cctvHydrated && cached && cached.dvrLama && cached.dvrBaru) {
+    renderCctvForm(contentEl, cached);
+    return;
+  }
+
+  /* Fallback (cache belum terisi): request detail ke server seperti biasa. */
   overlay.classList.add("is-visible");
   modal.classList.add("is-visible");
   modal.innerHTML = `
@@ -818,7 +832,15 @@ async function submitCctvUpdate(contentEl, detail) {
     if (result.success) {
       showSuccess(result.message || "Data berhasil diperbarui.");
       closeCctvModal(contentEl);
-      loadCctvList(contentEl, session);
+      /* Sinkronkan cache lokal dengan hasil simpan, lalu render ulang list
+         dari cache -> perubahan LANGSUNG tampil tanpa reload dari server. */
+      applyCctvUpdateToCache(detail.kdStore, result.data, {
+        statusValue,
+        urlValue,
+        credentialData,
+        groupKey
+      });
+      renderFromLocalCache(contentEl, session);
     } else {
       showError(result.message || "Data gagal diperbarui.");
     }
@@ -830,6 +852,42 @@ async function submitCctvUpdate(contentEl, detail) {
     saveBtn.disabled = false;
     saveBtn.textContent = "Simpan";
   }
+}
+
+/**
+ * Update 1 item di cache client setelah simpan (menghindari reload server).
+ * Prioritas: pakai full object dari response backend (result.data). Jika tidak
+ * ada, merge manual dari data form + timestamp lokal.
+ */
+function applyCctvUpdateToCache(kdStore, serverItem, formData) {
+  if (!Array.isArray(cctvClientCache)) return;
+  const idx = cctvClientCache.findIndex((it) => String(it.kdStore) === String(kdStore));
+  if (idx === -1) return;
+
+  // Backend mengembalikan baris terbaru lengkap (cctvRowToObject_) - pakai itu.
+  if (serverItem && serverItem.kdStore) {
+    cctvClientCache[idx] = serverItem;
+    return;
+  }
+
+  // Fallback: merge manual dari nilai form.
+  // Format sama dengan backend: "NAMA - dd/MM/yyyy HH:mm" (tanpa "Diupdate oleh").
+  const session = getSession();
+  const actor = (session && (session.name || session.nik)) || "";
+  const item = cctvClientCache[idx];
+  item.status = formData.statusValue;
+  item.url = formData.urlValue;
+  item[formData.groupKey] = Object.assign({}, item[formData.groupKey] || {}, formData.credentialData);
+  item.updatedInfo = actor + " - " + formatCctvTimestamp(new Date());
+}
+
+/** Format timestamp dd/MM/yyyy HH:mm (menyamai format catatan backend). */
+function formatCctvTimestamp(date) {
+  const p = (n) => String(n).padStart(2, "0");
+  return (
+    p(date.getDate()) + "/" + p(date.getMonth() + 1) + "/" + date.getFullYear() +
+    " " + p(date.getHours()) + ":" + p(date.getMinutes())
+  );
 }
 
 function closeCctvModal(contentEl) {
