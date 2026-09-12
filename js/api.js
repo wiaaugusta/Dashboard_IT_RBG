@@ -18,10 +18,34 @@
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyld_jhumhTe3FY2Yta9csQDIsAYe5l_el0BO917FF7USX1Ssj_QQHFSG1gGejHuoRt/exec";
 
 /**
+ * Browser modern bisa decompress gzip natively (tanpa library/CDN).
+ * Client lama yang tidak punya API ini tidak akan mengirim flag gz:true,
+ * sehingga backend tetap mengirim JSON polos (backward compatible).
+ */
+const GZIP_SUPPORTED = typeof window !== "undefined" && typeof window.DecompressionStream === "function";
+
+/** Decode data { gz:true, b64 } dari backend -> object asli. */
+async function decodeGzipBase64(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+  const stream = new Blob([bytes])
+    .stream()
+    .pipeThrough(new DecompressionStream("gzip"));
+  const text = await new Response(stream).text();
+  return JSON.parse(text);
+}
+
+/**
  * Kirim request ke backend Apps Script.
  * Mengikuti kontrak request/response di docs/DATA_AND_API.md #25-#27:
  *   request : { action, ...payload }
  *   response: { success, message, data }
+ *
+ * OPTIMASI: request menyertakan gz:true (opt-in). Untuk payload besar
+ * (mis. admin memuat 648 toko CCTV) backend mengirim data sebagai
+ * base64+gzip (~85% lebih kecil) dan didecode di sini secara transparan.
  *
  * @param {string} action - nama action backend, contoh: "login", "getCCTV"
  * @param {object} payload - data tambahan yang dikirim bersama action
@@ -38,6 +62,10 @@ export async function apiRequest(action, payload = {}, options = {}) {
     action,
     ...payload
   };
+
+  if (GZIP_SUPPORTED) {
+    body.gz = true;
+  }
 
   if (options.sessionToken) {
     body.sessionToken = options.sessionToken;
@@ -62,11 +90,26 @@ export async function apiRequest(action, payload = {}, options = {}) {
 
     const json = await response.json();
 
+    // Payload terkompresi dari backend: { gz: true, b64: "<base64 gzip>" }.
+    let data = json.data ?? null;
+    if (data && data.gz === true && typeof data.b64 === "string") {
+      try {
+        data = await decodeGzipBase64(data.b64);
+      } catch (decodeError) {
+        console.error("[api.js] Gagal decode data gzip:", decodeError);
+        return {
+          success: false,
+          message: "Gagal memproses data dari server. Silakan coba kembali.",
+          data: null
+        };
+      }
+    }
+
     // Jaga-jaga apabila backend tidak mengikuti kontrak response.
     return {
       success: Boolean(json.success),
       message: json.message || "",
-      data: json.data ?? null
+      data: data ?? null
     };
   } catch (error) {
     // Jangan bocorkan detail teknis ke UI (docs/PROJECT_CONSTITUTION.md #21).

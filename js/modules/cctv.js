@@ -182,6 +182,13 @@ function bindCctvPage(contentEl, session) {
  *   di cache client (cctvClientCache).
  * - Pindah menu, ganti halaman, & pencarian -> layani LOKAL dari cache,
  *   TANPA request ulang ke server (nol network) -> instan.
+ *
+ * OPTIMASI ADMIN (ratusan toko): render pertama TIDAK menunggu dataset
+ * penuh. Dua request dijalankan paralel:
+ *   1. "quick"  = 1 halaman ringkasan (payload kecil) -> tabel tampil cepat.
+ *   2. "all"    = dataset penuh (all:true, gzip) untuk hydrate cache client
+ *      di background; setelah selesai list dirender ulang dari cache
+ *      sehingga pagination/search/filter mencakup seluruh dataset.
  * @param {boolean} [forceRefresh] true = bypass semua cache (tombol Refresh).
  */
 async function loadCctvList(contentEl, session, forceRefresh) {
@@ -199,15 +206,26 @@ async function loadCctvList(contentEl, session, forceRefresh) {
   listArea.innerHTML = renderTableSkeleton();
   paginationArea.innerHTML = "";
 
-  const result = await apiRequest(
+  // Fase 1 (quick): 1 halaman ringkasan - payload kecil, render instan.
+  const quickPromise = apiRequest(
     "getCCTV",
-    { page: 1, limit: PAGE_SIZE, search: "", all: true, refresh: forceRefresh ? true : undefined },
+    { page: currentPage, limit: PAGE_SIZE, search: currentSearch, gz: true },
     { sessionToken: session.sessionToken }
   );
 
+  // Fase 2 (all): dataset penuh utk cache client - paralel di background.
+  const allPromise = apiRequest(
+    "getCCTV",
+    { page: 1, limit: PAGE_SIZE, search: "", all: true, gz: true, refresh: forceRefresh ? true : undefined },
+    { sessionToken: session.sessionToken }
+  );
+
+  const quick = await quickPromise;
   if (requestId !== cctvRequestId) return;
 
-  if (!result.success) {
+  if (quick.success) {
+    renderCctvList(contentEl, session, quick.data || {});
+  } else {
     listArea.innerHTML = `
       <div class="state-card">
         <div class="state-card__icon state-card__icon--error">!</div>
@@ -217,19 +235,27 @@ async function loadCctvList(contentEl, session, forceRefresh) {
       </div>
     `;
     listArea.querySelector("#cctvRetryBtn").addEventListener("click", () => loadCctvList(contentEl, session, forceRefresh));
-    return;
   }
 
-  const data = result.data || {};
-  const items = Array.isArray(data.items) ? data.items : [];
+  // Hydrate cache client dari dataset penuh (tetap berjalan walau quick
+  // gagal - begitu sukses, list langsung pulih dari cache).
+  const all = await allPromise;
+  if (requestId !== cctvRequestId) return;
 
-  // Simpan seluruh ringkasan di cache client untuk sesi ini.
-  cctvClientCache = items;
-  cctvClientCacheOwner = owner;
-  cctvClientCacheLoadedAt = Date.now();
-  cctvHydrated = true;
+  if (all.success) {
+    const data = all.data || {};
+    const items = Array.isArray(data.items) ? data.items : [];
 
-  renderFromLocalCache(contentEl, session);
+    // Simpan seluruh ringkasan di cache client untuk sesi ini.
+    cctvClientCache = items;
+    cctvClientCacheOwner = owner;
+    cctvClientCacheLoadedAt = Date.now();
+    cctvHydrated = true;
+
+    // Render ulang dari cache penuh: pagination/search/filter kini
+    // mencakup SELURUH dataset (bukan hanya halaman pertama).
+    renderFromLocalCache(contentEl, session);
+  }
 }
 
 /**
