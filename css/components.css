@@ -559,9 +559,12 @@
 }
 
 /* Tombol filter "Belum Lengkap" di samping kolom pencarian.
+   Icon-only, ukuran kotak disamakan dengan tinggi tombol Refresh (.btn 42px).
    is-active = filter toko yang status / URL-nya masih kosong sedang menyala. */
 .cctv-filter-btn {
+  width: 42px;
   flex-shrink: 0;
+  padding: 0;
 }
 
 .cctv-filter-btn.is-active {
@@ -1561,6 +1564,12 @@
   text-align: left;
 
   cursor: pointer;
+}
+
+/* Status default kosong -> teks "Pilih status..." tampil abu-abu,
+   hilang otomatis begitu user memilih salah satu opsi. */
+.status-dropdown__placeholder {
+  color: var(--color-text-muted);
 }
 
 .status-dropdown__trigger > .icon {

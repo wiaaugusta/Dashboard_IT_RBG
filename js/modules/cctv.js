@@ -91,9 +91,9 @@ export async function renderCctvPage(container) {
         id="cctvIncompleteBtn"
         aria-pressed="false"
         title="Tampilkan hanya toko yang status / URL-nya masih kosong"
+        aria-label="Filter toko belum lengkap"
       >
         ${icon("filter", { size: 15 })}
-        Belum Lengkap
       </button>
       <div class="cctv-toolbar__spacer"></div>
       <span class="cctv-toolbar__count" id="cctvCount"></span>
@@ -584,14 +584,15 @@ function renderCctvForm(contentEl, detail) {
       <div class="form-group">
         <label class="form-label" for="cctvStatusTrigger">Status</label>
         <div class="status-dropdown">
-          <input type="hidden" id="cctvStatusInput" value="${escapeAttr(detail.status)}" />
+          <!-- Status default KOSONG - wajib dipilih user sebelum simpan. -->
+          <input type="hidden" id="cctvStatusInput" value="" />
           <button type="button" class="input status-dropdown__trigger" id="cctvStatusTrigger">
-            <span id="cctvStatusValue">${escapeHtml(detail.status)}</span>
+            <span id="cctvStatusValue" class="status-dropdown__placeholder">Pilih status...</span>
             ${icon("chevron", { size: 14 })}
           </button>
           <div class="status-dropdown__popover" id="cctvStatusPopover">
             ${STATUS_OPTIONS.map((opt) => `
-              <button type="button" class="status-dropdown__item ${opt === detail.status ? "is-selected" : ""}" data-status-value="${escapeAttr(opt)}">
+              <button type="button" class="status-dropdown__item" data-status-value="${escapeAttr(opt)}">
                 ${escapeHtml(opt)}
               </button>
             `).join("")}
@@ -663,6 +664,8 @@ function renderCctvForm(contentEl, detail) {
     btn.addEventListener("click", () => {
       statusInput.value = btn.getAttribute("data-status-value");
       statusValueEl.textContent = btn.textContent;
+      // Status sudah dipilih -> buang tampilan placeholder abu-abu.
+      statusValueEl.classList.remove("status-dropdown__placeholder");
       statusPopover.classList.remove("is-visible");
 
       modal.querySelectorAll("[data-status-value]").forEach((b) => {
@@ -845,8 +848,16 @@ async function submitCctvUpdate(contentEl, detail) {
     return;
   }
 
-  const statusValue = modal.querySelector("#cctvStatusInput").value;
+  const statusValue = modal.querySelector("#cctvStatusInput").value.trim();
   const urlValue = modal.querySelector("#cctvUrlInput").value.trim();
+
+  // Validasi: kolom STATUS wajib terisi sebelum simpan (URL boleh kosong).
+  if (!statusValue) {
+    showError("Kolom Status harus diisi terlebih dahulu.");
+    modal.querySelector("#cctvStatusTrigger").focus();
+    return;
+  }
+
   const isDvrBaru = statusValue.toUpperCase().indexOf("BARU") !== -1;
   const groupKey = isDvrBaru ? "dvrBaru" : "dvrLama";
 
