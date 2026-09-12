@@ -8,7 +8,7 @@
  * & sidebar footer).
  */
 
-import { NAV_ITEMS, BOTTOM_NAV_ITEMS, isVisibleForRole, findParentKey } from "./nav-config.js";
+import { NAV_ITEMS, BOTTOM_NAV_ITEMS, isVisibleForRole, findParentKey, resolveGroupFallbackPath } from "./nav-config.js";
 import { getSession, logout } from "./auth.js";
 import { navigate } from "./router.js";
 import { icon } from "./icons.js";
@@ -125,7 +125,27 @@ function renderNavList(role, activeKey) {
 function renderNavItem(item, role, activeKey) {
   if (item.children) {
     const visibleChildren = item.children.filter((child) => isVisibleForRole(child, role));
-    if (visibleChildren.length === 0) return "";
+
+    /* Non-admin: submenu disembunyikan -> menu dirender sebagai LEAF biasa
+       yang langsung membuka halaman checklist sesuai role (pathByRole).
+       ADMIN tetap melihat submenu Office/Store seperti biasa. */
+    if (visibleChildren.length === 0) {
+      const fallbackPath = resolveGroupFallbackPath(item, role);
+      if (fallbackPath) {
+        const matchedChild = item.children.find((child) => child.path === fallbackPath);
+        return renderLeafItem(
+          {
+            key: matchedChild ? matchedChild.key : item.key,
+            label: item.label,
+            icon: item.icon,
+            path: fallbackPath
+          },
+          activeKey,
+          false
+        );
+      }
+      return "";
+    }
 
     const isExpanded = expandedGroups.has(item.key);
 
@@ -165,7 +185,10 @@ function renderBottomNav(role, activeKey) {
 
   const itemsHtml = items
     .map((item) => {
-      const isActive = item.key === activeKey;
+      /* Path bisa berbeda per role (mis. Checklist: IT_OFFICE -> office). */
+      const itemPath = resolveGroupFallbackPath(item, role) || item.path;
+      const isActive =
+        item.key === activeKey || findParentKey(activeKey) === item.key;
       if (item.action === "open-drawer") {
         return `
           <button type="button" class="app-bottom-nav__item" data-bottom-nav-action="open-drawer">
@@ -183,7 +206,7 @@ function renderBottomNav(role, activeKey) {
         `;
       }
       return `
-        <a href="#${item.path}" class="app-bottom-nav__item ${isActive ? "is-active" : ""}">
+        <a href="#${itemPath}" class="app-bottom-nav__item ${isActive ? "is-active" : ""}">
           <span class="app-bottom-nav__icon">${icon(item.icon, { size: 20 })}</span>
           <span>${escapeHtml(item.label)}</span>
         </a>
