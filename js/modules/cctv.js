@@ -207,9 +207,11 @@ async function loadCctvList(contentEl, session, forceRefresh) {
   paginationArea.innerHTML = "";
 
   // Fase 1 (quick): 1 halaman ringkasan - payload kecil, render instan.
+  // Saat forceRefresh, quick juga bypass cache server agar halaman pertama
+  // yang tampil benar-benar data terbaru.
   const quickPromise = apiRequest(
     "getCCTV",
-    { page: currentPage, limit: PAGE_SIZE, search: currentSearch, gz: true },
+    { page: currentPage, limit: PAGE_SIZE, search: currentSearch, gz: true, refresh: forceRefresh ? true : undefined },
     { sessionToken: session.sessionToken }
   );
 
@@ -552,18 +554,9 @@ async function openCctvModal(contentEl, kdStore) {
   overlay.classList.add("is-visible");
   modal.classList.add("is-visible");
 
-  /* CACHE-FIRST: request all:true mengirim data LENGKAP (termasuk kredensial),
-     jadi detail toko sudah ada di cctvClientCache -> form edit terbuka INSTAN
-     tanpa request ke server (round-trip Apps Script yang lama dihindari). */
-  const cached = Array.isArray(cctvClientCache)
-    ? cctvClientCache.find((it) => String(it.kdStore) === String(kdStore))
-    : null;
-  if (cctvHydrated && cached && cached.dvrLama && cached.dvrBaru) {
-    renderCctvForm(contentEl, cached);
-    return;
-  }
-
-  /* Fallback (cache belum terisi): request detail ke server seperti biasa. */
+  /* ON-DEMAND DETAIL: list hanya berisi ringkasan (tanpa data sensitif).
+     Kredensial & konfigurasi lengkap diambil SAAT form edit dibuka lewat
+     action getCCTVDetail (server juga meng-cache per toko 10 menit). */
   modal.innerHTML = `
     <div class="modal__body">
       <div class="skeleton skeleton-text" style="width:50%"></div>
@@ -917,9 +910,7 @@ async function submitCctvUpdate(contentEl, detail) {
          dari cache -> perubahan LANGSUNG tampil tanpa reload dari server. */
       applyCctvUpdateToCache(detail.kdStore, result.data, {
         statusValue,
-        urlValue,
-        credentialData,
-        groupKey
+        urlValue
       });
       renderFromLocalCache(contentEl, session);
     } else {
@@ -936,18 +927,20 @@ async function submitCctvUpdate(contentEl, detail) {
 }
 
 /**
- * Update 1 item di cache client setelah simpan (menghindari reload server).
- * Prioritas: pakai full object dari response backend (result.data). Jika tidak
- * ada, merge manual dari data form + timestamp lokal.
+ * Update 1 item RINGKASAN di cache client setelah simpan (menghindari reload
+ * server). Cache list tidak menyimpan kredensial - hanya field yang tampil
+ * di tabel. Prioritas: field dari response backend, fallback dari form.
  */
 function applyCctvUpdateToCache(kdStore, serverItem, formData) {
   if (!Array.isArray(cctvClientCache)) return;
   const idx = cctvClientCache.findIndex((it) => String(it.kdStore) === String(kdStore));
   if (idx === -1) return;
 
-  // Backend mengembalikan baris terbaru lengkap (cctvRowToObject_) - pakai itu.
+  const item = cctvClientCache[idx];
   if (serverItem && serverItem.kdStore) {
-    cctvClientCache[idx] = serverItem;
+    item.status = serverItem.status;
+    item.url = serverItem.url;
+    item.updatedInfo = serverItem.updatedInfo || "";
     return;
   }
 
@@ -955,10 +948,8 @@ function applyCctvUpdateToCache(kdStore, serverItem, formData) {
   // Format sama dengan backend: "NAMA - dd/MM/yyyy HH:mm" (tanpa "Diupdate oleh").
   const session = getSession();
   const actor = (session && (session.name || session.nik)) || "";
-  const item = cctvClientCache[idx];
   item.status = formData.statusValue;
   item.url = formData.urlValue;
-  item[formData.groupKey] = Object.assign({}, item[formData.groupKey] || {}, formData.credentialData);
   item.updatedInfo = actor + " - " + formatCctvTimestamp(new Date());
 }
 

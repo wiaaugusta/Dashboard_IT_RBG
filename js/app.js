@@ -27,7 +27,7 @@ function registerServiceWorker() {
   window.addEventListener("load", () => {
 
     navigator.serviceWorker
-      .register("./service-worker.js?v=10")
+      .register("./service-worker.js?v=11")
       .then((registration) => {
 
         console.log(

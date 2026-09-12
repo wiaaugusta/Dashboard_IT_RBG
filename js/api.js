@@ -63,7 +63,7 @@ export async function apiRequest(action, payload = {}, options = {}) {
     ...payload
   };
 
-  if (GZIP_SUPPORTED) {
+  if (GZIP_SUPPORTED && !options.disableGzip) {
     body.gz = true;
   }
 
@@ -96,6 +96,12 @@ export async function apiRequest(action, payload = {}, options = {}) {
       try {
         data = await decodeGzipBase64(data.b64);
       } catch (decodeError) {
+        // SELF-HEALING: kalau decode gzip gagal (mis. mismatch versi deploy),
+        // ulangi request SEKALI tanpa gzip supaya data tetap ter-load.
+        if (!options.disableGzip) {
+          console.warn("[api.js] Decode gzip gagal, mencoba ulang tanpa gzip...", decodeError);
+          return apiRequest(action, payload, { ...options, disableGzip: true });
+        }
         console.error("[api.js] Gagal decode data gzip:", decodeError);
         return {
           success: false,
