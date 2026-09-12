@@ -229,11 +229,11 @@ export function renderLoginPage(container) {
 
           <form id="loginForm" novalidate>
 
-            <!-- NIK -->
+            <!-- NIK / USERNAME -->
             <div class="form-group">
 
               <label for="nikInput" class="login-field-label">
-                NIK
+                NIK / Username
               </label>
 
               <div class="input-wrapper input-wrapper--icon">
@@ -242,14 +242,17 @@ export function renderLoginPage(container) {
                   ${icon("user", { size: 18 })}
                 </span>
 
+                <!-- TANPA inputmode=numeric: admin login pakai username
+                     alfabet, jadi keyboard mobile harus keyboard teks penuh. -->
                 <input
                   type="text"
                   id="nikInput"
                   name="nik"
                   class="input input--icon"
-                  placeholder="Masukkan NIK Anda"
+                  placeholder="Masukkan NIK / Username"
                   autocomplete="username"
-                  inputmode="numeric"
+                  autocapitalize="none"
+                  spellcheck="false"
                 />
 
               </div>
@@ -521,7 +524,7 @@ function validateLoginForm(
   if (!nik) {
 
     nikError.textContent =
-      "NIK wajib diisi.";
+      "NIK / Username wajib diisi.";
 
     isValid = false;
 
