@@ -1052,9 +1052,24 @@ html, body {
 
 
 .login-version {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
   color: #94a3b8;
 
   font-size: 9px;
+}
+
+
+/* Selama proses login berjalan: kolom NIK & password dikunci
+   (tidak bisa diklik / fokus) sampai request selesai. */
+.login-page.is-loading #loginForm .form-group .input-wrapper {
+  pointer-events: none;
+}
+
+.login-page.is-loading #loginForm .form-group .input-wrapper .input {
+  background-color: #f8fafc;
 }
 
 

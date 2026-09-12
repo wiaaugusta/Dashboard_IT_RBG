@@ -325,6 +325,7 @@ export function renderLoginPage(container) {
             </span>
 
             <span class="login-version">
+              ${icon("monitor", { size: 14 })}
               IT Platform
             </span>
 
@@ -402,6 +403,10 @@ function bindLoginForm(container) {
     container.querySelector(".login-page")?.classList.add("is-loading");
     submitBtn.disabled = true;
 
+    // Kunci kolom NIK & password selama proses login berjalan
+    // (tidak bisa diklik / diketik sampai request selesai).
+    setLoginInputsLocked(container, true);
+
     const originalContent =
       submitBtn.innerHTML;
 
@@ -451,6 +456,7 @@ function bindLoginForm(container) {
     } finally {
 
       container.querySelector(".login-page")?.classList.remove("is-loading");
+      setLoginInputsLocked(container, false);
       submitBtn.disabled = false;
       submitBtn.innerHTML = originalContent;
 
@@ -473,6 +479,26 @@ function hideBanner(banner) {
 
   banner.textContent = "";
   banner.classList.remove("is-visible");
+
+}
+
+
+/**
+ * Kunci / buka kembali kolom NIK & password.
+ * readOnly mencegah ketik, dan class .is-loading pada .login-page
+ * mematikan pointer-events kolom lewat CSS sehingga tidak bisa diklik.
+ */
+function setLoginInputsLocked(container, locked) {
+
+  const inputs = [
+    container.querySelector("#nikInput"),
+    container.querySelector("#passwordInput")
+  ];
+
+  inputs.forEach((input) => {
+    if (!input) return;
+    input.readOnly = locked;
+  });
 
 }
 
