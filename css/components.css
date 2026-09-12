@@ -545,6 +545,7 @@
 
 .cctv-search-input {
   max-width: 320px;
+  text-transform: uppercase;
 }
 
 .cctv-toolbar__spacer {
@@ -555,6 +556,19 @@
   font-size: var(--font-size-small);
   color: var(--color-text-secondary);
   white-space: nowrap;
+}
+
+/* Tombol filter "Belum Lengkap" di samping kolom pencarian.
+   is-active = filter toko yang status / URL-nya masih kosong sedang menyala. */
+.cctv-filter-btn {
+  flex-shrink: 0;
+}
+
+.cctv-filter-btn.is-active {
+  color: #c2410c;
+  border-color: #fdba74;
+  background: #fff7ed;
+  box-shadow: 0 1px 2px rgba(194, 65, 12, .12);
 }
 
 .cctv-credential-pair {

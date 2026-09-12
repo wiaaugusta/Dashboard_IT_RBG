@@ -45,6 +45,9 @@ let cctvClientCache = null;   // array ringkasan seluruh toko
 let cctvClientCacheOwner = null; // "role|nik" - cache dibuang kalau ganti user
 let cctvClientCacheLoadedAt =  0;
 let cctvHydrated = false;       // cache pernah dimuat sukses?
+/* Filter tombol "Belum Lengkap": true = tampilkan HANYA toko yang status
+   atau URL-nya masih kosong (data belum lengkap). */
+let cctvIncompleteOnly = false;
 
 export async function renderCctvPage(container) {
   const session = getSession();
@@ -52,6 +55,7 @@ export async function renderCctvPage(container) {
 
   currentPage = 1;
   currentSearch = "";
+  cctvIncompleteOnly = false;
   cctvTotalAll = null;
 
   const contentHtml = `
@@ -81,6 +85,16 @@ export async function renderCctvPage(container) {
           placeholder="Cari kode toko atau nama toko..."
         />
       </div>
+      <button
+        type="button"
+        class="btn btn-secondary cctv-filter-btn"
+        id="cctvIncompleteBtn"
+        aria-pressed="false"
+        title="Tampilkan hanya toko yang status / URL-nya masih kosong"
+      >
+        ${icon("filter", { size: 15 })}
+        Belum Lengkap
+      </button>
       <div class="cctv-toolbar__spacer"></div>
       <span class="cctv-toolbar__count" id="cctvCount"></span>
       <button type="button" class="btn btn-secondary" id="cctvRefreshBtn">
@@ -129,7 +143,10 @@ function bindCctvPage(contentEl, session) {
 
   searchInput.addEventListener("input", () => {
     currentPage = 1;
-    currentSearch = searchInput.value.trim();
+    /* Paksa huruf kapital otomatis utk pencarian KD & NAMA toko. */
+    const upper = searchInput.value.toUpperCase();
+    if (upper !== searchInput.value) searchInput.value = upper;
+    currentSearch = upper.trim();
     clearTimeout(cctvSearchTimer);
     cctvSearchTimer = setTimeout(() => loadCctvList(contentEl, session), 180);
   });
@@ -138,6 +155,17 @@ function bindCctvPage(contentEl, session) {
     // Refresh manual: bypass SEMUA cache (server & client) agar data
     // langsung tersinkron dengan isi Google Sheet terbaru.
     loadCctvList(contentEl, session, true);
+  });
+
+  // Toggle filter "Belum Lengkap": tampilkan hanya toko yang datanya
+  // belum lengkap (status / URL kosong). Filter dikerjakan LOKAL dari cache.
+  const incompleteBtn = contentEl.querySelector("#cctvIncompleteBtn");
+  incompleteBtn.addEventListener("click", () => {
+    cctvIncompleteOnly = !cctvIncompleteOnly;
+    incompleteBtn.classList.toggle("is-active", cctvIncompleteOnly);
+    incompleteBtn.setAttribute("aria-pressed", cctvIncompleteOnly ? "true" : "false");
+    currentPage = 1;
+    loadCctvList(contentEl, session);
   });
 
   contentEl.querySelector("#cctvModalOverlay").addEventListener("click", () => closeCctvModal(contentEl));
@@ -209,12 +237,17 @@ async function loadCctvList(contentEl, session, forceRefresh) {
  */
 function renderFromLocalCache(contentEl, session) {
   const all = cctvClientCache || [];
-  const filtered = currentSearch
+  let filtered = currentSearch
     ? all.filter((item) => {
         const text = ((item.kdStore || "") + " " + (item.namaStore || "")).toUpperCase();
         return text.indexOf(currentSearch) !== -1;
       })
     : all;
+
+  // Tombol "Belum Lengkap": hanya toko dengan status / URL masih kosong.
+  if (cctvIncompleteOnly) {
+    filtered = filtered.filter(isCctvIncomplete_);
+  }
 
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -231,6 +264,13 @@ function renderFromLocalCache(contentEl, session) {
   renderCctvList(contentEl, session, payload);
 }
 
+/** true = data toko belum lengkap (status ATAU URL masih kosong). */
+function isCctvIncomplete_(item) {
+  const status = (item.status || "").toString().trim();
+  const url = (item.url || "").toString().trim();
+  return !status || !url;
+}
+
 /** Stage 2: render 1 halaman hasil dari server + pagination + total count global. */
 function renderCctvList(contentEl, session, payload) {
   const listArea = contentEl.querySelector("#cctvListArea");
@@ -244,19 +284,21 @@ function renderCctvList(contentEl, session, payload) {
 
   /* Cache total keseluruhan HANYA saat dimuat tanpa filter pencarian,
      supaya label TOTAL TOKO tidak terpengaruh filter. */
-  if (!currentSearch) {
+  if (!currentSearch && !cctvIncompleteOnly) {
     cctvTotalAll = totalRecords;
   }
   const totalForPagination = cctvTotalAll !== null ? cctvTotalAll : totalRecords;
 
-  countEl.textContent = totalRecords > 0 ? `${totalRecords} toko` : "";
+  countEl.textContent = totalRecords > 0
+    ? (cctvIncompleteOnly ? `${totalRecords} toko belum lengkap` : `${totalRecords} toko`)
+    : "";
 
   if (totalRecords === 0) {
     listArea.innerHTML = `
       <div class="state-card">
         <div class="state-card__icon state-card__icon--empty">-</div>
         <p class="state-card__title">Data CCTV tidak ditemukan.</p>
-        <p class="state-card__subtitle">Coba ubah kata kunci pencarian.</p>
+        <p class="state-card__subtitle">${cctvIncompleteOnly && !currentSearch ? "Semua toko sudah lengkap datanya." : "Coba ubah kata kunci pencarian."}</p>
       </div>
     `;
     paginationArea.innerHTML = renderPagination(page, 0, 0, 0, totalForPagination);
