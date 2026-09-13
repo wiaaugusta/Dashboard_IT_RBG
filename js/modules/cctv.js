@@ -603,10 +603,11 @@ function bindCctvUrlMarquee(scopeEl) {
 }
 
 function getStatusClass(statusLabel) {
-  if (statusLabel.indexOf("BARU") !== -1) return "success";   // DVR BARU -> hijau
-  if (statusLabel.indexOf("LAMA") !== -1) return "info";      // DVR LAMA -> biru tipis
-  if (statusLabel.indexOf("OWNER") !== -1) return "danger";   // CCTV OWNER -> merah tipis
-  if (statusLabel.indexOf("APP") !== -1) return "orange";     // APP -> orange
+  const label = String(statusLabel == null ? "" : statusLabel);
+  if (label.indexOf("BARU") !== -1) return "success";   // DVR BARU -> hijau
+  if (label.indexOf("LAMA") !== -1) return "info";      // DVR LAMA -> biru tipis
+  if (label.indexOf("OWNER") !== -1) return "danger";   // CCTV OWNER -> merah tipis
+  if (label.indexOf("APP") !== -1) return "orange";     // APP -> orange
   return "info";
 }
 
@@ -637,7 +638,9 @@ function formatUpdatedInfo(raw) {
 }
 
 function renderCctvRow(item, rowNumber) {
-  const statusLabel = (item.status || "").toUpperCase();
+  /* Kolom STATUS di spreadsheet bisa berisi angka (bukan teks) ->
+     konversi paksa ke string supaya toUpperCase()/indexOf tidak error. */
+  const statusLabel = String(item.status == null ? "" : item.status).toUpperCase();
   const statusClass = getStatusClass(statusLabel);
   const storeCode = escapeHtml(item.kdStore);
   const storeName = escapeHtml(item.namaStore || "-");
