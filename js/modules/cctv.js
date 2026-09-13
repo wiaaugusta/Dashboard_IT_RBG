@@ -237,15 +237,21 @@ async function loadCctvList(contentEl, session, forceRefresh) {
     ? { page: 1, limit: PAGE_SIZE, search: "", all: true, offset: 0, chunk: ADMIN_CHUNK_SIZE, gz: true, refresh: forceRefresh ? true : undefined }
     : { page: 1, limit: PAGE_SIZE, search: "", all: true, gz: true, refresh: forceRefresh ? true : undefined };
 
-  const first = await apiRequest("getCCTV", firstRequest, { sessionToken: session.sessionToken });
+  const first = await Promise.race([
+    apiRequest("getCCTV", firstRequest, { sessionToken: session.sessionToken }),
+    new Promise((resolve) =>
+      setTimeout(() => resolve({ success: false, message: "Server tidak merespons dalam 30 detik.", data: null }), 30000)
+    )
+  ]);
   if (requestId !== cctvRequestId) return;
 
   if (!first.success) {
+    console.error("[cctv] chunk-1 gagal:", first.message);
     listArea.innerHTML = `
       <div class="state-card">
         <div class="state-card__icon state-card__icon--error">!</div>
         <p class="state-card__title">Data CCTV gagal dimuat.</p>
-        <p class="state-card__subtitle">Periksa koneksi Anda lalu coba lagi.</p>
+        <p class="state-card__subtitle">${escapeHtml(first.message || "Periksa koneksi Anda lalu coba lagi.")}</p>
         <button type="button" class="btn btn-secondary" id="cctvRetryBtn">Coba Lagi</button>
       </div>
     `;
@@ -254,12 +260,34 @@ async function loadCctvList(contentEl, session, forceRefresh) {
   }
 
   const firstData = first.data || {};
-  appendCctvChunk(firstData.items || []);
-  cctvTotalKnown = typeof firstData.total === "number" ? firstData.total : cctvClientCache.length;
-  cctvTotalAll = !currentSearch ? cctvTotalKnown : cctvTotalAll;
-  cctvHydrated = true;
 
-  renderFromLocalCache(contentEl, session);
+  try {
+    appendCctvChunk(firstData.items || []);
+    cctvTotalKnown = typeof firstData.total === "number" ? firstData.total : cctvClientCache.length;
+    cctvTotalAll = !currentSearch ? cctvTotalKnown : cctvTotalAll;
+    cctvHydrated = true;
+
+    /* DIAGNOSA DEPLOY: kalau console menulis "backend-lama", berarti
+       Apps Script belum berisi fitur chunk (jalankan clasp push ulang). */
+    console.log(
+      "[cctv] chunk-1 OK - build:", firstData.api || "backend-lama (clasp push ulang!)",
+      "| ter-load:", cctvClientCache.length, "/", cctvTotalKnown
+    );
+
+    renderFromLocalCache(contentEl, session);
+  } catch (renderError) {
+    console.error("[cctv] render chunk-1 gagal:", renderError);
+    listArea.innerHTML = `
+      <div class="state-card">
+        <div class="state-card__icon state-card__icon--error">!</div>
+        <p class="state-card__title">Terjadi kesalahan saat menampilkan data.</p>
+        <p class="state-card__subtitle">${escapeHtml(String(renderError && renderError.message ? renderError.message : renderError))}</p>
+        <button type="button" class="btn btn-secondary" id="cctvRetryBtn">Coba Lagi</button>
+      </div>
+    `;
+    listArea.querySelector("#cctvRetryBtn").addEventListener("click", () => loadCctvList(contentEl, session, forceRefresh));
+    return;
+  }
 
   // BACKGROUND: chunk berikutnya (khusus admin) - berurutan 100 per request
   // sampai dataset penuh, tanpa memblokir interaksi user.
@@ -276,7 +304,12 @@ async function loadCctvList(contentEl, session, forceRefresh) {
 async function hydrateRemainingChunks(contentEl, session, hydrateToken) {
   while (cctvHydrateToken === hydrateToken) {
     const offset = cctvClientCache.length;
-    if (cctvTotalKnown === null || offset >= cctvTotalKnown) return;
+    if (cctvTotalKnown === null || offset >= cctvTotalKnown) {
+      if (cctvTotalKnown !== null) {
+        console.log("[cctv] hydration selesai:", cctvTotalKnown, "toko di cache.");
+      }
+      return;
+    }
 
     const result = await apiRequest(
       "getCCTV",
@@ -285,9 +318,21 @@ async function hydrateRemainingChunks(contentEl, session, hydrateToken) {
     );
 
     if (cctvHydrateToken !== hydrateToken) return;
-    if (!result.success) return; // berhenti - user bisa tekan Refresh
+    if (!result.success) {
+      console.warn("[cctv] chunk offset", offset, "gagal - hydration berhenti:", result.message);
+      return; // berhenti - user bisa tekan Refresh
+    }
 
-    appendCctvChunk((result.data || {}).items || []);
+    /* GUARD ANTI-LOOP: kalau chunk tidak menambah data (backend tidak
+       mengenali offset/chunk), hentikan hydration supaya tidak request
+       offset yang sama terus-menerus. */
+    const added = appendCctvChunk((result.data || {}).items || []);
+    if (added === 0) {
+      console.warn("[cctv] chunk offset", offset, "kosong - hydration dihentikan.");
+      return;
+    }
+
+    console.log("[cctv] hydration:", cctvClientCache.length, "/", cctvTotalKnown, "toko");
 
     // Render ulang hanya saat tidak sedang memfilter pencarian supaya
     // tampilan yang sedang dibaca user tidak tiba-tiba berganti.
@@ -299,9 +344,10 @@ async function hydrateRemainingChunks(contentEl, session, hydrateToken) {
 
 /** Tambah hasil satu chunk ke cache client (menjaga urutan offset). */
 function appendCctvChunk(items) {
-  if (!Array.isArray(items) || items.length === 0) return;
+  if (!Array.isArray(items) || items.length === 0) return 0;
   if (!Array.isArray(cctvClientCache)) cctvClientCache = [];
   for (let i = 0; i < items.length; i++) cctvClientCache.push(items[i]);
+  return items.length;
 }
 
 /** true = seluruh dataset sudah di cache client (semua operasi bisa lokal). */
