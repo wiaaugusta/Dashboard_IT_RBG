@@ -242,8 +242,8 @@ export function renderLoginPage(container) {
                   ${icon("user", { size: 18 })}
                 </span>
 
-                <!-- TANPA inputmode=numeric: admin login pakai username
-                     alfabet, jadi keyboard mobile harus keyboard teks penuh. -->
+                <!-- TANPA inputmode=numeric: keyboard mobile harus keyboard
+                     teks penuh supaya NIK dan kredensial admin bisa diketik. -->
                 <input
                   type="text"
                   id="nikInput"
@@ -524,7 +524,7 @@ function validateLoginForm(
   if (!nik) {
 
     nikError.textContent =
-      "NIK / Username wajib diisi.";
+      "NIK wajib diisi.";
 
     isValid = false;
 
