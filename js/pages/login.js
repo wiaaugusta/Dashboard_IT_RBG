@@ -221,7 +221,7 @@ export function renderLoginPage(container) {
             </h2>
 
             <p class="login-card__subtitle">
-              Masuk menggunakan akun IT Anda untuk
+              Masuk menggunakan NIK Anda untuk
               melanjutkan ke Dashboard IT.
             </p>
           </div>
@@ -229,11 +229,11 @@ export function renderLoginPage(container) {
 
           <form id="loginForm" novalidate>
 
-            <!-- NIK / USERNAME -->
+            <!-- NIK -->
             <div class="form-group">
 
               <label for="nikInput" class="login-field-label">
-                NIK / Username
+                NIK
               </label>
 
               <div class="input-wrapper input-wrapper--icon">
@@ -249,7 +249,7 @@ export function renderLoginPage(container) {
                   id="nikInput"
                   name="nik"
                   class="input input--icon"
-                  placeholder="Masukkan NIK / Username"
+                  placeholder="Masukkan NIK"
                   autocomplete="username"
                   autocapitalize="none"
                   spellcheck="false"

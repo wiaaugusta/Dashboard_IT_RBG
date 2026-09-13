@@ -12,6 +12,14 @@
  *   Password digenerate oleh BACKEND lewat action "generateCctvPassword"
  *   (deterministic, HMAC + secret di server - frontend TIDAK menyimpan
  *   atau menghitung secret apa pun).
+ *
+ * OPTIMASI ADMIN (ratusan-648 toko):
+ * - Chunk 1 (100 toko, FULL termasuk kredensial) dirender dulu - irama load
+ *   mirip user biasa (~100 toko) yang terbukti lancar.
+ * - Chunk berikutnya diambil 100-per-100 di BACKGROUND sampai dataset penuh.
+ * - Form edit INSTAN dari cache (cache-first) utk toko yang sudah ter-load;
+ *   toko yang belum, fallback ke action getCCTVDetail.
+ * - Pencarian saat cache masih partial -> lewat server (akurat lintas toko).
  */
 
 import { renderShell } from "../shell.js";
@@ -22,6 +30,10 @@ import { icon } from "../icons.js";
 
 const STATUS_OPTIONS = ["OK - DVR BARU", "OK - DVR LAMA", "CCTV OWNER", "APP"];
 const PAGE_SIZE = 10;
+/* Ukuran chunk hydration admin - mirip beban per-user (~100 toko) yang
+   terbukti lancar; chunk 1 tampil langsung, sisanya 100-per-chunk di
+   background sampai dataset penuh (648 toko ~ 7 chunk). */
+const ADMIN_CHUNK_SIZE = 100;
 const URL_PRESETS = [
   "http://10.234.234.8/doc/page/login.asp",
   "http://10.234.234.8/",
@@ -39,12 +51,16 @@ let cctvSearchTimer = null;
    Di-cache saat list dimuat TANPA search; angka ini tidak berubah-ubah
    walau user mengetik filter. */
 let cctvTotalAll = null;
-/* Client-side cache ringkasan SELURUH toko (dari all:true, dimuat SEKALI
-   per sesi/refresh). Pagination & pencarian dikerjakan LOKAL dari cache ini. */
-let cctvClientCache = null;   // array ringkasan seluruh toko
+/* Client-side cache item CCTV (FULL, termasuk kredensial) - dipakai untuk
+   form edit INSTAN (cache-first) + pagination/pencarian lokal saat penuh.
+   ADMIN: terisi BERTAHAP per chunk 100 toko (chunk 1 dirender dulu,
+   sisanya di-hydrate di background). */
+let cctvClientCache = null;       // item yang sudah ter-load (bisa partial)
 let cctvClientCacheOwner = null; // "role|nik" - cache dibuang kalau ganti user
 let cctvClientCacheLoadedAt =  0;
-let cctvHydrated = false;       // cache pernah dimuat sukses?
+let cctvHydrated = false;        // chunk pertama sudah masuk cache?
+let cctvTotalKnown = null;       // total dataset server (penuh, tanpa filter)
+let cctvHydrateToken = 0;        // pembatal loop hydration background
 /* Filter tombol "Belum Lengkap": true = tampilkan HANYA toko yang status
    atau URL-nya masih kosong (data belum lengkap). */
 let cctvIncompleteOnly = false;
@@ -148,7 +164,16 @@ function bindCctvPage(contentEl, session) {
     if (upper !== searchInput.value) searchInput.value = upper;
     currentSearch = upper.trim();
     clearTimeout(cctvSearchTimer);
-    cctvSearchTimer = setTimeout(() => loadCctvList(contentEl, session), 180);
+    cctvSearchTimer = setTimeout(() => {
+      if (isCctvFullyLoaded()) {
+        // Cache penuh -> pencarian lokal, instan tanpa request.
+        renderFromLocalCache(contentEl, session);
+      } else {
+        // Cache admin masih partial -> cari lewat server supaya hasil
+        // akurat lintas SELURUH toko (bukan hanya yang sudah ter-load).
+        loadCctvServerSearch(contentEl, session);
+      }
+    }, 180);
   });
 
   refreshBtn.addEventListener("click", () => {
@@ -172,23 +197,13 @@ function bindCctvPage(contentEl, session) {
 }
 
 /**
- * Muat satu halaman dari server. Backend menangani pencarian terhadap
- * seluruh dataset, sehingga page 2+ tetap cepat tanpa payload besar.
- */
-/**
- * Muat data CCTV. Strategi:
- * - Panggilan PERTAMA / refresh -> minta SEMUA ringkasan sekali (all:true,
- *   server pakai ScriptCache utk menghindari baca ulang sheet) lalu simpan
- *   di cache client (cctvClientCache).
- * - Pindah menu, ganti halaman, & pencarian -> layani LOKAL dari cache,
- *   TANPA request ulang ke server (nol network) -> instan.
- *
- * OPTIMASI ADMIN (ratusan toko): render pertama TIDAK menunggu dataset
- * penuh. Dua request dijalankan paralel:
- *   1. "quick"  = 1 halaman ringkasan (payload kecil) -> tabel tampil cepat.
- *   2. "all"    = dataset penuh (all:true, gzip) untuk hydrate cache client
- *      di background; setelah selesai list dirender ulang dari cache
- *      sehingga pagination/search/filter mencakup seluruh dataset.
+ * Muat data CCTV.
+ * - USER BIASA (IT_STORE, ~100 toko): satu request all:true (FULL, termasuk
+ *   kredensial) -> cache client -> form edit instan. Sudah terbukti lancar.
+ * - ADMIN (ratusan-648 toko): hydration BERTAHAP per chunk 100 toko.
+ *   Chunk 1 di-await & dirender langsung (cepat), chunk berikutnya diambil
+ *   berurutan di BACKGROUND sampai dataset penuh (~7 chunk).
+ * - Form edit = cache-first dari item FULL di cache (instan).
  * @param {boolean} [forceRefresh] true = bypass semua cache (tombol Refresh).
  */
 async function loadCctvList(contentEl, session, forceRefresh) {
@@ -196,38 +211,36 @@ async function loadCctvList(contentEl, session, forceRefresh) {
   const paginationArea = contentEl.querySelector("#cctvPaginationArea");
   const owner = (session.role || "") + "|" + (session.nik || "");
 
-  // Cache client valid & bukan refresh -> render langsung, nol request.
+  // Cache valid & bukan refresh -> render lokal, nol request.
   if (cctvHydrated && cctvClientCacheOwner === owner && !forceRefresh) {
     renderFromLocalCache(contentEl, session);
     return;
   }
 
   const requestId = ++cctvRequestId;
+  const hydrateToken = ++cctvHydrateToken;
+  const isAdmin = session.role === "ADMIN";
+
+  // Reset state cache untuk hydration baru.
+  cctvClientCache = [];
+  cctvClientCacheOwner = owner;
+  cctvClientCacheLoadedAt = Date.now();
+  cctvHydrated = false;
+  cctvTotalKnown = null;
+
   listArea.innerHTML = renderTableSkeleton();
   paginationArea.innerHTML = "";
 
-  // Fase 1 (quick): 1 halaman ringkasan - payload kecil, render instan.
-  // Saat forceRefresh, quick juga bypass cache server agar halaman pertama
-  // yang tampil benar-benar data terbaru.
-  const quickPromise = apiRequest(
-    "getCCTV",
-    { page: currentPage, limit: PAGE_SIZE, search: currentSearch, gz: true, refresh: forceRefresh ? true : undefined },
-    { sessionToken: session.sessionToken }
-  );
+  // CHUNK 1 (admin, 100 toko) / dataset penuh (user biasa) - di-await agar
+  // tabel cepat tampil; payload sekecil beban per-user yang sudah lancar.
+  const firstRequest = isAdmin
+    ? { page: 1, limit: PAGE_SIZE, search: "", all: true, offset: 0, chunk: ADMIN_CHUNK_SIZE, gz: true, refresh: forceRefresh ? true : undefined }
+    : { page: 1, limit: PAGE_SIZE, search: "", all: true, gz: true, refresh: forceRefresh ? true : undefined };
 
-  // Fase 2 (all): dataset penuh utk cache client - paralel di background.
-  const allPromise = apiRequest(
-    "getCCTV",
-    { page: 1, limit: PAGE_SIZE, search: "", all: true, gz: true, refresh: forceRefresh ? true : undefined },
-    { sessionToken: session.sessionToken }
-  );
-
-  const quick = await quickPromise;
+  const first = await apiRequest("getCCTV", firstRequest, { sessionToken: session.sessionToken });
   if (requestId !== cctvRequestId) return;
 
-  if (quick.success) {
-    renderCctvList(contentEl, session, quick.data || {});
-  } else {
+  if (!first.success) {
     listArea.innerHTML = `
       <div class="state-card">
         <div class="state-card__icon state-card__icon--error">!</div>
@@ -237,27 +250,83 @@ async function loadCctvList(contentEl, session, forceRefresh) {
       </div>
     `;
     listArea.querySelector("#cctvRetryBtn").addEventListener("click", () => loadCctvList(contentEl, session, forceRefresh));
+    return;
   }
 
-  // Hydrate cache client dari dataset penuh (tetap berjalan walau quick
-  // gagal - begitu sukses, list langsung pulih dari cache).
-  const all = await allPromise;
+  const firstData = first.data || {};
+  appendCctvChunk(firstData.items || []);
+  cctvTotalKnown = typeof firstData.total === "number" ? firstData.total : cctvClientCache.length;
+  cctvTotalAll = !currentSearch ? cctvTotalKnown : cctvTotalAll;
+  cctvHydrated = true;
+
+  renderFromLocalCache(contentEl, session);
+
+  // BACKGROUND: chunk berikutnya (khusus admin) - berurutan 100 per request
+  // sampai dataset penuh, tanpa memblokir interaksi user.
+  if (isAdmin) {
+    hydrateRemainingChunks(contentEl, session, hydrateToken);
+  }
+}
+
+/**
+ * Ambil sisa dataset admin per chunk 100 di background (berurutan).
+ * Setiap chunk sukses -> render ulang list dari cache sehingga pagination
+ * dan filter "Belum Lengkap" tumbuh mengikuti data yang baru ter-load.
+ */
+async function hydrateRemainingChunks(contentEl, session, hydrateToken) {
+  while (cctvHydrateToken === hydrateToken) {
+    const offset = cctvClientCache.length;
+    if (cctvTotalKnown === null || offset >= cctvTotalKnown) return;
+
+    const result = await apiRequest(
+      "getCCTV",
+      { page: 1, limit: PAGE_SIZE, search: "", all: true, offset: offset, chunk: ADMIN_CHUNK_SIZE, gz: true },
+      { sessionToken: session.sessionToken }
+    );
+
+    if (cctvHydrateToken !== hydrateToken) return;
+    if (!result.success) return; // berhenti - user bisa tekan Refresh
+
+    appendCctvChunk((result.data || {}).items || []);
+
+    // Render ulang hanya saat tidak sedang memfilter pencarian supaya
+    // tampilan yang sedang dibaca user tidak tiba-tiba berganti.
+    if (!currentSearch && cctvHydrated) {
+      renderFromLocalCache(contentEl, session);
+    }
+  }
+}
+
+/** Tambah hasil satu chunk ke cache client (menjaga urutan offset). */
+function appendCctvChunk(items) {
+  if (!Array.isArray(items) || items.length === 0) return;
+  if (!Array.isArray(cctvClientCache)) cctvClientCache = [];
+  for (let i = 0; i < items.length; i++) cctvClientCache.push(items[i]);
+}
+
+/** true = seluruh dataset sudah di cache client (semua operasi bisa lokal). */
+function isCctvFullyLoaded() {
+  return Boolean(
+    cctvHydrated &&
+    cctvTotalKnown !== null &&
+    Array.isArray(cctvClientCache) &&
+    cctvClientCache.length >= cctvTotalKnown
+  );
+}
+
+/** Pencarian lewat server (dipakai saat cache admin masih partial). */
+async function loadCctvServerSearch(contentEl, session) {
+  const requestId = ++cctvRequestId;
+  const result = await apiRequest(
+    "getCCTV",
+    { page: currentPage, limit: PAGE_SIZE, search: currentSearch, gz: true },
+    { sessionToken: session.sessionToken }
+  );
   if (requestId !== cctvRequestId) return;
-
-  if (all.success) {
-    const data = all.data || {};
-    const items = Array.isArray(data.items) ? data.items : [];
-
-    // Simpan seluruh ringkasan di cache client untuk sesi ini.
-    cctvClientCache = items;
-    cctvClientCacheOwner = owner;
-    cctvClientCacheLoadedAt = Date.now();
-    cctvHydrated = true;
-
-    // Render ulang dari cache penuh: pagination/search/filter kini
-    // mencakup SELURUH dataset (bukan hanya halaman pertama).
-    renderFromLocalCache(contentEl, session);
+  if (result.success) {
+    renderCctvList(contentEl, session, result.data || {});
   }
+  // Gagal: biarkan tampilan terakhir agar tidak "reset" ke skeleton.
 }
 
 /**
@@ -312,13 +381,18 @@ function renderCctvList(contentEl, session, payload) {
 
   /* Cache total keseluruhan HANYA saat dimuat tanpa filter pencarian,
      supaya label TOTAL TOKO tidak terpengaruh filter. */
-  if (!currentSearch && !cctvIncompleteOnly) {
+  if (!currentSearch && !cctvIncompleteOnly && isCctvFullyLoaded()) {
     cctvTotalAll = totalRecords;
   }
   const totalForPagination = cctvTotalAll !== null ? cctvTotalAll : totalRecords;
 
-  countEl.textContent = totalRecords > 0
-    ? (cctvIncompleteOnly ? `${totalRecords} toko belum lengkap` : `${totalRecords} toko`)
+  /* Saat admin hydration berjalan (cache partial), label memakai total
+     server supaya angka tidak "beranjak" dari 100 ke 648. */
+  const shownTotal = (!currentSearch && !cctvIncompleteOnly && cctvTotalAll !== null)
+    ? cctvTotalAll
+    : totalRecords;
+  countEl.textContent = shownTotal > 0
+    ? (cctvIncompleteOnly ? `${totalRecords} toko belum lengkap` : `${shownTotal} toko`)
     : "";
 
   if (totalRecords === 0) {
@@ -430,7 +504,13 @@ function bindPagination(contentEl, session, totalPages) {
       else if (value === "next") currentPage = Math.min(totalPages, currentPage + 1);
       else currentPage = parseInt(value, 10);
 
-      loadCctvList(contentEl, session);
+      if (!isCctvFullyLoaded() && currentSearch) {
+        // Cache admin masih partial -> hasil pencarian diambil dari server
+        // agar akurat lintas seluruh toko.
+        loadCctvServerSearch(contentEl, session);
+      } else {
+        loadCctvList(contentEl, session);
+      }
       contentEl.querySelector("#cctvListArea").scrollIntoView({ block: "nearest" });
     });
   });
@@ -554,9 +634,18 @@ async function openCctvModal(contentEl, kdStore) {
   overlay.classList.add("is-visible");
   modal.classList.add("is-visible");
 
-  /* ON-DEMAND DETAIL: list hanya berisi ringkasan (tanpa data sensitif).
-     Kredensial & konfigurasi lengkap diambil SAAT form edit dibuka lewat
-     action getCCTVDetail (server juga meng-cache per toko 10 menit). */
+  /* CACHE-FIRST (dikembalikan): chunk/all:true mengirim item FULL termasuk
+     kredensial, jadi toko yang sudah ter-load form-nya terbuka INSTAN tanpa
+     request. Cek per-item -> aman saat cache admin masih partial; toko yang
+     belum ter-load jatuh ke jalur getCCTVDetail di bawah. */
+  const cached = Array.isArray(cctvClientCache)
+    ? cctvClientCache.find((it) => String(it.kdStore) === String(kdStore))
+    : null;
+  if (cctvHydrated && cached && cached.dvrLama && cached.dvrBaru) {
+    renderCctvForm(contentEl, cached);
+    return;
+  }
+
   modal.innerHTML = `
     <div class="modal__body">
       <div class="skeleton skeleton-text" style="width:50%"></div>
@@ -910,7 +999,9 @@ async function submitCctvUpdate(contentEl, detail) {
          dari cache -> perubahan LANGSUNG tampil tanpa reload dari server. */
       applyCctvUpdateToCache(detail.kdStore, result.data, {
         statusValue,
-        urlValue
+        urlValue,
+        credentialData,
+        groupKey
       });
       renderFromLocalCache(contentEl, session);
     } else {
@@ -927,20 +1018,18 @@ async function submitCctvUpdate(contentEl, detail) {
 }
 
 /**
- * Update 1 item RINGKASAN di cache client setelah simpan (menghindari reload
- * server). Cache list tidak menyimpan kredensial - hanya field yang tampil
- * di tabel. Prioritas: field dari response backend, fallback dari form.
+ * Update 1 item di cache client setelah simpan (menghindari reload server).
+ * Response backend berisi baris FULL (termasuk kredensial) -> ganti penuh
+ * supaya form edit berikutnya tetap terbuka instan dari cache. Jika response
+ * tidak lengkap, merge manual dari nilai form + timestamp lokal.
  */
 function applyCctvUpdateToCache(kdStore, serverItem, formData) {
   if (!Array.isArray(cctvClientCache)) return;
   const idx = cctvClientCache.findIndex((it) => String(it.kdStore) === String(kdStore));
   if (idx === -1) return;
 
-  const item = cctvClientCache[idx];
   if (serverItem && serverItem.kdStore) {
-    item.status = serverItem.status;
-    item.url = serverItem.url;
-    item.updatedInfo = serverItem.updatedInfo || "";
+    cctvClientCache[idx] = serverItem;
     return;
   }
 
@@ -948,8 +1037,10 @@ function applyCctvUpdateToCache(kdStore, serverItem, formData) {
   // Format sama dengan backend: "NAMA - dd/MM/yyyy HH:mm" (tanpa "Diupdate oleh").
   const session = getSession();
   const actor = (session && (session.name || session.nik)) || "";
+  const item = cctvClientCache[idx];
   item.status = formData.statusValue;
   item.url = formData.urlValue;
+  item[formData.groupKey] = Object.assign({}, item[formData.groupKey] || {}, formData.credentialData);
   item.updatedInfo = actor + " - " + formatCctvTimestamp(new Date());
 }
 
