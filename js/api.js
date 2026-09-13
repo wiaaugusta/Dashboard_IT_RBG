@@ -37,6 +37,63 @@ async function decodeGzipBase64(b64) {
   return JSON.parse(text);
 }
 
+/* =========================================================
+   RESILIENSI JARINGAN (cold start Apps Script + mobile)
+   ========================================================= */
+/* Request PERTAMA setelah lama idle menunggu "cold start" Apps Script
+   (3-15 detik) dan di jaringan mobile koneksi bisa putus sesaat ->
+   timeout per percobaan + 2x percobaan ulang otomatis dengan jeda. */
+const REQUEST_TIMEOUT_MS = 30000;
+const RETRY_DELAYS_MS = [800, 2000];
+
+async function fetchOnce(bodyJson) {
+  if (typeof AbortController === "function") {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      return await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain;charset=utf-8" // Apps Script web app menghindari CORS preflight
+        },
+        body: bodyJson,
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  // Browser tanpa AbortController: tanpa timeout, tanpa retry tambahan.
+  return fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain;charset=utf-8"
+    },
+    body: bodyJson
+  });
+}
+
+async function fetchWithRetry(body) {
+  const bodyJson = JSON.stringify(body);
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    if (attempt > 0) {
+      const delay = RETRY_DELAYS_MS[attempt - 1];
+      console.warn(`[api.js] request gagal, coba ulang dalam ${delay}ms (percobaan ${attempt + 1})...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+    try {
+      return await fetchOnce(bodyJson);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError;
+}
+
 /**
  * Kirim request ke backend Apps Script.
  * Mengikuti kontrak request/response di docs/DATA_AND_API.md #25-#27:
@@ -72,13 +129,7 @@ export async function apiRequest(action, payload = {}, options = {}) {
   }
 
   try {
-    const response = await fetch(APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=utf-8" // Apps Script web app menghindari CORS preflight
-      },
-      body: JSON.stringify(body)
-    });
+    const response = await fetchWithRetry(body);
 
     if (!response.ok) {
       return {

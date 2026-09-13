@@ -418,6 +418,16 @@ function bindLoginForm(container) {
       Memverifikasi...
     `;
 
+    /* Setelah 3.5 detik kemungkinan besar server sedang cold start
+       (baru dipakai lagi setelah lama idle) - beri tahu user supaya
+       tidak terasa seperti hang. */
+    let slowHintTimer = setTimeout(() => {
+      submitBtn.innerHTML = `
+        <span class="btn-spinner"></span>
+        Menghubungi server...
+      `;
+    }, 3500);
+
 
     try {
 
@@ -458,6 +468,7 @@ function bindLoginForm(container) {
 
     } finally {
 
+      clearTimeout(slowHintTimer);
       container.querySelector(".login-page")?.classList.remove("is-loading");
       setLoginInputsLocked(container, false);
       submitBtn.disabled = false;
