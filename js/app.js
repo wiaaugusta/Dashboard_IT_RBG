@@ -17,7 +17,8 @@ import { renderLoginPage } from "./pages/login.js";
 import { renderDashboardPage } from "./pages/dashboard.js";
 import { renderComingSoonPage } from "./pages/coming-soon.js";
 import { renderCctvPage } from "./modules/cctv.js";
-import { isAuthenticated } from "./auth.js";
+import { isAuthenticated, clearSession, touchSession } from "./auth.js";
+import { showError } from "./ui.js";
 import { getFlatRoutes } from "./nav-config.js";
 
 function registerServiceWorker() {
@@ -27,7 +28,7 @@ function registerServiceWorker() {
   window.addEventListener("load", () => {
 
     navigator.serviceWorker
-      .register("./service-worker.js?v=11")
+      .register("./service-worker.js?v=12")
       .then((registration) => {
 
         console.log(
@@ -84,8 +85,36 @@ function registerRoutes() {
   });
 }
 
+/**
+ * SIKLUS HIDUP SESI (auto-recovery, dipasangkan dengan emitSessionEvents
+ * di api.js):
+ * - itplatform:session-activity -> request ber-token sukses: perbarui
+ *   penanda aktivitas sesi supaya user yang aktif tidak pernah di-logout.
+ * - itplatform:session-invalid  -> backend menolak token ("Sesi tidak
+ *   valid"): bersihkan sesi lalu kembali ke /login. Sebelumnya kondisi ini
+ *   membuat user TERJEBAK: sessionStorage bertahan saat reload,
+ *   renderLoginPage me-redirect balik ke dashboard, semua API gagal, dan
+ *   hanya close tab yang menyelamatkan. Kini reload pun menyembuhkan.
+ */
+function bindSessionLifecycle() {
+
+  window.addEventListener("itplatform:session-activity", () => {
+    touchSession();
+  });
+
+  window.addEventListener("itplatform:session-invalid", () => {
+    clearSession();
+    showError("Sesi berakhir. Silakan login kembali.");
+    if (window.location.hash !== "#/login") {
+      navigate("/login");
+    }
+  });
+
+}
+
 function bootstrap() {
   registerServiceWorker();
+  bindSessionLifecycle();
   registerRoutes();
   initRouter();
 

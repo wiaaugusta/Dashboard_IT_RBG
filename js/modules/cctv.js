@@ -128,7 +128,6 @@ export async function renderCctvPage(container) {
         class="btn btn-secondary cctv-filter-btn"
         id="cctvIncompleteBtn"
         aria-pressed="false"
-        title="Tampilkan hanya toko yang status / URL-nya masih kosong"
         aria-label="Filter toko belum lengkap"
       >
         ${icon("filter", { size: 15 })}
@@ -259,12 +258,11 @@ async function loadCctvList(contentEl, session, forceRefresh) {
     ? { page: 1, limit: PAGE_SIZE, search: "", all: true, offset: 0, chunk: ADMIN_CHUNK_SIZE, gz: true, refresh: forceRefresh ? true : undefined }
     : { page: 1, limit: PAGE_SIZE, search: "", all: true, gz: true, refresh: forceRefresh ? true : undefined };
 
-  const first = await Promise.race([
-    apiRequest("getCCTV", firstRequest, { sessionToken: session.sessionToken }),
-    new Promise((resolve) =>
-      setTimeout(() => resolve({ success: false, message: "Server tidak merespons dalam 30 detik.", data: null }), 30000)
-    )
-  ]);
+  /* Catatan: TIDAK ada Promise.race timeout di sini lagi. apiRequest sudah
+     membatasi sendiri tiap percobaan (timeout bertingkat 12/20/30 detik +
+     retry internal). Race 30 detik yang lama justru mendeklarasikan gagal
+     prematur sementara percobaan ulang masih berjalan di belakang. */
+  const first = await apiRequest("getCCTV", firstRequest, { sessionToken: session.sessionToken });
   if (requestId !== cctvRequestId) return;
 
   if (!first.success) {
@@ -604,7 +602,7 @@ function renderCctvTableHead() {
       : activeDir === "desc" ? ' aria-sort="descending"' : "";
     return `
           <th class="cctv-table__th-sort${isActive ? " is-active" : ""}" data-sort-key="${col.key}"${ariaSort}>
-            <span class="cctv-table__th-sort-inner" data-tip="Klik untuk mengurutkan ${col.label}">
+            <span class="cctv-table__th-sort-inner">
               <span class="cctv-table__th-sort-label">${col.label}</span>
               <span class="cctv-table__th-sort-arrows" aria-hidden="true">
                 <span class="cctv-table__sort-arrow${activeDir === "asc" ? " is-active" : ""}">${icon("arrow-up", { size: 10 })}</span>

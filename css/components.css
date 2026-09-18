@@ -547,7 +547,6 @@
 }
 
 .cctv-table__th-sort-inner {
-  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -571,66 +570,6 @@
 
 .cctv-table__sort-arrow.is-active {
   opacity: 1;
-}
-
-/* ---------- CCTV TABLE: TOOLTIP HEADER SORT (samar, elegan) ---------- */
-/* Pengganti title hitam bawaan browser (title tidak bisa di-styling).
-   Latar "kaca susu" nyaris menyatu dengan sekitar, teks biru-abu lembut
-   tetap terbaca (kontras ±5:1), muncul TERTUNDA supaya tidak berkedip saat
-   kursor melintasi beberapa header sekaligus, hilang cepat saat keluar. */
-.cctv-table__th-sort-inner::after {
-  content: attr(data-tip);
-  position: absolute;
-  top: calc(100% + 7px);
-  left: 50%;
-  transform: translate(-50%, 3px);
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: rgba(241, 246, 252, .88);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(39, 87, 156, .1);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, .08);
-  color: #546a8c;
-  font-size: var(--font-size-caption);
-  font-weight: 500;
-  letter-spacing: .01em;
-  text-transform: none;   /* netralkan uppercase warisan dari th */
-  white-space: nowrap;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  z-index: 40;
-  transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s;
-}
-
-/* Hover di seluruh th (target lebih luas); tooltip berjangkar di bawah label */
-.cctv-table th[data-sort-key]:hover .cctv-table__th-sort-inner::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translate(-50%, 0);
-  transition-delay: .4s, .4s, 0s;
-}
-
-/* Kolom sortable pertama & terakhir: jangkar pinggir supaya tooltip tidak
-   terpotong tepi panel tabel (wrapper memakai overflow-x: auto). */
-.cctv-table th[data-sort-key="kdStore"] .cctv-table__th-sort-inner::after {
-  left: 0;
-  transform: translate(0, 3px);
-}
-
-.cctv-table th[data-sort-key="kdStore"]:hover .cctv-table__th-sort-inner::after {
-  transform: translate(0, 0);
-}
-
-.cctv-table th[data-sort-key="updatedInfo"] .cctv-table__th-sort-inner::after {
-  left: auto;
-  right: 0;
-  transform: translate(0, 3px);
-}
-
-.cctv-table th[data-sort-key="updatedInfo"]:hover .cctv-table__th-sort-inner::after {
-  transform: translate(0, 0);
 }
 
 /* ---------- CCTV TOOLBAR ---------- */

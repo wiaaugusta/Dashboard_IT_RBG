@@ -42,16 +42,25 @@ async function decodeGzipBase64(b64) {
    ========================================================= */
 /* Request PERTAMA setelah lama idle menunggu "cold start" Apps Script
    (3-15 detik) dan di jaringan mobile koneksi bisa putus sesaat ->
-   timeout per percobaan + 2x percobaan ulang otomatis dengan jeda. */
-const REQUEST_TIMEOUT_MS = 30000;
+   retry otomatis dengan timeout BERTINGKAT: percobaan awal cepat
+   (socket mati/stale biasanya hang < 12 detik), percobaan terakhir
+   paling panjang untuk menunggu cold start server. Total worst case
+   +-65 detik (sebelumnya 3x30 detik = 92 detik). */
+const REQUEST_TIMEOUT_SCHEDULE_MS = [12000, 20000, 30000];
 const RETRY_DELAYS_MS = [800, 2000];
 
-async function fetchOnce(bodyJson) {
+function buildRequestUrl() {
+  /* Cache-buster: pastikan URL /exec (dan rantai redirect-nya) tidak
+     tersangkut di cache perantara saat page sudah lama terbuka. */
+  return APPS_SCRIPT_URL + (APPS_SCRIPT_URL.indexOf("?") === -1 ? "?" : "&") + "cb=" + Date.now();
+}
+
+async function fetchOnce(bodyJson, timeoutMs) {
   if (typeof AbortController === "function") {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await fetch(APPS_SCRIPT_URL, {
+      const response = await fetch(buildRequestUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "text/plain;charset=utf-8" // Apps Script web app menghindari CORS preflight
@@ -59,13 +68,24 @@ async function fetchOnce(bodyJson) {
         body: bodyJson,
         signal: controller.signal
       });
+
+      /* Google kadang membalas halaman HTML (error/throttle) dengan status
+         200. Kalau dibiarkan, response.json() meledak dan dilaporkan
+         "tidak terhubung ke server" padahal jaringan baik - deteksi di
+         sini supaya kasus ini masuk loop retry, bukan langsung gagal. */
+      const contentType = (response.headers.get("content-type") || "").toLowerCase();
+      if (!response.ok || contentType.indexOf("application/json") === -1) {
+        throw new Error(`RESPONSE_INVALID status=${response.status} type=${contentType || "unknown"}`);
+      }
+
+      return response;
     } finally {
       clearTimeout(timer);
     }
   }
 
   // Browser tanpa AbortController: tanpa timeout, tanpa retry tambahan.
-  return fetch(APPS_SCRIPT_URL, {
+  return fetch(buildRequestUrl(), {
     method: "POST",
     headers: {
       "Content-Type": "text/plain;charset=utf-8"
@@ -78,20 +98,48 @@ async function fetchWithRetry(body) {
   const bodyJson = JSON.stringify(body);
   let lastError = null;
 
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+  for (let attempt = 0; attempt < REQUEST_TIMEOUT_SCHEDULE_MS.length; attempt++) {
     if (attempt > 0) {
-      const delay = RETRY_DELAYS_MS[attempt - 1];
+      const delay = RETRY_DELAYS_MS[Math.min(attempt - 1, RETRY_DELAYS_MS.length - 1)];
       console.warn(`[api.js] request gagal, coba ulang dalam ${delay}ms (percobaan ${attempt + 1})...`);
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
     try {
-      return await fetchOnce(bodyJson);
+      return await fetchOnce(bodyJson, REQUEST_TIMEOUT_SCHEDULE_MS[attempt]);
     } catch (error) {
       lastError = error;
     }
   }
 
   throw lastError;
+}
+
+/* =========================================================
+   SIKLUS HIDUP SESI (client-side)
+   ========================================================= */
+/* Sesi backend tersimpan di CacheService dengan TTL maks 6 jam (dan bisa
+   ter-evict lebih cepat). Tanpa sinkronisasi, session di sessionStorage
+   client "hidup selamanya" -> user TERJEBAK: reload tetap membawa token
+   mati (sessionStorage bertahan antar reload), halaman login me-redirect
+   balik ke dashboard, semua API gagal, dan hanya close tab yang
+   menyelamatkan. Dua event di bawah dipakai app.js:
+   - itplatform:session-activity : request ber-token sukses -> perpanjang
+     umur sesi client (backend melakukan hal yang sama via sliding renewal).
+   - itplatform:session-invalid  : backend menjawab "Sesi tidak valid" ->
+     auto logout dan kembali ke halaman login tanpa harus close tab. */
+const SESSION_INVALID_PATTERN = /sesi tidak valid/i;
+
+function emitSessionEvents(options, result) {
+  if (typeof window === "undefined" || !options.sessionToken) return;
+
+  if (result.success) {
+    window.dispatchEvent(new CustomEvent("itplatform:session-activity"));
+    return;
+  }
+
+  if (SESSION_INVALID_PATTERN.test(result.message)) {
+    window.dispatchEvent(new CustomEvent("itplatform:session-invalid"));
+  }
 }
 
 /**
@@ -163,11 +211,14 @@ export async function apiRequest(action, payload = {}, options = {}) {
     }
 
     // Jaga-jaga apabila backend tidak mengikuti kontrak response.
-    return {
+    const result = {
       success: Boolean(json.success),
       message: json.message || "",
       data: data ?? null
     };
+
+    emitSessionEvents(options, result);
+    return result;
   } catch (error) {
     // Jangan bocorkan detail teknis ke UI (docs/PROJECT_CONSTITUTION.md #21).
     console.error("[api.js] Request gagal:", error);
