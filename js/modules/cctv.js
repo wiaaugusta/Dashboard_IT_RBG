@@ -603,8 +603,8 @@ function renderCctvTableHead() {
       ? ' aria-sort="ascending"'
       : activeDir === "desc" ? ' aria-sort="descending"' : "";
     return `
-          <th class="cctv-table__th-sort${isActive ? " is-active" : ""}" data-sort-key="${col.key}"${ariaSort} title="Klik untuk mengurutkan ${col.label}">
-            <span class="cctv-table__th-sort-inner">
+          <th class="cctv-table__th-sort${isActive ? " is-active" : ""}" data-sort-key="${col.key}"${ariaSort}>
+            <span class="cctv-table__th-sort-inner" data-tip="Klik untuk mengurutkan ${col.label}">
               <span class="cctv-table__th-sort-label">${col.label}</span>
               <span class="cctv-table__th-sort-arrows" aria-hidden="true">
                 <span class="cctv-table__sort-arrow${activeDir === "asc" ? " is-active" : ""}">${icon("arrow-up", { size: 10 })}</span>
