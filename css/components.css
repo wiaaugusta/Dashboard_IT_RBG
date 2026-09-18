@@ -534,6 +534,44 @@
   text-align: center;
 }
 
+/* ---------- CCTV TABLE: SORT HEADER (ikon panah atas/bawah) ---------- */
+/* Kolom sortable: seluruh th bisa diklik untuk toggle urut A-Z / Z-A. */
+.cctv-table th.cctv-table__th-sort {
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.cctv-table th.cctv-table__th-sort:hover {
+  background: #d9e9fb;
+}
+
+.cctv-table__th-sort-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* Dua panah kecil bertumpuk: atas = A-Z, bawah = Z-A.
+   Panah arah aktif ditonjolkan, sisanya redup (hanya ikon, tanpa teks). */
+.cctv-table__th-sort-arrows {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 0;
+}
+
+.cctv-table__sort-arrow {
+  display: inline-flex;
+  opacity: .3;
+  transition: opacity .15s ease;
+}
+
+.cctv-table__sort-arrow.is-active {
+  opacity: 1;
+}
+
 /* ---------- CCTV TOOLBAR ---------- */
 .cctv-toolbar {
   display: flex;

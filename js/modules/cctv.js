@@ -20,6 +20,12 @@
  * - Form edit INSTAN dari cache (cache-first) utk toko yang sudah ter-load;
  *   toko yang belum, fallback ke action getCCTVDetail.
  * - Pencarian saat cache masih partial -> lewat server (akurat lintas toko).
+ *
+ * SORT HEADER (ikon panah atas/bawah):
+ * - Setiap kolom data di header tabel punya ikon panah atas/bawah.
+ *   Klik 1 = A-Z, klik 2 = Z-A, klik 3 = kembali ke urutan asli server.
+ *   Sorting client-side (renderFromLocalCache) -> berlaku lintas halaman
+ *   pagination tanpa request tambahan.
  */
 
 import { renderShell } from "../shell.js";
@@ -40,6 +46,17 @@ const URL_PRESETS = [
   "http://10.234.234.8:8899/",
   "http://10.234.234.8:9090/doc/page/login.asp",
   "http://10.234.234.8:9090/"
+];
+
+/* Kolom tabel yang bisa di-sort lewat ikon panah di header.
+   "No" (penomoran baris) dan "Edit" (tombol aksi) tidak ikut sortable. */
+const CCTV_SORTABLE_COLUMNS = [
+  { key: "kdStore", label: "Kode Toko" },
+  { key: "namaStore", label: "Nama Toko" },
+  { key: "itArea", label: "IT AREA" },
+  { key: "status", label: "Status" },
+  { key: "url", label: "URL" },
+  { key: "updatedInfo", label: "Terakhir Update" }
 ];
 
 // State halaman aktif dan cache dataset CCTV.
@@ -64,6 +81,9 @@ let cctvHydrateToken = 0;        // pembatal loop hydration background
 /* Filter tombol "Belum Lengkap": true = tampilkan HANYA toko yang status
    atau URL-nya masih kosong (data belum lengkap). */
 let cctvIncompleteOnly = false;
+/* Sort header tabel: kolom aktif + arah urut. null = urutan asli dari server. */
+let cctvSortKey = null;
+let cctvSortDir = "asc";
 
 export async function renderCctvPage(container) {
   const session = getSession();
@@ -72,6 +92,8 @@ export async function renderCctvPage(container) {
   currentPage = 1;
   currentSearch = "";
   cctvIncompleteOnly = false;
+  cctvSortKey = null;
+  cctvSortDir = "asc";
   cctvTotalAll = null;
 
   const contentHtml = `
@@ -392,6 +414,12 @@ function renderFromLocalCache(contentEl, session) {
     filtered = filtered.filter(isCctvIncomplete_);
   }
 
+  /* Sort dari header tabel (ikon panah): diterapkan ke SELURUH hasil filter
+     sebelum pagination supaya urutan benar lintas halaman. */
+  if (cctvSortKey) {
+    filtered = sortCctvItems_(filtered, cctvSortKey, cctvSortDir);
+  }
+
   const total = filtered.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   if (currentPage > totalPages) currentPage = totalPages;
@@ -414,6 +442,78 @@ function isCctvIncomplete_(item) {
   return !status || !url;
 }
 
+/**
+ * Klik header kolom data: A-Z -> Z-A -> kembali ke urutan asli (3 kondisi).
+ * Setiap perubahan sort mengembalikan tampilan ke halaman pertama.
+ */
+function handleCctvSortClick(contentEl, session, key) {
+  if (cctvSortKey === key) {
+    if (cctvSortDir === "asc") {
+      cctvSortDir = "desc";
+    } else {
+      // Klik ketiga pada kolom yang sama: hapus sort, urutan kembali normal.
+      cctvSortKey = null;
+      cctvSortDir = "asc";
+    }
+  } else {
+    cctvSortKey = key;
+    cctvSortDir = "asc";
+  }
+  currentPage = 1;
+
+  if (currentSearch && !isCctvFullyLoaded()) {
+    /* Cache admin masih partial + sedang mencari: hasil pencarian tetap
+       diambil dari server (sort server-side belum didukung); halaman yang
+       tampil diurutkan best-effort per halaman di renderCctvList. */
+    loadCctvServerSearch(contentEl, session);
+  } else {
+    renderFromLocalCache(contentEl, session);
+  }
+}
+
+/** Urutkan SALINAN items sesuai kolom & arah aktif (cache asli tidak diubah). */
+function sortCctvItems_(items, key, dir) {
+  const factor = dir === "desc" ? -1 : 1;
+  return items.slice().sort((a, b) => {
+    /* "Terakhir Update" diurutkan berdasarkan WAKTU, bukan teks - format
+       "NAMA - dd/MM/yyyy HH:mm" tidak kronologis bila dibanding sebagai teks. */
+    if (key === "updatedInfo") {
+      const ta = parseCctvUpdatedTs_(a);
+      const tb = parseCctvUpdatedTs_(b);
+      if (ta === null && tb === null) return 0;
+      if (ta === null) return 1; // toko tanpa catatan update selalu paling bawah
+      if (tb === null) return -1;
+      return (ta - tb) * factor;
+    }
+
+    const va = getCctvSortValue_(a, key);
+    const vb = getCctvSortValue_(b, key);
+    if (va === vb) return 0;
+    // numeric:true -> "TOKO-2" urut sebelum "TOKO-10" (bukan "TOKO-10" dulu).
+    return va.localeCompare(vb, undefined, { numeric: true }) * factor;
+  });
+}
+
+/** Nilai pembanding sort berbentuk teks uppercase (aman null / angka). */
+function getCctvSortValue_(item, key) {
+  const raw = item ? item[key] : "";
+  return String(raw == null ? "" : raw).trim().toUpperCase();
+}
+
+/** Timestamp (ms) dari teks "NAMA - dd/MM/yyyy HH:mm"; null bila tidak ada. */
+function parseCctvUpdatedTs_(item) {
+  const value = formatUpdatedInfo(item && item.updatedInfo);
+  const match = value.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2})/);
+  if (!match) return null;
+  return new Date(
+    parseInt(match[3], 10),
+    parseInt(match[2], 10) - 1,
+    parseInt(match[1], 10),
+    parseInt(match[4], 10),
+    parseInt(match[5], 10)
+  ).getTime();
+}
+
 /** Stage 2: render 1 halaman hasil dari server + pagination + total count global. */
 function renderCctvList(contentEl, session, payload) {
   const listArea = contentEl.querySelector("#cctvListArea");
@@ -421,6 +521,11 @@ function renderCctvList(contentEl, session, payload) {
   const countEl = contentEl.querySelector("#cctvCount");
 
   const items = payload.items || [];
+  /* Jalur pencarian saat cache admin masih partial: halaman dari server
+     diurutkan best-effort per halaman supaya ikon sort tidak menyesatkan.
+     Jalur cache lokal sudah diurutkan sebelum slicing -> re-sort di sini
+     tidak mengubah urutan apa pun (idempotent). */
+  const displayItems = cctvSortKey ? sortCctvItems_(items, cctvSortKey, cctvSortDir) : items;
   const totalRecords = payload.total || 0;
   const totalPages = payload.totalPages || 1;
   const page = payload.page || 1;
@@ -458,20 +563,9 @@ function renderCctvList(contentEl, session, payload) {
   listArea.innerHTML = `
     <div class="cctv-table-wrapper">
       <table class="cctv-table">
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Kode Toko</th>
-            <th>Nama Toko</th>
-            <th>IT AREA</th>
-            <th>Status</th>
-            <th>URL</th>
-            <th>Terakhir Update</th>
-            <th>Edit</th>
-          </tr>
-        </thead>
+        ${renderCctvTableHead()}
         <tbody>
-          ${items.map((item, i) => renderCctvRow(item, startIndex + i + 1)).join("")}
+          ${displayItems.map((item, i) => renderCctvRow(item, startIndex + i + 1)).join("")}
         </tbody>
       </table>
     </div>
@@ -483,10 +577,51 @@ function renderCctvList(contentEl, session, payload) {
     });
   });
 
+  // Header sort: klik th kolom data untuk toggle urut naik/turun.
+  listArea.querySelectorAll("th[data-sort-key]").forEach((th) => {
+    th.addEventListener("click", () => {
+      handleCctvSortClick(contentEl, session, th.getAttribute("data-sort-key"));
+    });
+  });
+
   bindCctvUrlMarquee(listArea);
 
   paginationArea.innerHTML = renderPagination(page, totalPages, startIndex, items.length, totalForPagination);
   bindPagination(contentEl, session, totalPages);
+}
+
+/**
+ * Header tabel CCTV: kolom data jadi tombol sort dengan ikon panah atas/bawah
+ * (panah arah aktif ditonjolkan, lainnya redup). "No" dan "Edit" tetap
+ * header biasa tanpa sort.
+ */
+function renderCctvTableHead() {
+  const sortThHtml = CCTV_SORTABLE_COLUMNS.map((col) => {
+    const isActive = cctvSortKey === col.key;
+    const activeDir = isActive ? cctvSortDir : null;
+    const ariaSort = activeDir === "asc"
+      ? ' aria-sort="ascending"'
+      : activeDir === "desc" ? ' aria-sort="descending"' : "";
+    return `
+          <th class="cctv-table__th-sort${isActive ? " is-active" : ""}" data-sort-key="${col.key}"${ariaSort} title="Klik untuk mengurutkan ${col.label}">
+            <span class="cctv-table__th-sort-inner">
+              <span class="cctv-table__th-sort-label">${col.label}</span>
+              <span class="cctv-table__th-sort-arrows" aria-hidden="true">
+                <span class="cctv-table__sort-arrow${activeDir === "asc" ? " is-active" : ""}">${icon("arrow-up", { size: 10 })}</span>
+                <span class="cctv-table__sort-arrow${activeDir === "desc" ? " is-active" : ""}">${icon("arrow-down", { size: 10 })}</span>
+              </span>
+            </span>
+          </th>`;
+  }).join("");
+
+  return `
+        <thead>
+          <tr>
+            <th>No</th>${sortThHtml}
+            <th>Edit</th>
+          </tr>
+        </thead>
+      `;
 }
 
 function renderPagination(page, totalPages, startIndex, pageCount, totalRecords) {
