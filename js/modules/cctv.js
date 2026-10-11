@@ -927,8 +927,8 @@ function renderCctvForm(contentEl, detail) {
 
     credentialFieldsContainer.innerHTML = `
       <p class="modal__section-title">${isDvrBaru ? "Kredensial DVR Baru" : "Kredensial DVR Lama"}</p>
-      ${renderCredentialInputPair("User", groupKey, "userUsername", "userPassword", group, detail.kdStore, statusSelected)}
-      ${renderCredentialInputPair("Admin", groupKey, "adminUsername", "adminPassword", group, detail.kdStore, statusSelected)}
+      ${renderCredentialInputPair("User", groupKey, "userUsername", "userPassword", group, detail.kdStore, statusSelected, isDvrBaru)}
+      ${renderCredentialInputPair("Admin", groupKey, "adminUsername", "adminPassword", group, detail.kdStore, statusSelected, isDvrBaru)}
     `;
 
     bindPasswordToggles(credentialFieldsContainer);
@@ -1008,7 +1008,7 @@ function bindUrlSuggestion(modal) {
   });
 }
 
-function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, group, kdStore, statusSelected) {
+function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, group, kdStore, statusSelected, isDvrBaru) {
   const usernameId = `cctv_${groupKey}_${usernameKey}`;
   const passwordId = `cctv_${groupKey}_${passwordKey}`;
   const generateBoxId = `cctv_${groupKey}_${passwordKey}_gen`;
@@ -1036,13 +1036,25 @@ function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, gr
         <span class="generated-password-box__value generated-password-box__value--placeholder" data-gen-value>
           Belum ada password baru
         </span>
+        ${isDvrBaru ? `
+        <div class="generated-password-box__actions">
+          <button type="button" class="btn btn-secondary btn-sm" data-generate-password
+            data-gen-variant="V1" data-target-input="${passwordId}" data-kdstore="${escapeAttr(kdStore)}"
+            ${statusSelected ? "" : 'disabled title="Pilih Status terlebih dahulu"'}>
+            Generate Password
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" data-generate-password
+            data-gen-variant="V2" data-target-input="${passwordId}" data-kdstore="${escapeAttr(kdStore)}"
+            ${statusSelected ? "" : 'disabled title="Pilih Status terlebih dahulu"'}>
+            Generate V2
+          </button>
+        </div>` : `
         <button type="button" class="btn btn-secondary btn-sm" data-generate-password
           data-target-input="${passwordId}" data-kdstore="${escapeAttr(kdStore)}"
           ${statusSelected ? "" : 'disabled title="Pilih Status terlebih dahulu"'}>
           Generate Password Baru
-        </button>
+        </button>`}
       </div>
-      ${statusSelected ? "" : '<span class="form-hint">Pilih Status terlebih dahulu untuk mengaktifkan generate password.</span>'}
     </div>
   `;
 }
@@ -1068,10 +1080,13 @@ function bindGeneratePasswordButtons(scopeEl, groupKey, kdStore) {
 
       const purpose = targetInputId.indexOf("admin") !== -1 ? "admin" : "user";
       const dvrType = groupKey === "dvrBaru" ? "DVR_BARU" : "DVR_LAMA";
+      // Varian password (hanya DVR Baru yang punya 2 tombol):
+      // "V1" = standar (dengan simbol), "V2" = tanpa simbol.
+      const variant = btn.getAttribute("data-gen-variant") || "";
 
       const result = await apiRequest(
         "generateCctvPassword",
-        { kdStore, dvrType, purpose },
+        { kdStore, dvrType, purpose, variant },
         { sessionToken: session.sessionToken }
       );
 
@@ -1094,7 +1109,10 @@ function bindGeneratePasswordButtons(scopeEl, groupKey, kdStore) {
         useBtn.className = "btn btn-primary btn-sm";
         useBtn.setAttribute("data-use-password", "");
         useBtn.textContent = "Gunakan";
-        box.appendChild(useBtn);
+        // Saat ada wrapper 2 tombol (DVR Baru), "Gunakan" ikut di dalamnya
+        // supaya baris tombol tetap rapi.
+        const actionsWrap = box.querySelector(".generated-password-box__actions") || box;
+        actionsWrap.appendChild(useBtn);
 
         useBtn.addEventListener("click", () => {
           const targetInput = scopeEl.querySelector(`#${targetInputId}`) || document.getElementById(targetInputId);
@@ -1110,7 +1128,7 @@ function bindGeneratePasswordButtons(scopeEl, groupKey, kdStore) {
           if (!check) {
             check = document.createElement("span");
             check.className = "generated-password-box__check";
-            box.insertBefore(check, useBtn);
+            useBtn.parentNode.insertBefore(check, useBtn);
           }
           check.textContent = "\u2713 Dipilih";
         });
