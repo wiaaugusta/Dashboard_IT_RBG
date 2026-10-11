@@ -2060,7 +2060,10 @@
     margin: 2px 0 8px;
     font-size: 11px;
   }
+  /* User & Admin (username + password) tetap sejajar 2 kolom di mobile,
+     menimpa aturan global .cctv-credential-pair yang menjadikan 1 kolom. */
   #cctvModal .cctv-credential-pair {
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
   }
   #cctvModal .cctv-credential-pair .form-group {
