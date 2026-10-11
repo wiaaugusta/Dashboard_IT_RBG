@@ -846,12 +846,23 @@
   margin-top: var(--space-2);
 }
 
-/* Wrapper tombol generate (DVR Baru punya 2 tombol: Password + V2). */
+/* Wrapper tombol generate (DVR Baru punya 2 tombol: Generate + Gen V2). */
 .generated-password-box__actions {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   flex-shrink: 0;
+}
+
+/* DVR Baru (2 tombol + tombol Gunakan): password di baris atas sendiri,
+   semua tombol center di baris bawah supaya tidak berantakan. */
+.generated-password-box--stacked .generated-password-box__value {
+  flex: 1 1 100%;
+}
+
+.generated-password-box--stacked .generated-password-box__actions {
+  flex: 1 1 100%;
+  justify-content: center;
 }
 
 .generated-password-box__value {
@@ -867,16 +878,6 @@
   color: var(--color-text-muted);
   font-family: var(--font-family-base);
   font-size: var(--font-size-small);
-}
-
-.generated-password-box__check {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-success);
-  font-size: var(--font-size-caption);
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 /* ---------- MODAL ---------- */

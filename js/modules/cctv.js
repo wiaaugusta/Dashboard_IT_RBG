@@ -1032,7 +1032,7 @@ function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, gr
       </div>
     </div>
     <div class="form-group" data-generate-group="${passwordId}">
-      <div class="generated-password-box" id="${generateBoxId}">
+      <div class="generated-password-box ${isDvrBaru ? "generated-password-box--stacked" : ""}" id="${generateBoxId}">
         <span class="generated-password-box__value generated-password-box__value--placeholder" data-gen-value>
           Belum ada password baru
         </span>
@@ -1041,12 +1041,12 @@ function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, gr
           <button type="button" class="btn btn-secondary btn-sm" data-generate-password
             data-gen-variant="V1" data-target-input="${passwordId}" data-kdstore="${escapeAttr(kdStore)}"
             ${statusSelected ? "" : 'disabled title="Pilih Status terlebih dahulu"'}>
-            Generate Password
+            Generate
           </button>
           <button type="button" class="btn btn-secondary btn-sm" data-generate-password
             data-gen-variant="V2" data-target-input="${passwordId}" data-kdstore="${escapeAttr(kdStore)}"
             ${statusSelected ? "" : 'disabled title="Pilih Status terlebih dahulu"'}>
-            Generate V2
+            Gen V2
           </button>
         </div>` : `
         <button type="button" class="btn btn-secondary btn-sm" data-generate-password
@@ -1124,13 +1124,9 @@ function bindGeneratePasswordButtons(scopeEl, groupKey, kdStore) {
             if (toggleBtn) toggleBtn.innerHTML = icon("eye", { size: 16 });
           }
 
-          let check = box.querySelector(".generated-password-box__check");
-          if (!check) {
-            check = document.createElement("span");
-            check.className = "generated-password-box__check";
-            useBtn.parentNode.insertBefore(check, useBtn);
-          }
-          check.textContent = "\u2713 Dipilih";
+          // Tanda centang ditampilkan DI DALAM tombol Gunakan sendiri
+          // (tidak ada lagi teks "Dipilih" di luar tombol).
+          useBtn.textContent = "\u2713 Gunakan";
         });
       }
     });
