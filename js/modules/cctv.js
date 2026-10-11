@@ -918,14 +918,17 @@ function renderCctvForm(contentEl, detail) {
   const credentialFieldsContainer = modal.querySelector("#cctvCredentialFields");
 
   function renderCredentialFieldsForStatus() {
+    // Generate password hanya boleh dilakukan SETELAH status dipilih -
+    // saat status masih kosong tombolnya dimatikan (disabled).
+    const statusSelected = statusInput.value.trim() !== "";
     const isDvrBaru = statusInput.value.toUpperCase().indexOf("BARU") !== -1;
     const group = isDvrBaru ? detail.dvrBaru : detail.dvrLama;
     const groupKey = isDvrBaru ? "dvrBaru" : "dvrLama";
 
     credentialFieldsContainer.innerHTML = `
       <p class="modal__section-title">${isDvrBaru ? "Kredensial DVR Baru" : "Kredensial DVR Lama"}</p>
-      ${renderCredentialInputPair("User", groupKey, "userUsername", "userPassword", group, detail.kdStore)}
-      ${renderCredentialInputPair("Admin", groupKey, "adminUsername", "adminPassword", group, detail.kdStore)}
+      ${renderCredentialInputPair("User", groupKey, "userUsername", "userPassword", group, detail.kdStore, statusSelected)}
+      ${renderCredentialInputPair("Admin", groupKey, "adminUsername", "adminPassword", group, detail.kdStore, statusSelected)}
     `;
 
     bindPasswordToggles(credentialFieldsContainer);
@@ -1005,7 +1008,7 @@ function bindUrlSuggestion(modal) {
   });
 }
 
-function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, group, kdStore) {
+function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, group, kdStore, statusSelected) {
   const usernameId = `cctv_${groupKey}_${usernameKey}`;
   const passwordId = `cctv_${groupKey}_${passwordKey}`;
   const generateBoxId = `cctv_${groupKey}_${passwordKey}_gen`;
@@ -1034,10 +1037,12 @@ function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, gr
           Belum ada password baru
         </span>
         <button type="button" class="btn btn-secondary btn-sm" data-generate-password
-          data-target-input="${passwordId}" data-kdstore="${escapeAttr(kdStore)}">
+          data-target-input="${passwordId}" data-kdstore="${escapeAttr(kdStore)}"
+          ${statusSelected ? "" : 'disabled title="Pilih Status terlebih dahulu"'}>
           Generate Password Baru
         </button>
       </div>
+      ${statusSelected ? "" : '<span class="form-hint">Pilih Status terlebih dahulu untuk mengaktifkan generate password.</span>'}
     </div>
   `;
 }
@@ -1155,6 +1160,32 @@ async function submitCctvUpdate(contentEl, detail) {
   modal.querySelectorAll("[data-cred-field]").forEach((input) => {
     credentialData[input.getAttribute("data-cred-field")] = input.value;
   });
+
+  // Validasi format password yang DIUBAH user (docs/UI_AND_DESIGN.md #17):
+  // DVR Lama wajib tepat 6 digit angka, DVR Baru wajib tepat 8 karakter.
+  // Nilai yang tidak berubah dari data existing di-skip supaya data lama
+  // (yang mungkin sudah salah format sebelum fix ini) tidak memblokir simpan.
+  const existingGroup = detail[groupKey] || {};
+  const passwordFields = [
+    { key: "userPassword", label: "Password User" },
+    { key: "adminPassword", label: "Password Admin" }
+  ];
+  for (const field of passwordFields) {
+    const newValue = String(credentialData[field.key] || "").trim();
+    const existingRaw = existingGroup[field.key];
+    const oldValue = existingRaw == null ? "" : String(existingRaw);
+    if (!newValue || newValue === oldValue) {
+      continue;
+    }
+    if (!isDvrBaru && !/^\d{6}$/.test(newValue)) {
+      showError(`${field.label} DVR Lama wajib tepat 6 digit angka.`);
+      return;
+    }
+    if (isDvrBaru && newValue.length !== 8) {
+      showError(`${field.label} DVR Baru wajib tepat 8 karakter.`);
+      return;
+    }
+  }
 
   const payload = {
     kdStore: detail.kdStore,
