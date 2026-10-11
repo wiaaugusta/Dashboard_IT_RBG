@@ -1032,7 +1032,7 @@ function renderCredentialInputPair(label, groupKey, usernameKey, passwordKey, gr
       </div>
     </div>
     <div class="form-group" data-generate-group="${passwordId}">
-      <div class="generated-password-box ${isDvrBaru ? "generated-password-box--stacked" : ""}" id="${generateBoxId}">
+      <div class="generated-password-box" id="${generateBoxId}">
         <span class="generated-password-box__value generated-password-box__value--placeholder" data-gen-value>
           Belum ada password baru
         </span>

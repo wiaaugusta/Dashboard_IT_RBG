@@ -846,23 +846,22 @@
   margin-top: var(--space-2);
 }
 
-/* Wrapper tombol generate (DVR Baru punya 2 tombol: Generate + Gen V2). */
+/* Wrapper tombol generate (DVR Baru punya 2 tombol: Generate + Gen V2).
+   Rata KANAN (mepet) di baris yang sama dengan password. */
 .generated-password-box__actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-2);
   flex-shrink: 0;
 }
 
-/* DVR Baru (2 tombol + tombol Gunakan): password di baris atas sendiri,
-   semua tombol center di baris bawah supaya tidak berantakan. */
-.generated-password-box--stacked .generated-password-box__value {
-  flex: 1 1 100%;
-}
-
-.generated-password-box--stacked .generated-password-box__actions {
-  flex: 1 1 100%;
-  justify-content: center;
+/* Password asli (bukan placeholder) TIDAK boleh terpotong - selalu 1 baris.
+   Kalau lebar password + tombol melebihi kotak, tombol-lah yang otomatis
+   turun ke baris bawah (karena box memakai flex-wrap), bukan password. */
+.generated-password-box__value:not(.generated-password-box__value--placeholder) {
+  white-space: nowrap;
+  min-width: max-content;
 }
 
 .generated-password-box__value {
