@@ -4,17 +4,19 @@
  * Sumber tunggal struktur navigasi.
  *
  * ADMIN:
- * - Melihat seluruh menu
- * - Kaspersky Office/Store
- * - ITAM Office/Store
- * - Checklist Office/Store (submenu)
+ * - Melihat seluruh menu.
+ * - Manage PC: submenu Kaspersky / ITAM / KACE. Scope Office/Store TIDAK
+ *   lagi menjadi submenu sidebar - perbedaannya menjadi TAB di dalam
+ *   halaman (pola dashboard modern, lihat js/pages/manage-pc.js)
+ *   supaya sidebar tetap ringkas.
+ * - Checklist Office/Store masih memakai submenu.
  *
  * IT_STORE / IT_OFFICE:
  * - Checklist TANPA submenu - login sudah menentukan halamannya
  *   (pathByRole), klik menu langsung membuka checklist yang sesuai.
  *
  * IT_STORE:
- * - Tidak melihat menu Office/Store Kaspersky & ITAM
+ * - Tidak melihat menu Manage PC (Kaspersky/ITAM/KACE)
  * - Tetap melihat CCTV
  *
  * IT_OFFICE:
@@ -60,21 +62,34 @@ export const NAV_ITEMS = [
   },
 
   {
-    key: "kaspersky",
-    label: "Kaspersky",
-    icon: "kaspersky",
-    roles: null,
+    /* Manage PC menggantikan menu Kaspersky + ITAM yang sebelumnya
+       berdiri sendiri; KACE juga bergabung ke sini. Scope Office/Store
+       yang dulu menjadi submenu kini menjadi TAB di dalam halaman
+       (lihat js/pages/manage-pc.js) supaya sidebar tetap ringkas. */
+    key: "manage-pc",
+    label: "Manage PC",
+    icon: "pc",
+    roles: ["ADMIN"],
     children: [
       {
-        key: "kaspersky-office",
-        label: "Office",
-        path: "/kaspersky/office",
+        key: "manage-pc-kaspersky",
+        label: "Kaspersky",
+        path: "/manage-pc/kaspersky",
+        icon: "kaspersky",
         roles: ["ADMIN"]
       },
       {
-        key: "kaspersky-store",
-        label: "Store",
-        path: "/kaspersky/store",
+        key: "manage-pc-itam",
+        label: "ITAM",
+        path: "/manage-pc/itam",
+        icon: "itam",
+        roles: ["ADMIN"]
+      },
+      {
+        key: "manage-pc-kace",
+        label: "KACE",
+        path: "/manage-pc/kace",
+        icon: "kace",
         roles: ["ADMIN"]
       }
     ]
@@ -86,27 +101,6 @@ export const NAV_ITEMS = [
     path: "/nms",
     icon: "nms",
     roles: null
-  },
-
-  {
-    key: "itam",
-    label: "ITAM",
-    icon: "itam",
-    roles: null,
-    children: [
-      {
-        key: "itam-office",
-        label: "Office",
-        path: "/itam/office",
-        roles: ["ADMIN"]
-      },
-      {
-        key: "itam-store",
-        label: "Store",
-        path: "/itam/store",
-        roles: ["ADMIN"]
-      }
-    ]
   },
 
   {
@@ -232,6 +226,7 @@ export function getFlatRoutes() {
         key: item.key,
         label: item.label,
         path: item.path,
+        parentKey: null,
         parentLabel: null
       });
     }
@@ -244,6 +239,7 @@ export function getFlatRoutes() {
           key: child.key,
           label: child.label,
           path: child.path,
+          parentKey: item.key,
           parentLabel: item.label
         });
 

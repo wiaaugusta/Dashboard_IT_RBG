@@ -234,17 +234,20 @@ Contoh informasi:
 
 ---
 
-## Kaspersky
+## Manage PC
 
-Modul Kaspersky memiliki submenu:
+Menu utama **Manage PC** menggabungkan tiga modul pengelolaan PC:
+**Kaspersky**, **ITAM**, dan **KACE**. Semuanya hanya untuk login ADMIN.
 
-### Office
+Perbedaan lingkup **Office** dan **Store** tidak lagi menjadi submenu
+sidebar - keduanya menjadi **tab di dalam halaman** masing-masing modul
+(pola dashboard modern) supaya sidebar tetap ringkas.
 
-Monitoring perangkat Kaspersky di Office.
+### Kaspersky
 
-### Store
+Tab Office / Store di dalam halaman Kaspersky.
 
-Monitoring perangkat Kaspersky di Store.
+Monitoring perangkat Kaspersky di Office / Store.
 
 Informasi yang nantinya dapat ditampilkan:
 
@@ -256,6 +259,41 @@ Informasi yang nantinya dapat ditampilkan:
 - threat
 - last update
 - compliance
+
+### ITAM
+
+Tab Office / Store di dalam halaman ITAM.
+
+Asset IT Office / Asset IT Store.
+- Memastikan data termanage semua dan privilege sesuai. 
+- Database dari Gsheet 
+
+Informasi yang nantinya dapat dikelola:
+
+- asset
+- laptop
+- PC
+- printer
+- network device
+- hardware
+- asset owner
+- location
+- status
+- lifecycle
+- warranty
+- assignment
+
+### KACE
+
+Tab Office / Store di dalam halaman KACE.
+
+Deployment & otomasi perangkat PC.
+
+Informasi yang nantinya dapat dikelola:
+
+- deployment OS & aplikasi
+- inventory agent & scripting
+- konfigurasi & antrian service perangkat
 
 
 ---
@@ -275,40 +313,6 @@ Informasi yang nantinya dapat ditampilkan:
 - store
 - network device
 - critical issue
-
-
----
-
-## ITAM
-
-Modul ITAM memiliki submenu:
-
-### Office
-
-Asset IT Office.
-- Memastikan data termanage semua dan privilege sesuai. 
-- Database dari Gsheet 
-
-### Store
-
-Asset IT Store.
-- Memastikan data termanage semua dan privilege sesuai. 
-- Database dari Gsheet 
-
-Informasi yang nantinya dapat dikelola:
-
-- asset
-- laptop
-- PC
-- printer
-- network device
-- hardware
-- asset owner
-- location
-- status
-- lifecycle
-- warranty
-- assignment
 
 
 ---
@@ -375,9 +379,8 @@ Nantinya dapat digunakan untuk:
 | Dashboard | Foundation |
 | KPI | Placeholder |
 | AHO | Placeholder |
-| Kaspersky | Placeholder |
+| Manage PC (Kaspersky, ITAM, KACE) | Placeholder |
 | NMS | Placeholder |
-| ITAM | Placeholder |
 | CCTV | Implementasi Pertama |
 | Checklist | Placeholder |
 

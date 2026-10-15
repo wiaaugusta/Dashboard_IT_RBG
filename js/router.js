@@ -34,7 +34,29 @@ export function setNotFoundHandler(renderFn) {
 
 function getCurrentPath() {
   const hash = window.location.hash || "#/";
-  return hash.replace("#", "") || "/";
+  const raw = hash.replace("#", "") || "/";
+
+  /* Hash bisa mengandung query (#/manage-pc/kaspersky?scope=store) untuk
+     state TAB in-page. Path yang dicocokkan ke tabel route harus bersih
+     dari query supaya satu route tetap melayani semua tab. */
+  const queryIndex = raw.indexOf("?");
+  return queryIndex === -1 ? raw : raw.substring(0, queryIndex);
+}
+
+/**
+ * Ambil nilai sebuah query parameter dari hash aktif (#/path?key=value).
+ * Dipakai halaman yang punya TAB in-page (mis. Manage PC: ?scope=store)
+ * supaya tab deep-linkable - refresh / back button tetap berada di tab
+ * yang terakhir dipilih.
+ * @param {string} name
+ * @returns {string|null} nilai parameter, atau null jika tidak ada.
+ */
+export function getQueryParam(name) {
+  const hash = window.location.hash || "#/";
+  const queryIndex = hash.indexOf("?");
+  if (queryIndex === -1) return null;
+
+  return new URLSearchParams(hash.substring(queryIndex + 1)).get(name);
 }
 
 function resolve() {

@@ -39,13 +39,14 @@ const MODULE_SUMMARY = [
     roles: null
   },
   {
-    key: "kaspersky",
-    label: "Kaspersky",
-    description: "Security & endpoint protection",
-    icon: "kaspersky",
+    key: "manage-pc",
+    label: "Manage PC",
+    description: "Kaspersky · ITAM · KACE dalam satu menu",
+    icon: "pc",
     accent: "purple",
-    active: false,
-    roles: null
+    active: true,
+    path: "/manage-pc/kaspersky",
+    roles: ["ADMIN"]
   },
   {
     key: "nms",
@@ -56,15 +57,7 @@ const MODULE_SUMMARY = [
     active: false,
     roles: null
   },
-  {
-    key: "itam",
-    label: "ITAM",
-    description: "IT Asset Management",
-    icon: "itam",
-    accent: "teal",
-    active: false,
-    roles: null
-  },
+
   {
     key: "checklist",
     label: "Checklist",
@@ -396,7 +389,7 @@ function renderModuleCard(module) {
 
   return `
     <a
-      href="${module.active ? `#/${module.key}` : "javascript:void(0)"}"
+      href="${module.active ? `#${module.path || `/${module.key}`}` : "javascript:void(0)"}"
       class="
         dashboard-module-card
         dashboard-module-card--${module.accent}

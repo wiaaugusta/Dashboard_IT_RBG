@@ -155,13 +155,12 @@ Menu utama aplikasi:
 - Dashboard
 - KPI
 - AHO
-- Kaspersky
+- Manage PC (admin-only)
 - NMS
-- ITAM
 - CCTV
 - Checklist
 
-Beberapa menu memiliki submenu.
+Beberapa menu memiliki grup / submenu.
 
 Contoh:
 
@@ -169,17 +168,15 @@ AHO
 ├── SLA AHO Store
 └── SLA Form Hardware
 
-Kaspersky
-├── Office
-└── Store
+Manage PC (admin-only)
+├── Kaspersky → /manage-pc/kaspersky
+├── ITAM → /manage-pc/itam
+└── KACE → /manage-pc/kace
 
-ITAM
-├── Office
-└── Store
-
-Checklist
-├── Office
-└── Store
+Scope Office/Store tidak lagi menjadi submenu sidebar - menjadi
+tab dalam halaman dengan deep link ?scope=office|store
+(mis. #/manage-pc/kaspersky?scope=store). Satu route melayani
+semua tab.
 
 
 Menu boleh terlihat walaupun modul belum memiliki data.
@@ -201,13 +198,15 @@ Setiap modul harus memiliki logic sendiri.
 
 Contoh:
 
+js/pages/
+├── dashboard.js
+└── manage-pc.js (Kaspersky / ITAM / KACE + tab Office/Store)
+
 js/modules/
 ├── cctv.js
 ├── kpi.js
 ├── aho.js
-├── kaspersky.js
 ├── nms.js
-├── itam.js
 └── checklist.js
 
 

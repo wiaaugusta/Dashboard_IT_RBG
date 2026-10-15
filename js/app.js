@@ -15,9 +15,10 @@
 import { init as initRouter, registerRoute, navigate } from "./router.js";
 import { renderLoginPage } from "./pages/login.js";
 import { renderDashboardPage } from "./pages/dashboard.js";
+import { renderManagePcPage } from "./pages/manage-pc.js";
 import { renderComingSoonPage } from "./pages/coming-soon.js";
 import { renderCctvPage } from "./modules/cctv.js";
-import { isAuthenticated, clearSession, touchSession } from "./auth.js";
+import { isAuthenticated, getSession, clearSession, touchSession } from "./auth.js";
 import { showError } from "./ui.js";
 import { getFlatRoutes } from "./nav-config.js";
 
@@ -28,7 +29,7 @@ function registerServiceWorker() {
   window.addEventListener("load", () => {
 
     navigator.serviceWorker
-      .register("./service-worker.js?v=12")
+      .register("./service-worker.js?v=13")
       .then((registration) => {
 
         console.log(
@@ -68,6 +69,30 @@ function withAuth(renderFn) {
   };
 }
 
+/**
+ * Sama dengan withAuth(), ditambah pengecekan role.
+ * Menyembunyikan menu adalah UI behavior; halaman yang hanya untuk
+ * role tertentu (mis. Manage PC untuk ADMIN) juga dijaga di sini.
+ * Authorization yang SEBENARNYA tetap dilakukan backend
+ * (docs/UI_AND_DESIGN.md #27).
+ */
+function withRole(roles, renderFn) {
+  return (container) => {
+    if (!isAuthenticated()) {
+      navigate("/login");
+      return;
+    }
+
+    const session = getSession();
+    if (!session || !roles.includes(session.role)) {
+      navigate("/dashboard");
+      return;
+    }
+
+    renderFn(container);
+  };
+}
+
 function registerRoutes() {
   registerRoute("/login", renderLoginPage);
   registerRoute("/dashboard", withAuth(renderDashboardPage));
@@ -78,6 +103,17 @@ function registerRoutes() {
   // benar-benar dibangun.
   getFlatRoutes().forEach((route) => {
     if (route.key === "dashboard" || route.key === "cctv") return; // sudah didaftarkan di atas
+
+    // Halaman Manage PC (Kaspersky / ITAM / KACE) dengan TAB Office/Store
+    // di dalam halaman - hanya untuk ADMIN.
+    if (route.parentKey === "manage-pc") {
+      registerRoute(
+        route.path,
+        withRole(["ADMIN"], (container) => renderManagePcPage(container, route))
+      );
+      return;
+    }
+
     registerRoute(
       route.path,
       withAuth((container) => renderComingSoonPage(container, route))

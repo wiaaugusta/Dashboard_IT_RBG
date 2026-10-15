@@ -71,11 +71,17 @@ Platform memiliki menu utama:
 1. Dashboard
 2. KPI
 3. AHO
-4. Kaspersky
+4. Manage PC
 5. NMS
-6. ITAM
-7. CCTV
-8. Checklist
+6. CCTV
+7. Checklist
+
+Catatan menu Manage PC:
+
+- Menggabungkan tiga modul PC dalam satu menu admin-only: Kaspersky, ITAM, dan KACE.
+- Path: `/manage-pc/kaspersky`, `/manage-pc/itam`, `/manage-pc/kace`.
+- Submenu Office/Store diganti tab dalam halaman dengan deep link `?scope=office|store`.
+- Akses scope: Admin (office + store), IT Office, IT Store sesuai role.
 
 
 ---
