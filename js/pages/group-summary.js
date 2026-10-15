@@ -24,6 +24,7 @@ import { renderShell } from "../shell.js";
 import { getSession } from "../auth.js";
 import { NAV_ITEMS, isVisibleForRole } from "../nav-config.js";
 import { icon } from "../icons.js";
+import { loadManagePcSummary } from "../api.js";
 
 /**
  * Meta per menu parent: warna aksen hero + deskripsi, aksen, dan label
@@ -58,17 +59,17 @@ const GROUP_META = {
       "manage-pc-kaspersky": {
         accent: "blue",
         description: "Endpoint Security - proteksi, update database & compliance.",
-        stats: ["Total Device", "Protected", "Threat"]
+        stats: ["Total Device", "Device Manage", "Not Manage"]
       },
       "manage-pc-itam": {
         accent: "teal",
         description: "IT Asset Management - inventaris & lifecycle aset.",
-        stats: ["Total Asset", "Ter-Assign", "Verifikasi"]
+        stats: ["Total Device", "Device Manage", "Not Manage"]
       },
       "manage-pc-kace": {
         accent: "purple",
         description: "Systems Deployment - deployment OS, agent & otomasi.",
-        stats: ["Total Device", "Deployed", "Antrian Service"]
+        stats: ["Total Device", "Device Manage", "Not Manage"]
       }
     }
   },
@@ -132,23 +133,24 @@ export function renderGroupSummaryPage(container, routeInfo) {
   const meta = GROUP_META[routeInfo.key];
   if (!group || !meta || !group.children) return;
 
-  const cards = group.children
-    .filter((child) => isVisibleForRole(child, session.role))
-    .map((child) => renderSummaryCard(child, meta.children[child.key]));
+  const visibleChildren = group.children
+    .filter((child) => isVisibleForRole(child, session.role));
+  const isManagePc = routeInfo.key === "manage-pc";
+  const cards = visibleChildren
+    .map((child) => renderSummaryCard(child, meta.children[child.key], null, isManagePc));
 
   const contentHtml = `
     <div class="gsp-page">
       ${renderHero(group, meta)}
 
-      <section class="gsp-cards" aria-label="Rangkuman submenu ${escapeHtml(group.label)}">
+      <section class="gsp-cards" data-group-summary-cards aria-label="Rangkuman submenu ${escapeHtml(group.label)}">
         ${cards.join("")}
       </section>
 
-      <div class="mpc-note">
+      <div class="mpc-note" data-group-summary-message aria-live="polite">
         ${icon("info", { size: 16 })}
         <span>
-          ${escapeHtml(getScopeNote(session.role, routeInfo.key))}
-          Angka pada kartu masih placeholder &mdash; menunggu integrasi data backend.
+          ${isManagePc ? "Memuat ringkasan data Manage PC..." : `${escapeHtml(getScopeNote(session.role, routeInfo.key))} Angka pada kartu masih placeholder &mdash; menunggu integrasi data backend.`}
         </span>
       </div>
     </div>
@@ -159,6 +161,28 @@ export function renderGroupSummaryPage(container, routeInfo) {
     pageTitle: routeInfo.label,
     contentHtml
   });
+
+  if (isManagePc) {
+    loadManagePcSummary("office", { sessionToken: session.sessionToken })
+      .then((result) => {
+        const cardsElement = container.querySelector("[data-group-summary-cards]");
+        const messageElement = container.querySelector("[data-group-summary-message] span");
+        if (result.success && result.data) {
+          if (cardsElement) {
+            cardsElement.innerHTML = visibleChildren
+              .map((child) => renderSummaryCard(child, meta.children[child.key], result.data, true))
+              .join("");
+          }
+          if (messageElement) messageElement.textContent = "Status OK dihitung sebagai Device Manage; status selain OK dihitung sebagai Not Manage.";
+        } else if (messageElement) {
+          messageElement.textContent = result.message || "Ringkasan Manage PC gagal dimuat.";
+        }
+      })
+      .catch((error) => {
+        const messageElement = container.querySelector("[data-group-summary-message] span");
+        if (messageElement) messageElement.textContent = error.message || "Ringkasan Manage PC gagal dimuat.";
+      });
+  }
 }
 
 function renderHero(group, meta) {
@@ -181,13 +205,23 @@ function renderHero(group, meta) {
   `;
 }
 
-function renderSummaryCard(child, childMeta = {}) {
+function renderSummaryCard(child, childMeta = {}, summaryData = null, showManageStats = false) {
   const isAvailable = AVAILABLE_CHILD_KEYS.has(child.key);
+  const moduleData = child.key === "manage-pc-kaspersky"
+    ? summaryData?.kaspersky
+    : child.key === "manage-pc-itam"
+      ? summaryData?.itam
+      : child.key === "manage-pc-kace"
+        ? summaryData?.kace
+        : null;
+  const statValues = showManageStats
+    ? [summaryData?.summary?.totalPc, moduleData?.ok, moduleData?.nok]
+    : [];
   const stats = (childMeta.stats || [])
-    .map((statLabel) => `
+    .map((statLabel, index) => `
       <div class="gsp-card__stat">
         <small>${escapeHtml(statLabel)}</small>
-        <strong>&mdash;</strong>
+        <strong>${statValues[index] == null ? "&mdash;" : Number(statValues[index]).toLocaleString()}</strong>
       </div>
     `)
     .join("");
