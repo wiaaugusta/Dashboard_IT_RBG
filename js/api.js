@@ -13,6 +13,8 @@
  * dipanggil pada phase ini.
  */
 
+/**\n * ACTION ROUTES - Manage PC\n * ----------------------------\n * Sinkronisasi frontend dengan backend Apps Script:\n *   - getManagePcSummary : total PC (175), total Manage, total NOK\n *                          + OK/NOK per modul (Kaspersky, ITAM, KACE)\n *   - getManagePcList    : daftar PC per modul dengan filter status/search\n *\n * Format request: { action, ...payload }\n * Format response: { success, message, data }\n */
+
 // TODO (Phase Authentication/CCTV): ganti dengan URL deployment Apps Script.
 // JANGAN pernah menaruh credential/API key di sini - hanya URL endpoint publik.
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyld_jhumhTe3FY2Yta9csQDIsAYe5l_el0BO917FF7USX1Ssj_QQHFSG1gGejHuoRt/exec";
@@ -228,4 +230,20 @@ export async function apiRequest(action, payload = {}, options = {}) {
       data: null
     };
   }
+}
+
+/* API ROUTES - Manage PC */
+export async function loadManagePcSummary(scope = "office", options = {}) {
+  return apiRequest("getManagePcSummary", { scope }, options);
+}
+
+export async function loadManagePcList(module, scope = "office", options = {}) {
+  return apiRequest("getManagePcList", {
+    module,
+    scope,
+    page: options.page ?? 1,
+    limit: options.limit ?? 25,
+    status: options.status,
+    search: options.search ?? ""
+  }, options);
 }

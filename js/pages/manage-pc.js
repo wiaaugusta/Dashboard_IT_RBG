@@ -21,6 +21,7 @@ import { renderShell } from "../shell.js";
 import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { icon } from "../icons.js";
+import { loadManagePcSummary } from "../api.js";
 
 /**
  * Konfigurasi modul di bawah menu Manage PC.
@@ -225,23 +226,62 @@ function renderControlBar(module, accessibleScopes, activeScope) {
   `;
 }
 
-/* Ringkasan angka per modul - masih placeholder ("menunggu integrasi
-   data"), dipisahkan supaya gampang dihidupkan saat backend siap. */
-function renderStats(module) {
-  const cards = module.stats
-    .map((stat) => `
-      <div class="mpc-stat">
-        <div class="mpc-stat__top">
-          <span class="mpc-stat__label">${escapeHtml(stat.label)}</span>
-          <span class="mpc-stat__icon">${icon(stat.icon, { size: 15 })}</span>
-        </div>
-        <strong class="mpc-stat__value">&mdash;</strong>
-        <small class="mpc-stat__hint">Menunggu integrasi data</small>
+function renderSummary(data) {
+  if (!data) {
+    return `
+      <section class="mpc-summary" data-mpc-summary aria-live="polite">
+        <p class="mpc-summary__hint">Memuat ringkasan Manage PC...</p>
+      </section>
+    `;
+  }
+
+  if (!data.summary) {
+    return `
+      <section class="mpc-summary" data-mpc-summary aria-live="polite">
+        <p class="mpc-summary__hint" role="alert">${escapeHtml(data.message || "Ringkasan Manage PC gagal dimuat.")}</p>
+      </section>
+    `;
+  }
+
+  const summary = data.summary;
+
+  const totalPc = summary.totalPc ?? 0;
+  const totalManage = summary.totalManage ?? 0;
+  const totalNok = summary.totalNok ?? 0;
+
+  const moduleLines = (summary.modules || [])
+    .map((m) => `
+      <div class="mpc-summary__module">
+        <span class="mpc-summary__module-label">${escapeHtml(m.label)}</span>
+        <span class="mpc-summary__module-digits">
+          <span>${m.ok != null ? m.ok.toLocaleString() : ""} OK</span>
+          <span>${m.nok != null ? m.nok.toLocaleString() : ""} NOK</span>
+        </span>
       </div>
     `)
     .join("");
 
-  return `<section class="mpc-stats">${cards}</section>`;
+  return `
+    <section class="mpc-summary" data-mpc-summary aria-live="polite">
+      <div class="mpc-summary__cards">
+        <div class="mpc-summary__card mpc-summary__card--total">
+          <span class="mpc-summary__label">Total PC</span>
+          <strong class="mpc-summary__value">${totalPc.toLocaleString()}</strong>
+        </div>
+        <div class="mpc-summary__card mpc-summary__card--manage">
+          <span class="mpc-summary__label">Total Terkelola</span>
+          <strong class="mpc-summary__value">${totalManage.toLocaleString()}</strong>
+        </div>
+        <div class="mpc-summary__card mpc-summary__card--nok">
+          <span class="mpc-summary__label">Total NOK</span>
+          <strong class="mpc-summary__value">${totalNok.toLocaleString()}</strong>
+          <small class="mpc-summary__hint">Status belum "OK"</small>
+        </div>
+      </div>
+
+      ${moduleLines ? `<div class="mpc-summary__modules">${moduleLines}</div>` : ""}
+    </section>
+  `;
 }
 
 /* Panel konten utama per (modul + scope). Saat backend modul siap,
@@ -332,7 +372,7 @@ export function renderManagePcPage(container, routeInfo) {
     <div class="mpc-page">
       ${renderHero(module)}
       ${renderControlBar(module, accessibleScopes, activeScope)}
-      ${renderStats(module)}
+      ${renderSummary(null)}
       ${renderScopePanel(module, activeScope)}
     </div>
   `;
@@ -342,4 +382,20 @@ export function renderManagePcPage(container, routeInfo) {
     pageTitle: `Manage PC · ${module.label}`,
     contentHtml
   });
+
+  loadManagePcSummary(activeScope, { sessionToken: session.sessionToken })
+    .then((result) => {
+      const summaryElement = container.querySelector("[data-mpc-summary]");
+      if (summaryElement) {
+        summaryElement.outerHTML = renderSummary(result.success ? result.data : result);
+      }
+    })
+    .catch((error) => {
+      const summaryElement = container.querySelector("[data-mpc-summary]");
+      if (summaryElement) {
+        summaryElement.outerHTML = renderSummary({
+          message: error.message || "Ringkasan Manage PC gagal dimuat."
+        });
+      }
+    });
 }
