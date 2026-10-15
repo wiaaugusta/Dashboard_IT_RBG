@@ -45,8 +45,10 @@ const MODULE_SUMMARY = [
     icon: "pc",
     accent: "purple",
     active: true,
-    path: "/manage-pc/kaspersky",
-    roles: ["ADMIN"]
+    path: "/manage-pc",
+    /* Menu tidak dihilangkan untuk login Office/Store - mereka membuka
+       halaman Manage PC dengan lingkup miliknya (tanpa tab Office/Store). */
+    roles: ["ADMIN", "IT_OFFICE", "IT_STORE"]
   },
   {
     key: "nms",

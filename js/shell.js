@@ -147,15 +147,36 @@ function renderNavItem(item, role, activeKey) {
       return "";
     }
 
-    const isExpanded = expandedGroups.has(item.key);
+    /* Parent link / clickable dropdown:
+       - Label + icon parent = LINK ke halaman parent sendiri (rangkuman
+         data submenu, lihat js/pages/group-summary.js).
+       - Chevron = tombol buka/tutup submenu, jadi dropdown tetap bisa
+         dilebarkan/dilipat tanpa berpindah halaman.
+       - Saat berada di halaman parent, grup otomatis terbuka dan item
+         parent ditandai aktif. */
+    const isExpanded = expandedGroups.has(item.key) || item.key === activeKey;
 
     return `
       <div class="app-nav-group ${isExpanded ? "is-expanded" : ""}">
-        <button type="button" class="app-nav-item app-nav-item--group" data-group-toggle="${item.key}">
-          <span class="app-nav-item__icon">${icon(item.icon, { size: 18 })}</span>
-          <span class="app-nav-item__label">${escapeHtml(item.label)}</span>
-          <span class="app-nav-item__chevron">${icon("chevron", { size: 15 })}</span>
-        </button>
+        <div class="app-nav-item app-nav-item--group ${item.key === activeKey ? "is-active" : ""}">
+          <a
+            href="#${item.path}"
+            class="app-nav-item__main"
+            data-nav-key="${item.key}"
+          >
+            <span class="app-nav-item__icon">${icon(item.icon, { size: 18 })}</span>
+            <span class="app-nav-item__label">${escapeHtml(item.label)}</span>
+          </a>
+          <button
+            type="button"
+            class="app-nav-item__toggle"
+            data-group-toggle="${item.key}"
+            aria-expanded="${isExpanded ? "true" : "false"}"
+            aria-label="Buka submenu ${escapeHtml(item.label)}"
+          >
+            <span class="app-nav-item__chevron">${icon("chevron", { size: 15 })}</span>
+          </button>
+        </div>
         <div class="app-nav-submenu">
           ${visibleChildren.map((child) => renderLeafItem(child, activeKey, true)).join("")}
         </div>
@@ -347,7 +368,10 @@ function bindShellEvents(container) {
       } else {
         expandedGroups.add(key);
       }
-      btn.closest(".app-nav-group").classList.toggle("is-expanded");
+
+      const isExpanded = expandedGroups.has(key);
+      btn.closest(".app-nav-group").classList.toggle("is-expanded", isExpanded);
+      btn.setAttribute("aria-expanded", String(isExpanded));
     });
   });
 

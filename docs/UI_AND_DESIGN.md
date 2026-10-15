@@ -260,6 +260,19 @@ Untuk user IT Store:
 
 - menu CCTV tersedia
 
+Untuk login Office/Store (IT_OFFICE / IT_STORE):
+
+- menu Manage PC tetap tersedia, TANPA pembagian Office/Store - login
+  sudah menentukan lingkup datanya (IT Store → Store, IT Office →
+  Office); ADMIN tetap mendapat pemilihan tab Office/Store di dalam
+  halaman
+- menu Checklist langsung membuka checklist sesuai jabatan (tanpa
+  submenu Office/Store); halaman parent `/checklist` khusus ADMIN
+
+Menu utama yang memiliki submenu (AHO, Manage PC, Checklist) adalah
+parent link / clickable dropdown: label parent membuka halaman parent
+berisi rangkuman data submenu, chevron membuka/menutup submenu.
+
 Jangan hanya menyembunyikan menu secara visual jika authorization/security membutuhkan validasi backend.
 
 UI restriction bukan pengganti backend authorization.

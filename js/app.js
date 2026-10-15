@@ -16,6 +16,7 @@ import { init as initRouter, registerRoute, navigate } from "./router.js";
 import { renderLoginPage } from "./pages/login.js";
 import { renderDashboardPage } from "./pages/dashboard.js";
 import { renderManagePcPage } from "./pages/manage-pc.js";
+import { renderGroupSummaryPage } from "./pages/group-summary.js";
 import { renderComingSoonPage } from "./pages/coming-soon.js";
 import { renderCctvPage } from "./modules/cctv.js";
 import { isAuthenticated, getSession, clearSession, touchSession } from "./auth.js";
@@ -29,7 +30,7 @@ function registerServiceWorker() {
   window.addEventListener("load", () => {
 
     navigator.serviceWorker
-      .register("./service-worker.js?v=13")
+      .register("./service-worker.js?v=14")
       .then((registration) => {
 
         console.log(
@@ -72,7 +73,8 @@ function withAuth(renderFn) {
 /**
  * Sama dengan withAuth(), ditambah pengecekan role.
  * Menyembunyikan menu adalah UI behavior; halaman yang hanya untuk
- * role tertentu (mis. Manage PC untuk ADMIN) juga dijaga di sini.
+ * role tertentu (mis. halaman parent Checklist yang khusus ADMIN
+ * karena submenu Office/Store hanya untuk admin) juga dijaga di sini.
  * Authorization yang SEBENARNYA tetap dilakukan backend
  * (docs/UI_AND_DESIGN.md #27).
  */
@@ -93,6 +95,18 @@ function withRole(roles, renderFn) {
   };
 }
 
+/**
+ * Route halaman PARENT untuk menu utama bersubmenu (AHO / Manage PC /
+ * Checklist). Menu utama juga punya halaman sendiri berisi rangkuman
+ * data submenu-nya (lihat pages/group-summary.js). Nilai = daftar role
+ * yang dibolehkan (dijaga withRole); null = semua role yang sudah login.
+ */
+const GROUP_SUMMARY_ROLES = {
+  "aho": null, // semua role
+  "manage-pc": ["ADMIN", "IT_OFFICE", "IT_STORE"],
+  "checklist": ["ADMIN"] // submenu Office/Store hanya untuk admin
+};
+
 function registerRoutes() {
   registerRoute("/login", renderLoginPage);
   registerRoute("/dashboard", withAuth(renderDashboardPage));
@@ -104,12 +118,34 @@ function registerRoutes() {
   getFlatRoutes().forEach((route) => {
     if (route.key === "dashboard" || route.key === "cctv") return; // sudah didaftarkan di atas
 
-    // Halaman Manage PC (Kaspersky / ITAM / KACE) dengan TAB Office/Store
-    // di dalam halaman - hanya untuk ADMIN.
+    // Halaman PARENT menu bersubmenu (AHO / Manage PC / Checklist):
+    // rangkuman data submenu, bukan placeholder coming-soon.
+    if (
+      route.parentKey === null &&
+      Object.prototype.hasOwnProperty.call(GROUP_SUMMARY_ROLES, route.key)
+    ) {
+      const roles = GROUP_SUMMARY_ROLES[route.key];
+
+      registerRoute(
+        route.path,
+        roles
+          ? withRole(roles, (container) => renderGroupSummaryPage(container, route))
+          : withAuth((container) => renderGroupSummaryPage(container, route))
+      );
+      return;
+    }
+
+    // Halaman modul di bawah menu Manage PC (Kaspersky / ITAM / KACE)
+    // dengan TAB Office/Store di dalam halaman. ADMIN bebas memilih tab;
+    // IT_OFFICE / IT_STORE langsung ke lingkup miliknya - TANPA
+    // pembagian Office/Store karena login sudah sesuai jabatan.
     if (route.parentKey === "manage-pc") {
       registerRoute(
         route.path,
-        withRole(["ADMIN"], (container) => renderManagePcPage(container, route))
+        withRole(
+          ["ADMIN", "IT_OFFICE", "IT_STORE"],
+          (container) => renderManagePcPage(container, route)
+        )
       );
       return;
     }

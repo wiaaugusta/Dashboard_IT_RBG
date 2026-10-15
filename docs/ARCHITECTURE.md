@@ -155,23 +155,37 @@ Menu utama aplikasi:
 - Dashboard
 - KPI
 - AHO
-- Manage PC (admin-only)
+- Manage PC
 - NMS
 - CCTV
 - Checklist
 
-Beberapa menu memiliki grup / submenu.
+Beberapa menu memiliki grup / submenu. Menu utama yang memiliki
+submenu juga punya HALAMAN SENDIRI (parent link / clickable
+dropdown): label/icon parent membuka halaman rangkuman data
+submenu, sedangkan chevron tetap membuka/menutup submenu.
 
-Contoh:
-
-AHO
+AHO → /aho (rangkuman SLA AHO Store & SLA Form Hardware)
 ├── SLA AHO Store
 └── SLA Form Hardware
 
-Manage PC (admin-only)
+Manage PC → /manage-pc (rangkuman Kaspersky / ITAM / KACE)
 ├── Kaspersky → /manage-pc/kaspersky
 ├── ITAM → /manage-pc/itam
 └── KACE → /manage-pc/kace
+
+Checklist → /checklist (rangkuman Office & Store, khusus ADMIN)
+├── Office → /checklist/office
+└── Store → /checklist/store
+
+Halaman parent dirender oleh js/pages/group-summary.js - satu
+halaman generik untuk semua menu parent, sumber data submenu
+tetap nav-config.js.
+
+Akses Manage PC: semua role IT. ADMIN bebas memilih scope;
+login Office/Store membukanya TANPA pembagian Office/Store -
+lingkup data otomatis sesuai jabatan (IT Store → Store,
+IT Office → Office).
 
 Scope Office/Store tidak lagi menjadi submenu sidebar - menjadi
 tab dalam halaman dengan deep link ?scope=office|store
@@ -200,7 +214,9 @@ Contoh:
 
 js/pages/
 ├── dashboard.js
-└── manage-pc.js (Kaspersky / ITAM / KACE + tab Office/Store)
+├── manage-pc.js (Kaspersky / ITAM / KACE + tab Office/Store)
+└── group-summary.js (halaman parent menu bersubmenu:
+    AHO / Manage PC / Checklist - rangkuman data submenu)
 
 js/modules/
 ├── cctv.js

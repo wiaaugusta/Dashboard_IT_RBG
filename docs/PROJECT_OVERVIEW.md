@@ -196,7 +196,8 @@ Pada tahap awal modul KPI belum perlu memiliki data.
 
 ## AHO
 
-Modul AHO memiliki submenu:
+Modul AHO memiliki submenu. Menu utama AHO juga punya halaman parent
+sendiri (`/aho`) berisi rangkuman kedua submenu-nya.
 
 ### SLA AHO STORE
 
@@ -237,11 +238,18 @@ Contoh informasi:
 ## Manage PC
 
 Menu utama **Manage PC** menggabungkan tiga modul pengelolaan PC:
-**Kaspersky**, **ITAM**, dan **KACE**. Semuanya hanya untuk login ADMIN.
+**Kaspersky**, **ITAM**, dan **KACE**. Menu ini TIDAK dihilangkan untuk
+login Office/Store - mereka membukanya TANPA pembagian Office/Store
+karena login sudah sesuai jabatan (lingkup data otomatis: IT Store →
+Store, IT Office → Office). ADMIN bebas memilih Office/Store.
 
 Perbedaan lingkup **Office** dan **Store** tidak lagi menjadi submenu
 sidebar - keduanya menjadi **tab di dalam halaman** masing-masing modul
 (pola dashboard modern) supaya sidebar tetap ringkas.
+
+Menu utama Manage PC juga punya halaman parent sendiri (`/manage-pc`)
+berisi rangkuman data ketiga modulnya (pola yang sama diterapkan pada
+menu AHO dan Checklist).
 
 ### Kaspersky
 
@@ -349,7 +357,10 @@ Backend menggunakan Google Apps Script.
 
 ## Checklist
 
-Modul Checklist memiliki submenu:
+Modul Checklist memiliki submenu. Menu utama Checklist juga punya
+halaman parent sendiri (`/checklist`) berisi rangkuman kedua
+submenu-nya (khusus ADMIN - login Office/Store langsung membuka
+checklist miliknya tanpa pemilihan lingkup).
 
 ### Office
 

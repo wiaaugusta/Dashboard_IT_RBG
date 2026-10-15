@@ -3,6 +3,13 @@
  * -------------------------------------------------------
  * Sumber tunggal struktur navigasi.
  *
+ * MENU UTAMA BERSUBMENU (AHO / Manage PC / Checklist):
+ * - Menu utama juga punya HALAMAN SENDIRI (item.path) berisi RANGKUMAN
+ *   data submenu-nya (lihat js/pages/group-summary.js). Di sidebar,
+ *   label/icon parent menjadi link ke halaman itu, sedangkan chevron
+ *   tetap berfungsi membuka/menutup submenu (parent link / clickable
+ *   dropdown).
+ *
  * ADMIN:
  * - Melihat seluruh menu.
  * - Manage PC: submenu Kaspersky / ITAM / KACE. Scope Office/Store TIDAK
@@ -14,9 +21,12 @@
  * IT_STORE / IT_OFFICE:
  * - Checklist TANPA submenu - login sudah menentukan halamannya
  *   (pathByRole), klik menu langsung membuka checklist yang sesuai.
+ * - Menu Manage PC TIDAK dihilangkan, tetapi TANPA pembagian
+ *   Office/Store karena login sudah sesuai jabatan: halaman langsung
+ *   memakai lingkup miliknya (IT Store -> Store, IT Office -> Office,
+ *   tanpa pemilihan scope).
  *
  * IT_STORE:
- * - Tidak melihat menu Manage PC (Kaspersky/ITAM/KACE)
  * - Tetap melihat CCTV
  *
  * IT_OFFICE:
@@ -41,8 +51,11 @@ export const NAV_ITEMS = [
   },
 
   {
+    /* Menu utama punya halaman sendiri (/aho) - rangkuman dari submenu
+       SLA AHO Store & SLA Form Hardware (js/pages/group-summary.js). */
     key: "aho",
     label: "AHO",
+    path: "/aho",
     icon: "aho",
     roles: null,
     children: [
@@ -65,32 +78,37 @@ export const NAV_ITEMS = [
     /* Manage PC menggantikan menu Kaspersky + ITAM yang sebelumnya
        berdiri sendiri; KACE juga bergabung ke sini. Scope Office/Store
        yang dulu menjadi submenu kini menjadi TAB di dalam halaman
-       (lihat js/pages/manage-pc.js) supaya sidebar tetap ringkas. */
+       (lihat js/pages/manage-pc.js) supaya sidebar tetap ringkas.
+       Menu TIDAK dihilangkan untuk login Office/Store - mereka juga
+       bisa membukanya TANPA pembagian Office/Store karena login sudah
+       sesuai jabatan (halaman langsung memakai lingkup miliknya,
+       tanpa pemilihan scope). */
     key: "manage-pc",
     label: "Manage PC",
+    path: "/manage-pc",
     icon: "pc",
-    roles: ["ADMIN"],
+    roles: ["ADMIN", "IT_OFFICE", "IT_STORE"],
     children: [
       {
         key: "manage-pc-kaspersky",
         label: "Kaspersky",
         path: "/manage-pc/kaspersky",
         icon: "kaspersky",
-        roles: ["ADMIN"]
+        roles: ["ADMIN", "IT_OFFICE", "IT_STORE"]
       },
       {
         key: "manage-pc-itam",
         label: "ITAM",
         path: "/manage-pc/itam",
         icon: "itam",
-        roles: ["ADMIN"]
+        roles: ["ADMIN", "IT_OFFICE", "IT_STORE"]
       },
       {
         key: "manage-pc-kace",
         label: "KACE",
         path: "/manage-pc/kace",
         icon: "kace",
-        roles: ["ADMIN"]
+        roles: ["ADMIN", "IT_OFFICE", "IT_STORE"]
       }
     ]
   },
@@ -112,8 +130,12 @@ export const NAV_ITEMS = [
   },
 
   {
+    /* Menu utama punya halaman sendiri (/checklist) - rangkuman submenu
+       Office & Store (js/pages/group-summary.js); halaman parent ini
+       khusus ADMIN karena submenu Office/Store hanya untuk admin. */
     key: "checklist",
     label: "Checklist",
+    path: "/checklist",
     icon: "checklist",
     roles: null,
     /* Submenu Office/Store HANYA untuk ADMIN (login admin bisa melihat
@@ -166,12 +188,14 @@ export const BOTTOM_NAV_ITEMS = [
   {
     key: "checklist",
     label: "Checklist",
-    path: "/checklist/store",
+    path: "/checklist",
     icon: "checklist",
     roles: null,
-    /* Bottom nav mobile: role menentukan halaman checklist-nya
-       (IT_OFFICE -> office, lainnya -> store) tanpa submenu. */
+    /* Bottom nav mobile: ADMIN -> halaman parent (/checklist, rangkuman
+       submenu). Role menentukan halaman checklist-nya (IT_STORE ->
+       store, IT_OFFICE -> office) tanpa pembagian Office/Store. */
     pathByRole: {
+      IT_STORE: "/checklist/store",
       IT_OFFICE: "/checklist/office"
     }
   },

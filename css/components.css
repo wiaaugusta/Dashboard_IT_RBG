@@ -2682,3 +2682,289 @@
     margin-left: 0;
   }
 }
+/* =========================================================
+   GROUP SUMMARY PAGE (halaman parent menu bersubmenu)
+   Halaman rangkuman data submenu untuk menu utama yang punya
+   submenu (AHO / Manage PC / Checklist). Menu utama di sidebar
+   menjadi link ke halaman ini (js/pages/group-summary.js).
+   ========================================================= */
+
+.gsp-page {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Hero ---------- */
+
+.gsp-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--space-7);
+  margin-bottom: var(--space-5);
+  border-radius: var(--radius-2xl);
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% -20%, rgba(125, 211, 252, 0.30), transparent 46%),
+    radial-gradient(circle at 0% 150%, rgba(96, 165, 250, 0.35), transparent 55%),
+    linear-gradient(135deg, #09295f 0%, #104f9f 55%, #0878d1 100%);
+  box-shadow: 0 20px 45px rgba(9, 41, 95, 0.25);
+}
+
+.gsp-hero--blue {
+  /* default: gradient biru di .gsp-hero */
+}
+
+.gsp-hero--amber {
+  background:
+    radial-gradient(circle at 88% -20%, rgba(253, 230, 138, 0.28), transparent 46%),
+    radial-gradient(circle at 0% 150%, rgba(245, 158, 11, 0.30), transparent 55%),
+    linear-gradient(135deg, #3f2d0a 0%, #7c4a03 55%, #b45309 100%);
+  box-shadow: 0 20px 45px rgba(63, 45, 10, 0.28);
+}
+
+.gsp-hero--purple {
+  background:
+    radial-gradient(circle at 88% -20%, rgba(196, 181, 253, 0.35), transparent 46%),
+    radial-gradient(circle at 0% 150%, rgba(99, 102, 241, 0.45), transparent 55%),
+    linear-gradient(135deg, #14123a 0%, #23205f 55%, #4340a8 100%);
+  box-shadow: 0 20px 45px rgba(20, 18, 58, 0.28);
+}
+
+/* Grid pattern halus, konsisten dengan hero CCTV / Manage PC */
+.gsp-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+
+.gsp-hero__content {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.gsp-hero__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-caption);
+  opacity: 0.85;
+}
+
+.gsp-hero__crumbs a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.gsp-hero__crumbs a:hover {
+  text-decoration: underline;
+}
+
+.gsp-hero__crumb-sep {
+  display: flex;
+  opacity: 0.55;
+}
+
+.gsp-hero__crumb-current {
+  font-weight: 600;
+}
+
+.gsp-hero__title {
+  margin: 0 0 6px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.gsp-hero__subtitle {
+  margin: 0;
+  max-width: 560px;
+  font-size: var(--font-size-small);
+  opacity: 0.85;
+}
+
+.gsp-hero__badge {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.14);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gsp-hero__badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.25);
+}
+
+/* ---------- Kartu rangkuman per submenu ---------- */
+
+.gsp-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.gsp-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.gsp-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--color-primary-soft);
+  box-shadow: var(--shadow-lg);
+}
+
+.gsp-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.gsp-card__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 43px;
+  height: 43px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+/* Palet aksen konsisten dengan kartu dashboard (token soft per-modul) */
+.gsp-card--blue .gsp-card__icon {
+  color: var(--color-accent-blue);
+  background: var(--color-accent-blue-soft);
+}
+
+.gsp-card--teal .gsp-card__icon {
+  color: var(--color-accent-teal);
+  background: var(--color-accent-teal-soft);
+}
+
+.gsp-card--amber .gsp-card__icon {
+  color: var(--color-accent-amber);
+  background: var(--color-accent-amber-soft);
+}
+
+.gsp-card--purple .gsp-card__icon {
+  color: var(--color-accent-purple);
+  background: var(--color-accent-purple-soft);
+}
+
+.gsp-card__status {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--color-background-offwhite);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.gsp-card__status--active {
+  background: #e7f8ef;
+  color: #059669;
+}
+
+.gsp-card__body h4 {
+  margin: 0 0 5px;
+  font-size: var(--font-size-body);
+  font-weight: 600;
+}
+
+.gsp-card__body p {
+  margin: 0;
+  max-width: 260px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.gsp-card__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  margin-top: auto;
+}
+
+.gsp-card__stat {
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-background-offwhite);
+}
+
+.gsp-card__stat small {
+  display: block;
+  margin-bottom: 3px;
+  font-size: var(--font-size-caption);
+  color: var(--color-text-muted);
+}
+
+.gsp-card__stat strong {
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+}
+
+.gsp-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--font-size-caption);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.gsp-card:hover .gsp-card__footer {
+  color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+  .gsp-hero {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .gsp-hero__title {
+    font-size: 22px;
+  }
+
+  .gsp-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+

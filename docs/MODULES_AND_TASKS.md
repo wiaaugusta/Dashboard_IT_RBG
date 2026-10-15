@@ -78,10 +78,15 @@ Platform memiliki menu utama:
 
 Catatan menu Manage PC:
 
-- Menggabungkan tiga modul PC dalam satu menu admin-only: Kaspersky, ITAM, dan KACE.
+- Menggabungkan tiga modul PC dalam satu menu: Kaspersky, ITAM, dan KACE.
 - Path: `/manage-pc/kaspersky`, `/manage-pc/itam`, `/manage-pc/kace`.
 - Submenu Office/Store diganti tab dalam halaman dengan deep link `?scope=office|store`.
 - Akses scope: Admin (office + store), IT Office, IT Store sesuai role.
+- Menu TIDAK dihilangkan untuk login Office/Store: mereka membuka
+  halaman yang sama TANPA pembagian Office/Store karena login sudah
+  sesuai jabatan (lingkup otomatis, tanpa pemilihan scope).
+- Menu utama Manage PC juga punya halaman parent `/manage-pc` berisi
+  rangkuman data submenu (parent link / clickable dropdown).
 
 
 ---
