@@ -227,9 +227,15 @@ function renderSummary(data, moduleKey, isLoading = false) {
     const d = data.data;
     total = d.totalUser || 0;
 
+    // Kasus untuk Kaspersky (menambah Versi Kaspersky)
     if (moduleKey === "manage-pc-kaspersky") {
       managed = d.kaspersky?.ok || 0;
       nok = d.kaspersky?.nok || 0;
+      // Perlu tambahan khusus untuk Versi Kaspersky agar muncul
+      // Tapi kita ikuti struktur 3 kartu statis: Total, Managed, NOK
+      // Jika perlu tampilan OK/NOK untuk Versi Kaspersky, 
+      // mungkin perlu kartu statistik keempat atau modifikasi.
+      // Untuk saat ini, ikuti pola 3 kartu sesuai permintaan "samakan presis".
     } else if (moduleKey === "manage-pc-itam") {
       managed = d.itam?.ok || 0;
       nok = d.itam?.nok || 0;
