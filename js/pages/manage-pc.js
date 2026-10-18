@@ -136,28 +136,43 @@ function escapeHtml(value) {
    BAGIAN HALAMAN
    ============================================================== */
 
-function renderHero(module) {
+function renderPageHeader(module, accessibleScopes, activeScope) {
+  const scopeTabs = accessibleScopes.length > 1
+    ? `
+      <nav class="mpc-scope-tabs" role="tablist" aria-label="Lingkup Manage PC">
+        ${accessibleScopes.map((scopeKey) => {
+          const meta = SCOPE_META[scopeKey];
+          const isActive = scopeKey === activeScope;
+          return `
+            <a
+              href="#${module.path}?scope=${scopeKey}"
+              class="mpc-scope-tab${isActive ? " is-active" : ""}"
+              role="tab"
+              aria-selected="${isActive}"
+              ${isActive ? 'aria-current="page"' : ""}
+            >
+              ${icon(meta.icon, { size: 17 })}
+              <span>${escapeHtml(meta.label)}</span>
+            </a>
+          `;
+        }).join("")}
+      </nav>
+    `
+    : `
+      <div class="mpc-scope-tabs mpc-scope-tabs--single" aria-label="Lingkup Manage PC">
+        ${icon(SCOPE_META[activeScope].icon, { size: 17 })}
+        <span>${escapeHtml(SCOPE_META[activeScope].label)}</span>
+      </div>
+    `;
+
   return `
-    <section class="mpc-hero">
-      <div class="mpc-hero__content">
-        <div class="mpc-hero__icon">${icon(module.icon, { size: 26 })}</div>
-        <div class="mpc-hero__text">
-          <div class="mpc-hero__crumbs">
-            <a href="#/dashboard">Home</a>
-            <span class="mpc-hero__crumb-sep">${icon("chevron", { size: 12 })}</span>
-            <span>Manage PC</span>
-            <span class="mpc-hero__crumb-sep">${icon("chevron", { size: 12 })}</span>
-            <span class="mpc-hero__crumb-current">${escapeHtml(module.label)}</span>
-          </div>
-          <h2 class="mpc-hero__title">${escapeHtml(module.title)}</h2>
-          <p class="mpc-hero__subtitle">${escapeHtml(module.subtitle)}</p>
-        </div>
+    <header class="mpc-page-header">
+      <div class="mpc-page-header__title">
+        <h2>Manage PC</h2>
+        <p>${escapeHtml(SCOPE_META[activeScope].label)} · ${escapeHtml(activeScope === "store" ? "Data Store menyusul" : "Endpoint, asset, dan deployment")}</p>
       </div>
-      <div class="mpc-hero__badge">
-        <span class="mpc-hero__badge-dot"></span>
-        ${escapeHtml(module.kicker)}
-      </div>
-    </section>
+      ${scopeTabs}
+    </header>
   `;
 }
 
@@ -168,7 +183,7 @@ function renderHero(module) {
  * - kanan : segmented control Office/Store (ADMIN) atau chip statis
  *           untuk role yang hanya punya satu scope.
  */
-function renderControlBar(module, accessibleScopes, activeScope) {
+function renderControlBar(module, activeScope) {
   const moduleTabs = Object.values(MANAGE_PC_MODULES)
     .map((m) => `
       <a
@@ -182,47 +197,19 @@ function renderControlBar(module, accessibleScopes, activeScope) {
     `)
     .join("");
 
-  let scopeControl;
-
-  if (accessibleScopes.length > 1) {
-    const scopeTabs = accessibleScopes
-      .map((scopeKey) => {
-        const meta = SCOPE_META[scopeKey];
-        const isActive = scopeKey === activeScope;
-        return `
-          <a
-            href="#${module.path}?scope=${scopeKey}"
-            class="mpc-scope-tab${isActive ? " is-active" : ""}"
-            role="tab"
-            aria-selected="${isActive}"
-          >
-            ${icon(meta.icon, { size: 15 })}
-            <span>${escapeHtml(meta.label)}</span>
-          </a>
-        `;
-      })
-      .join("");
-
-    scopeControl = `
-      <div class="mpc-scope-switch" role="tablist" aria-label="Lingkup data">
-        ${scopeTabs}
-      </div>
-    `;
-  } else {
-    const meta = SCOPE_META[accessibleScopes[0]];
-    scopeControl = `
-      <span class="mpc-scope-chip">
-        ${icon(meta.icon, { size: 15 })}
-        <span>Lingkup ${escapeHtml(meta.label)}</span>
-      </span>
-    `;
-  }
-
   return `
     <div class="mpc-controlbar">
       <nav class="mpc-module-tabs" aria-label="Modul Manage PC">${moduleTabs}</nav>
-      ${scopeControl}
     </div>
+  `;
+}
+
+function renderScopePending() {
+  return `
+    <section class="mpc-summary mpc-summary--pending" data-mpc-summary aria-live="polite">
+      <span class="mpc-summary__pending-icon">${icon("info", { size: 17 })}</span>
+      <p>Struktur halaman Store sudah siap. Data Store akan ditampilkan setelah sumber datanya dihubungkan.</p>
+    </section>
   `;
 }
 
@@ -408,9 +395,9 @@ export function renderManagePcPage(container, routeInfo) {
 
   const contentHtml = `
     <div class="mpc-page">
-      ${renderHero(module)}
-      ${renderControlBar(module, accessibleScopes, activeScope)}
-      ${renderSummary(null)}
+      ${renderPageHeader(module, accessibleScopes, activeScope)}
+      ${renderControlBar(module, activeScope)}
+      ${activeScope === "store" ? renderScopePending() : renderSummary(null)}
       ${renderScopePanel(module, activeScope)}
     </div>
   `;
@@ -420,6 +407,8 @@ export function renderManagePcPage(container, routeInfo) {
     pageTitle: `Manage PC · ${module.label}`,
     contentHtml
   });
+
+  if (activeScope !== "office") return;
 
   loadManagePcSummary(activeScope, { sessionToken: session.sessionToken })
     .then((result) => {

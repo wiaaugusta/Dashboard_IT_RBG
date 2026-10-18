@@ -25,6 +25,9 @@ export function renderShell(container, options) {
 
   const parentKey = findParentKey(options.activeKey);
   if (parentKey) expandedGroups.add(parentKey);
+  else if (NAV_ITEMS.some((item) => item.key === options.activeKey && item.children)) {
+    expandedGroups.add(options.activeKey);
+  }
 
   container.innerHTML = `
     <div class="app-shell">
@@ -154,7 +157,7 @@ function renderNavItem(item, role, activeKey) {
          dilebarkan/dilipat tanpa berpindah halaman.
        - Saat berada di halaman parent, grup otomatis terbuka dan item
          parent ditandai aktif. */
-    const isExpanded = expandedGroups.has(item.key) || item.key === activeKey;
+    const isExpanded = expandedGroups.has(item.key);
 
     return `
       <div class="app-nav-group ${isExpanded ? "is-expanded" : ""}">
@@ -163,6 +166,7 @@ function renderNavItem(item, role, activeKey) {
             href="#${item.path}"
             class="app-nav-item__main"
             data-nav-key="${item.key}"
+            data-group-link="${item.key}"
           >
             <span class="app-nav-item__icon">${icon(item.icon, { size: 18 })}</span>
             <span class="app-nav-item__label">${escapeHtml(item.label)}</span>
@@ -172,7 +176,7 @@ function renderNavItem(item, role, activeKey) {
             class="app-nav-item__toggle"
             data-group-toggle="${item.key}"
             aria-expanded="${isExpanded ? "true" : "false"}"
-            aria-label="Buka submenu ${escapeHtml(item.label)}"
+            aria-label="${isExpanded ? "Tutup" : "Buka"} submenu ${escapeHtml(item.label)}"
           >
             <span class="app-nav-item__chevron">${icon("chevron", { size: 15 })}</span>
           </button>
@@ -363,15 +367,22 @@ function bindShellEvents(container) {
   container.querySelectorAll("[data-group-toggle]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.getAttribute("data-group-toggle");
-      if (expandedGroups.has(key)) {
-        expandedGroups.delete(key);
-      } else {
-        expandedGroups.add(key);
+      toggleNavGroup(key, btn.closest(".app-nav-group"), btn);
+    });
+  });
+
+  container.querySelectorAll("[data-group-link]").forEach((link) => {
+    link.addEventListener("click", (event) => {
+      const key = link.getAttribute("data-group-link");
+      const group = link.closest(".app-nav-group");
+      const toggle = group?.querySelector("[data-group-toggle]");
+      if (group?.querySelector(".app-nav-item--group.is-active")) {
+        event.preventDefault();
+        toggleNavGroup(key, group, toggle);
+        return;
       }
 
-      const isExpanded = expandedGroups.has(key);
-      btn.closest(".app-nav-group").classList.toggle("is-expanded", isExpanded);
-      btn.setAttribute("aria-expanded", String(isExpanded));
+      expandedGroups.add(key);
     });
   });
 
@@ -379,6 +390,19 @@ function bindShellEvents(container) {
     logoutBtn.addEventListener("click", () => performLogout(logoutBtn));
   }
 
+}
+
+function toggleNavGroup(key, group, button) {
+  const isExpanded = !expandedGroups.has(key);
+  if (isExpanded) expandedGroups.add(key);
+  else expandedGroups.delete(key);
+
+  if (group) group.classList.toggle("is-expanded", isExpanded);
+  if (button) {
+    button.setAttribute("aria-expanded", String(isExpanded));
+    const label = button.getAttribute("aria-label") || "submenu";
+    button.setAttribute("aria-label", label.replace(/^(Buka|Tutup)/, isExpanded ? "Tutup" : "Buka"));
+  }
 }
 
 async function performLogout(button) {
