@@ -2836,7 +2836,7 @@
   flex-direction: column;
   gap: var(--space-3);
   min-width: 0;
-  padding: var(--space-4);
+  padding: var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -2912,29 +2912,32 @@
 
 .gsp-card__stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
+  grid-template-columns: repeat(3, minmax(58px, 1fr));
+  gap: 3px;
   margin-top: auto;
 }
 
 .gsp-card__stat {
   min-width: 0;
-  padding: 7px 6px;
+  padding: 7px 2px;
   border-radius: var(--radius-md);
   background: var(--color-background-offwhite);
+  text-align: center;
 }
 
 .gsp-card__stat small {
   display: block;
   margin-bottom: 3px;
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.25;
   color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .gsp-card__stat strong {
   font-size: var(--font-size-small);
   color: var(--color-text);
+  white-space: nowrap;
 }
 
 .gsp-card__footer {

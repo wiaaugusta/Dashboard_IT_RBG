@@ -59,17 +59,17 @@ const GROUP_META = {
       "manage-pc-kaspersky": {
         accent: "blue",
         description: "Endpoint Security - proteksi, update database & compliance.",
-        stats: ["Total Device", "Device Manage", "Not Manage"]
+        stats: ["Total Device", "Manage", "Not Manage"]
       },
       "manage-pc-itam": {
         accent: "teal",
         description: "IT Asset Management - inventaris & lifecycle aset.",
-        stats: ["Total Device", "Device Manage", "Not Manage"]
+        stats: ["Total Device", "Manage", "Not Manage"]
       },
       "manage-pc-kace": {
         accent: "purple",
         description: "Systems Deployment - deployment OS, agent & otomasi.",
-        stats: ["Total Device", "Device Manage", "Not Manage"]
+        stats: ["Total Device", "Manage", "Not Manage"]
       }
     }
   },

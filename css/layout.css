@@ -3265,7 +3265,7 @@ html, body {
   ----------------------------------------- */
 
   .app-sidebar:hover {
-    width: 252px !important;
+    width: 224px !important;
 
     box-shadow:
       12px 0 35px rgba(15,23,42,.08);
@@ -3959,7 +3959,7 @@ html, body {
 
   .app-sidebar:hover {
 
-    width: 252px !important;
+    width: 224px !important;
 
     box-shadow:
       12px 0 38px
@@ -4846,7 +4846,7 @@ html, body {
 
   .app-sidebar.is-expanded {
 
-    width: 252px !important;
+    width: 224px !important;
 
     box-shadow:
       12px 0 40px
@@ -5121,7 +5121,7 @@ html, body {
 
   .app-sidebar.is-expanded:hover {
 
-    width: 252px !important;
+    width: 224px !important;
   }
 
 
