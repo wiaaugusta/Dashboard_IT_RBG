@@ -225,6 +225,31 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
       </div>
     `)
     .join("");
+  const secondaryStat = showManageStats && child.key === "manage-pc-kaspersky"
+    ? {
+        label: "Versi Kaspersky",
+        ok: summaryData?.kaspersky?.versionOk,
+        nok: summaryData?.kaspersky?.versionNok
+      }
+    : showManageStats && child.key === "manage-pc-itam"
+      ? {
+          label: "Privilege ITAM",
+          ok: summaryData?.itam?.privilegeOk,
+          nok: summaryData?.itam?.privilegeNok
+        }
+      : null;
+  const secondaryStats = secondaryStat
+    ? `
+      <div class="gsp-card__secondary-stats">
+        <small>${escapeHtml(secondaryStat.label)}</small>
+        <span>
+          ${secondaryStat.ok == null ? "&mdash;" : Number(secondaryStat.ok).toLocaleString()} OK
+          <span aria-hidden="true">·</span>
+          ${secondaryStat.nok == null ? "&mdash;" : Number(secondaryStat.nok).toLocaleString()} NOK
+        </span>
+      </div>
+    `
+    : "";
 
   return `
     <a
@@ -244,6 +269,7 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
       </div>
 
       <div class="gsp-card__stats">${stats}</div>
+      ${secondaryStats}
 
       <div class="gsp-card__footer">
         <span>Buka halaman ${escapeHtml(child.label)}</span>
