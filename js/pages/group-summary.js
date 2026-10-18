@@ -93,16 +93,6 @@ const GROUP_META = {
   }
 };
 
-/* Submenu yang sudah punya halaman nyata (bukan coming soon) - kartunya
-   ditandai "Tersedia". Tambahkan key di sini saat modul baru selesai. */
-const AVAILABLE_CHILD_KEYS = new Set([
-  "manage-pc-kaspersky",
-  "manage-pc-kaspersky-version",
-  "manage-pc-itam",
-  "manage-pc-itam-privilege",
-  "manage-pc-kace"
-]);
-
 const MANAGE_PC_EXTRA_CARDS = {
   "manage-pc-kaspersky-version": {
     key: "manage-pc-kaspersky-version",
@@ -252,7 +242,6 @@ function renderHero(group, meta) {
 }
 
 function renderSummaryCard(child, childMeta = {}, summaryData = null, showManageStats = false) {
-  const isAvailable = AVAILABLE_CHILD_KEYS.has(child.key);
   const moduleData = child.key === "manage-pc-kaspersky-version"
     ? {
         ok: summaryData?.kaspersky?.versionOk,
@@ -281,28 +270,29 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
       </div>
     `)
     .join("");
+  const pageLabel = child.key === "manage-pc-kaspersky-version"
+    ? "Kaspersky"
+    : child.key === "manage-pc-itam-privilege"
+      ? "ITAM"
+      : child.label;
 
   return `
     <a
       href="#${child.path}"
       class="gsp-card gsp-card--${childMeta.accent || "blue"}"
     >
-      <div class="gsp-card__top">
+      <div class="gsp-card__header">
         <div class="gsp-card__icon">${icon(child.icon, { size: 21 })}</div>
-        <span class="gsp-card__status ${isAvailable ? "gsp-card__status--active" : ""}">
-          ${isAvailable ? "Tersedia" : "Dalam Pengembangan"}
-        </span>
-      </div>
-
-      <div class="gsp-card__body">
-        <h4>${escapeHtml(child.label)}</h4>
-        <p>${escapeHtml(childMeta.description || "")}</p>
+        <div class="gsp-card__body">
+          <h4>${escapeHtml(child.label)}</h4>
+          <p>${escapeHtml(childMeta.description || "")}</p>
+        </div>
       </div>
 
       <div class="gsp-card__stats">${stats}</div>
 
       <div class="gsp-card__footer">
-        <span>Buka halaman ${escapeHtml(child.label)}</span>
+        <span>Buka halaman ${escapeHtml(pageLabel)}</span>
         ${icon("arrow-right", { size: 16 })}
       </div>
     </a>
