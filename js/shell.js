@@ -15,6 +15,7 @@ import { icon } from "./icons.js";
 
 let expandedGroups = new Set();
 let bottomNavAutoHideCleanup = null;
+let desktopSidebarHovered = false;
 
 export function renderShell(container, options) {
   const session = getSession();
@@ -23,6 +24,7 @@ export function renderShell(container, options) {
     return;
   }
 
+  const keepSidebarExpanded = window.innerWidth >= 769 && desktopSidebarHovered;
   const parentKey = findParentKey(options.activeKey);
   if (parentKey) expandedGroups.add(parentKey);
   else if (NAV_ITEMS.some((item) => item.key === options.activeKey && item.children)) {
@@ -30,8 +32,8 @@ export function renderShell(container, options) {
   }
 
   container.innerHTML = `
-    <div class="app-shell">
-      <aside class="app-sidebar" id="appSidebar">
+    <div class="app-shell ${keepSidebarExpanded ? "sidebar-expanded" : ""}">
+      <aside class="app-sidebar ${keepSidebarExpanded ? "is-expanded" : ""}" id="appSidebar">
 
           <div class="app-sidebar__brand">
             <div class="app-sidebar__mark">IT</div>
@@ -111,7 +113,21 @@ export function renderShell(container, options) {
     ${renderBottomNav(session.role, options.activeKey)}
   `;
 
-  bindShellEvents(container);
+  bindShellEvents(container, options.activeKey);
+
+  const initiallyExpandedGroups = Array.from(
+    container.querySelectorAll(".app-nav-group.is-expanded")
+  );
+  initiallyExpandedGroups.forEach((group) => group.classList.remove("is-expanded"));
+  if (initiallyExpandedGroups.length > 0) {
+    void container.offsetHeight;
+    window.requestAnimationFrame(() => {
+      initiallyExpandedGroups.forEach((group) => {
+        const key = group.querySelector("[data-group-link]")?.getAttribute("data-group-link");
+        if (key && expandedGroups.has(key)) group.classList.add("is-expanded");
+      });
+    });
+  }
 
   const contentEl = container.querySelector("#appContent");
   if (options.onContentMount && contentEl) {
@@ -242,7 +258,7 @@ function renderBottomNav(role, activeKey) {
   return `<nav class="app-bottom-nav" id="appBottomNav">${itemsHtml}</nav>`;
 }
 
-function bindShellEvents(container) {
+function bindShellEvents(container, activeKey) {
   const sidebar = container.querySelector("#appSidebar");
   const overlay = container.querySelector("#appDrawerOverlay");
   const hamburgerBtn = container.querySelector("#hamburgerBtn");
@@ -262,6 +278,7 @@ function bindShellEvents(container) {
       if (window.innerWidth < 769) return;
 
       clearTimeout(sidebarCloseTimer);
+      desktopSidebarHovered = true;
 
       sidebar.classList.add("is-expanded");
       sidebar.closest(".app-shell")?.classList.add("sidebar-expanded");
@@ -281,6 +298,7 @@ function bindShellEvents(container) {
 
       sidebarCloseTimer = setTimeout(() => {
 
+        desktopSidebarHovered = false;
         sidebar.classList.remove("is-expanded");
         sidebar.closest(".app-shell")
           ?.classList.remove("sidebar-expanded");
@@ -400,7 +418,6 @@ function bindShellEvents(container) {
 
     group.addEventListener("mouseleave", () => {
       if (window.innerWidth < 769) return;
-      const activeKey = options.activeKey;
       const parentKey = findParentKey(activeKey);
       if (key !== activeKey && key !== parentKey) {
         expandedGroups.delete(key);
@@ -432,6 +449,7 @@ function toggleNavGroup(key, group, button) {
 
 async function performLogout(button) {
   button.disabled = true;
+  desktopSidebarHovered = false;
   const logoutRequest = logout();
   navigate("/login");
   await logoutRequest;

@@ -1470,13 +1470,27 @@ html, body {
 }
 
 .app-nav-submenu {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition:
+    max-height .38s cubic-bezier(.22, 1, .36, 1),
+    opacity .25s ease,
+    visibility 0s linear .38s;
 }
 
 .app-nav-group.is-expanded .app-nav-submenu {
-  display: flex;
+  max-height: 250px;
+  opacity: 1;
+  visibility: visible;
+  transition:
+    max-height .38s cubic-bezier(.22, 1, .36, 1),
+    opacity .25s ease,
+    visibility 0s;
 }
 
 .app-sidebar__footer {
@@ -5356,3 +5370,8 @@ html, body {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .app-nav-submenu {
+    transition: none !important;
+  }
+}
