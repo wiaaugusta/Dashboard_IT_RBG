@@ -25,12 +25,6 @@ export function renderShell(container, options) {
   }
 
   const keepSidebarExpanded = window.innerWidth >= 769 && desktopSidebarHovered;
-  const parentKey = findParentKey(options.activeKey);
-  if (parentKey) expandedGroups.add(parentKey);
-  else if (NAV_ITEMS.some((item) => item.key === options.activeKey && item.children)) {
-    expandedGroups.add(options.activeKey);
-  }
-
   container.innerHTML = `
     <div class="app-shell ${keepSidebarExpanded ? "sidebar-expanded" : ""}">
       <aside class="app-sidebar ${keepSidebarExpanded ? "is-expanded" : ""}" id="appSidebar">
@@ -113,7 +107,7 @@ export function renderShell(container, options) {
     ${renderBottomNav(session.role, options.activeKey)}
   `;
 
-  bindShellEvents(container, options.activeKey);
+  bindShellEvents(container);
 
   const initiallyExpandedGroups = Array.from(
     container.querySelectorAll(".app-nav-group.is-expanded")
@@ -191,13 +185,14 @@ function renderNavItem(item, role, activeKey) {
             type="button"
             class="app-nav-item__toggle"
             data-group-toggle="${item.key}"
+            aria-controls="${item.key}-submenu"
             aria-expanded="${isExpanded ? "true" : "false"}"
             aria-label="${isExpanded ? "Tutup" : "Buka"} submenu ${escapeHtml(item.label)}"
           >
             <span class="app-nav-item__chevron">${icon("chevron", { size: 15 })}</span>
           </button>
         </div>
-        <div class="app-nav-submenu">
+        <div class="app-nav-submenu" id="${item.key}-submenu">
           ${visibleChildren.map((child) => renderLeafItem(child, activeKey, true)).join("")}
         </div>
       </div>
@@ -258,7 +253,7 @@ function renderBottomNav(role, activeKey) {
   return `<nav class="app-bottom-nav" id="appBottomNav">${itemsHtml}</nav>`;
 }
 
-function bindShellEvents(container, activeKey) {
+function bindShellEvents(container) {
   const sidebar = container.querySelector("#appSidebar");
   const overlay = container.querySelector("#appDrawerOverlay");
   const hamburgerBtn = container.querySelector("#hamburgerBtn");
@@ -386,45 +381,6 @@ function bindShellEvents(container, activeKey) {
     btn.addEventListener("click", () => {
       const key = btn.getAttribute("data-group-toggle");
       toggleNavGroup(key, btn.closest(".app-nav-group"), btn);
-    });
-  });
-
-  container.querySelectorAll("[data-group-link]").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      const key = link.getAttribute("data-group-link");
-      const group = link.closest(".app-nav-group");
-      expandedGroups.add(key);
-      if (group) {
-        group.classList.add("is-expanded");
-        const toggle = group.querySelector("[data-group-toggle]");
-        if (toggle) {
-          toggle.setAttribute("aria-expanded", "true");
-        }
-      }
-    });
-  });
-
-  container.querySelectorAll(".app-nav-group").forEach((group) => {
-    const key = group.querySelector("[data-group-link]")?.getAttribute("data-group-link");
-    if (!key) return;
-
-    group.addEventListener("mouseenter", () => {
-      if (window.innerWidth < 769) return;
-      expandedGroups.add(key);
-      group.classList.add("is-expanded");
-      const toggle = group.querySelector("[data-group-toggle]");
-      if (toggle) toggle.setAttribute("aria-expanded", "true");
-    });
-
-    group.addEventListener("mouseleave", () => {
-      if (window.innerWidth < 769) return;
-      const parentKey = findParentKey(activeKey);
-      if (key !== activeKey && key !== parentKey) {
-        expandedGroups.delete(key);
-        group.classList.remove("is-expanded");
-        const toggle = group.querySelector("[data-group-toggle]");
-        if (toggle) toggle.setAttribute("aria-expanded", "false");
-      }
     });
   });
 

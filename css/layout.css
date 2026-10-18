@@ -4334,7 +4334,8 @@ html, body {
 
     transition:
       max-height .38s cubic-bezier(.22,1,.36,1),
-      opacity .25s ease;
+      opacity .25s ease,
+      visibility 0s linear .38s;
   }
 
 
@@ -4344,6 +4345,13 @@ html, body {
     max-height: 250px;
 
     opacity: 1;
+
+    visibility: visible;
+
+    transition:
+      max-height .38s cubic-bezier(.22,1,.36,1),
+      opacity .25s ease,
+      visibility 0s;
   }
 
 
@@ -5229,6 +5237,14 @@ html, body {
   margin-right: 0 !important;
 }
 
+.app-nav-item__toggle .app-nav-item__chevron svg {
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1);
+}
+
+.app-nav-group.is-expanded .app-nav-item__toggle .app-nav-item__chevron svg {
+  transform: rotate(180deg);
+}
+
 /* Sidebar desktop dalam keadaan collapsed (76px, state dikontrol JS
    lewat class .is-expanded): chevron memang disembunyikan, jadi tombol
    toggle ikut menyusut agar baris ikon tetap rapi dan tidak ada target
@@ -5371,7 +5387,8 @@ html, body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .app-nav-submenu {
+  .app-nav-submenu,
+  .app-nav-item__toggle .app-nav-item__chevron svg {
     transition: none !important;
   }
 }
