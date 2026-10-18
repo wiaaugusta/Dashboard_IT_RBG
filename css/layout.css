@@ -1460,8 +1460,48 @@ html, body {
 }
 
 .app-nav-item--child {
-  padding-left: var(--space-8);
+  justify-content: flex-start;
+  gap: var(--space-2);
+  padding-left: var(--space-4);
   font-size: var(--font-size-caption);
+}
+
+.app-nav-item__child-marker {
+  position: relative;
+  align-self: stretch;
+  width: 14px;
+  flex: 0 0 14px;
+}
+
+.app-nav-item__child-marker::before {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 6px;
+  width: 1px;
+  background-color: #cbdcf7;
+  content: "";
+}
+
+.app-nav-item__child-marker::after {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  width: 5px;
+  height: 5px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  background-color: #60a5fa;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.app-nav-item--child:first-child .app-nav-item__child-marker::before {
+  top: 50%;
+}
+
+.app-nav-item--child:last-child .app-nav-item__child-marker::before {
+  bottom: 50%;
 }
 
 .app-nav-item__chevron {
@@ -5383,6 +5423,12 @@ html, body {
   .app-sidebar:not(.is-expanded) .app-nav-item--group:hover .app-nav-item__icon {
     border-radius: 12px;
     background: rgba(37, 99, 235, 0.08);
+  }
+}
+
+@media (min-width: 769px) {
+  .app-sidebar:not(.is-expanded) .app-nav-submenu {
+    display: none;
   }
 }
 

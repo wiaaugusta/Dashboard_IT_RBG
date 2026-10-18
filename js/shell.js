@@ -196,7 +196,9 @@ function renderLeafItem(item, activeKey, isChild) {
       class="app-nav-item ${isChild ? "app-nav-item--child" : ""} ${isActive ? "is-active" : ""}"
       data-nav-key="${item.key}"
     >
-      ${item.icon ? `<span class="app-nav-item__icon">${icon(item.icon, { size: 18 })}</span>` : ""}
+      ${isChild
+        ? `<span class="app-nav-item__child-marker" aria-hidden="true"></span>`
+        : item.icon ? `<span class="app-nav-item__icon">${icon(item.icon, { size: 18 })}</span>` : ""}
       <span class="app-nav-item__label">${escapeHtml(item.label)}</span>
     </a>
   `;
