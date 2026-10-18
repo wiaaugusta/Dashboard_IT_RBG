@@ -219,18 +219,14 @@ function renderManagePcScopeBar(activeScope, canChooseScope) {
         `).join("")}
       </nav>
     `
-    : `
-      <div class="mpc-scope-tabs mpc-scope-tabs--single">
-        ${icon(activeScope === "office" ? "office" : "store", { size: 17 })}
-        <span>${activeScope === "office" ? "Office" : "Store"}</span>
-      </div>
-    `;
+    : "";
+
   const description = activeScope === "store"
     ? "Ringkasan data Manage PC Store akan tersedia setelah sumber datanya terhubung."
     : "Ringkasan status Kaspersky, ITAM, Privilege ITAM, dan KACE untuk Office.";
 
   return `
-    <header class="mpc-scope-bar">
+    <header class="mpc-scope-bar${!canChooseScope ? " mpc-scope-bar--no-tabs" : ""}">
       ${tabs}
       <p>${escapeHtml(description)}</p>
     </header>

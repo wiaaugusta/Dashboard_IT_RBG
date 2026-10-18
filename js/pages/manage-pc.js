@@ -162,6 +162,7 @@ function escapeHtml(value) {
    ============================================================== */
 
 function renderPageHeader(module, accessibleScopes, activeScope) {
+  // Bila accessibleScopes <= 1 (mis. login IT_OFFICE atau IT_STORE), tab dihilangkan total
   const scopeTabs = accessibleScopes.length > 1
     ? `
       <nav class="mpc-scope-tabs" role="tablist" aria-label="Lingkup Manage PC">
@@ -183,19 +184,15 @@ function renderPageHeader(module, accessibleScopes, activeScope) {
         }).join("")}
       </nav>
     `
-    : `
-      <div class="mpc-scope-tabs mpc-scope-tabs--single" aria-label="Lingkup Manage PC">
-        ${icon(SCOPE_META[activeScope].icon, { size: 17 })}
-        <span>${escapeHtml(SCOPE_META[activeScope].label)}</span>
-      </div>
-    `;
+    : "";
 
   const scopeDescription = activeScope === "store"
     ? "Data Store akan menyusul setelah sumber data dihubungkan."
     : `Data perangkat ${module.scopes.office.replace(/^.*?lingkup /i, "")}`;
 
+  // Jika tidak ada tab (non-ADMIN), tampilkan p langsung tanpa wrapper scope-bar jika tidak diperlukan, atau scope-bar sederhana
   return `
-    <header class="mpc-scope-bar">
+    <header class="mpc-scope-bar${accessibleScopes.length <= 1 ? " mpc-scope-bar--no-tabs" : ""}">
       ${scopeTabs}
       <p>${escapeHtml(scopeDescription)}</p>
     </header>
