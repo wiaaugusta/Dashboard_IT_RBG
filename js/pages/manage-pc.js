@@ -28,6 +28,31 @@ import { loadManagePcSummary } from "../api.js";
  * Urutan property = urutan tab modul di control bar halaman.
  */
 const MANAGE_PC_MODULES = {
+  "manage-pc": {
+    key: "manage-pc",
+    label: "Manage PC",
+    path: "/manage-pc",
+    icon: "pc",
+    accent: "blue",
+    kicker: "Overview",
+    title: "PC Management Overview",
+    subtitle: "Ringkasan status pengelolaan seluruh perangkat PC.",
+    stats: [
+      { label: "Total Device", icon: "monitor" },
+      { label: "Managed", icon: "check" },
+      { label: "NOK", icon: "alert" }
+    ],
+    features: [
+      "Monitoring status Kaspersky",
+      "Inventarisasi Aset (ITAM)",
+      "Deployment & Otomasi (KACE)"
+    ],
+    scopes: {
+      office: "Monitoring status pengelolaan PC di lingkup Head Office.",
+      store: "Monitoring status pengelolaan PC di seluruh Store."
+    }
+  },
+
   "manage-pc-kaspersky": {
     key: "manage-pc-kaspersky",
     label: "Kaspersky",
@@ -39,8 +64,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Monitoring proteksi, update database, dan compliance endpoint PC.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Protected", icon: "shield" },
-      { label: "Threat", icon: "alert" }
+      { label: "Managed", icon: "check" },
+      { label: "NOK", icon: "alert" }
     ],
     features: [
       "Status proteksi & compliance tiap endpoint",
@@ -63,9 +88,9 @@ const MANAGE_PC_MODULES = {
     title: "IT Asset Management",
     subtitle: "Inventarisasi, kepemilikan, dan lifecycle aset PC & hardware.",
     stats: [
-      { label: "Total Asset", icon: "monitor" },
-      { label: "Ter-Assign", icon: "user" },
-      { label: "Perlu Verifikasi", icon: "clock" }
+      { label: "Total Device", icon: "monitor" },
+      { label: "Managed", icon: "check" },
+      { label: "NOK", icon: "alert" }
     ],
     features: [
       "Inventaris hardware & software per perangkat",
@@ -89,8 +114,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Deployment, inventory agent, dan otomasi perangkat PC.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Deployed", icon: "check" },
-      { label: "Antrian Service", icon: "clock" }
+      { label: "Managed", icon: "check" },
+      { label: "NOK", icon: "alert" }
     ],
     features: [
       "Deployment OS & aplikasi secara massal",
@@ -184,26 +209,6 @@ function renderPageHeader(module, accessibleScopes, activeScope) {
  * - kanan : segmented control Office/Store (ADMIN) atau chip statis
  *           untuk role yang hanya punya satu scope.
  */
-function renderControlBar(module, activeScope) {
-  const moduleTabs = Object.values(MANAGE_PC_MODULES)
-    .map((m) => `
-      <a
-        href="#${m.path}?scope=${activeScope}"
-        class="mpc-module-tab${m.key === module.key ? " is-active" : ""}"
-        ${m.key === module.key ? 'aria-current="page"' : ""}
-      >
-        ${icon(m.icon, { size: 16 })}
-        <span>${escapeHtml(m.label)}</span>
-      </a>
-    `)
-    .join("");
-
-  return `
-    <div class="mpc-controlbar">
-      <nav class="mpc-module-tabs" aria-label="Modul Manage PC">${moduleTabs}</nav>
-    </div>
-  `;
-}
 
 function renderScopePending() {
   return `
@@ -215,62 +220,51 @@ function renderScopePending() {
 }
 
 function renderSummary(data, moduleKey, isLoading = false) {
-  const summary = data?.summary || {};
-  const moduleRowsByKey = {
-    "manage-pc-kaspersky": [
-    {
-      label: "Kaspersky",
-      ok: data?.kaspersky?.ok ?? summary.totalManage,
-      nok: data?.kaspersky?.nok ?? summary.totalNok
-    },
-    {
-      label: "Versi Kaspersky",
-      ok: data?.kaspersky?.versionOk,
-      nok: data?.kaspersky?.versionNok
-    }],
-    "manage-pc-itam": [
-    {
-      label: "ITAM",
-      ok: data?.itam?.ok,
-      nok: data?.itam?.nok
-    },
-    {
-      label: "Privilege ITAM",
-      ok: data?.itam?.privilegeOk,
-      nok: data?.itam?.privilegeNok
-    }],
-    "manage-pc-kace": [
-    {
-      label: "KACE",
-      ok: data?.kace?.ok,
-      nok: data?.kace?.nok
+  const isError = data && !data.success && data.message;
+  let total = 0, managed = 0, nok = 0;
+
+  if (!isLoading && data && data.success) {
+    const d = data.data;
+    total = d.totalUser || 0;
+
+    if (moduleKey === "manage-pc-kaspersky") {
+      managed = d.kaspersky?.ok || 0;
+      nok = d.kaspersky?.nok || 0;
+    } else if (moduleKey === "manage-pc-itam") {
+      managed = d.itam?.ok || 0;
+      nok = d.itam?.nok || 0;
+    } else if (moduleKey === "manage-pc-kace") {
+      managed = d.kace?.ok || 0;
+      nok = d.kace?.nok || 0;
+    } else {
+      // Main Manage PC (manage-pc) - Default Kaspersky as reference
+      managed = d.kaspersky?.ok || 0;
+      nok = total - managed;
     }
-    ]
-  };
-  const moduleRows = moduleRowsByKey[moduleKey] || [];
-  const moduleCards = moduleRows.map((row) => `
-    <article class="mpc-summary__module-card">
-      <h3>${escapeHtml(row.label)}</h3>
-      <div class="mpc-summary__module-values">
-        <div><small>OK</small><strong>${renderMetricValue(row.ok, isLoading)}</strong></div>
-        <div><small>NOK</small><strong>${renderMetricValue(row.nok, isLoading)}</strong></div>
+  }
+
+  const renderStat = (label, value, iconName) => `
+    <article class="mpc-stat">
+      <div class="mpc-stat__top">
+        <span class="mpc-stat__label">${escapeHtml(label)}</span>
+        <div class="mpc-stat__icon">${icon(iconName, { size: 16 })}</div>
       </div>
+      <span class="mpc-stat__value">
+        ${isLoading ? '<span class="skeleton" style="width:60%; height:32px; display:inline-block"></span>' : Number(value).toLocaleString()}
+      </span>
     </article>
-  `).join("");
-  const errorMessage = data && !data.summary ? data.message || "Ringkasan Manage PC gagal dimuat." : "";
+  `;
 
   return `
-    <section class="mpc-summary" data-mpc-summary aria-live="polite">
-      ${errorMessage ? `<p class="mpc-summary__error" role="alert">${escapeHtml(errorMessage)}</p>` : ""}
-      <div class="mpc-summary__module-cards">${moduleCards}</div>
-    </section>
+    <div class="mpc-stats" data-mpc-summary aria-live="polite">
+      ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
+      ${renderStat("Total Device", total, "monitor")}
+      ${renderStat("Managed", managed, "check")}
+      ${renderStat("NOK", nok, "alert")}
+    </div>
   `;
 }
 
-function renderMetricValue(value, isLoading) {
-  if (isLoading) return '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>';
-  return value == null ? "&mdash;" : Number(value).toLocaleString();
-}
 
 /* Panel konten utama per (modul + scope). Saat backend modul siap,
    bagian inilah yang diganti dengan tabel/detail yang sesungguhnya. */
@@ -359,7 +353,6 @@ export function renderManagePcPage(container, routeInfo) {
   const contentHtml = `
     <div class="mpc-page">
       ${renderPageHeader(module, accessibleScopes, activeScope)}
-      ${renderControlBar(module, activeScope)}
       ${activeScope === "store" ? renderScopePending() : renderSummary(null, module.key, true)}
       ${renderScopePanel(module, activeScope)}
     </div>
