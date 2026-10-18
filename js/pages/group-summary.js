@@ -154,7 +154,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
   const activeScope = canChooseScope
     ? (getQueryParam("scope") === "store" ? "store" : "office")
     : (session.role === "IT_STORE" ? "store" : "office");
-  const cards = renderGroupCards(visibleChildren, meta, null, isManagePc, activeScope);
+  const cards = renderGroupCards(visibleChildren, meta, null, isManagePc, activeScope, isManagePc && activeScope === "office");
 
   const contentHtml = `
     <div class="gsp-page">
@@ -237,10 +237,10 @@ function renderManagePcScopeBar(activeScope, canChooseScope) {
   `;
 }
 
-function renderGroupCards(children, meta, summaryData, isManagePc, activeScope = "office") {
+function renderGroupCards(children, meta, summaryData, isManagePc, activeScope = "office", isLoading = false) {
   const cards = [];
   children.forEach((child) => {
-    cards.push(renderSummaryCard(child, meta.children[child.key], summaryData, isManagePc, activeScope));
+    cards.push(renderSummaryCard(child, meta.children[child.key], summaryData, isManagePc, activeScope, isLoading));
 
     if (isManagePc && child.key === "manage-pc-kaspersky") {
       cards.push(renderSummaryCard(
@@ -248,7 +248,8 @@ function renderGroupCards(children, meta, summaryData, isManagePc, activeScope =
         MANAGE_PC_EXTRA_CARDS["manage-pc-kaspersky-version"],
         summaryData,
         true,
-        activeScope
+        activeScope,
+        isLoading
       ));
     }
 
@@ -258,7 +259,8 @@ function renderGroupCards(children, meta, summaryData, isManagePc, activeScope =
         MANAGE_PC_EXTRA_CARDS["manage-pc-itam-privilege"],
         summaryData,
         true,
-        activeScope
+        activeScope,
+        isLoading
       ));
     }
   });
@@ -285,7 +287,7 @@ function renderHero(group, meta) {
   `;
 }
 
-function renderSummaryCard(child, childMeta = {}, summaryData = null, showManageStats = false, activeScope = "office") {
+function renderSummaryCard(child, childMeta = {}, summaryData = null, showManageStats = false, activeScope = "office", isLoading = false) {
   const moduleData = child.key === "manage-pc-kaspersky-version"
     ? {
         ok: summaryData?.kaspersky?.versionOk,
@@ -310,7 +312,7 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
     .map((statLabel, index) => `
       <div class="gsp-card__stat">
         <small>${escapeHtml(statLabel)}</small>
-        <strong>${statValues[index] == null ? "&mdash;" : Number(statValues[index]).toLocaleString()}</strong>
+        <strong>${renderMetricValue(statValues[index], isLoading)}</strong>
       </div>
     `)
     .join("");
@@ -341,6 +343,11 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
       </div>
     </a>
   `;
+}
+
+function renderMetricValue(value, isLoading) {
+  if (isLoading) return '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>';
+  return value == null ? "&mdash;" : Number(value).toLocaleString();
 }
 
 function escapeHtml(value) {

@@ -5233,8 +5233,32 @@ html, body {
 /* Final desktop sidebar polish: consistent parent rows and compact active states. */
 @media (min-width: 821px) {
   .app-sidebar__brand {
-    height: 76px;
-    min-height: 76px;
+    height: 60px;
+    min-height: 60px;
+    padding-right: 12px !important;
+    padding-left: 12px !important;
+    gap: 10px;
+  }
+
+  .app-sidebar__mark {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    border-radius: 11px !important;
+    font-size: 12px !important;
+  }
+
+  .app-header {
+    height: 60px !important;
+    min-height: 60px !important;
+    padding-right: 22px !important;
+    padding-left: 22px !important;
+  }
+
+  .app-header__title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
   }
 
   .app-nav-item--group {

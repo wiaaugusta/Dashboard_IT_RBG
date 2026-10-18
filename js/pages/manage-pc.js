@@ -214,53 +214,36 @@ function renderScopePending() {
   `;
 }
 
-function renderSummary(data, moduleKey) {
-  if (!data) {
-    return `
-      <section class="mpc-summary" data-mpc-summary aria-live="polite">
-        <p class="mpc-summary__hint">Memuat ringkasan Manage PC...</p>
-      </section>
-    `;
-  }
-
-  if (!data.summary) {
-    return `
-      <section class="mpc-summary" data-mpc-summary aria-live="polite">
-        <p class="mpc-summary__hint" role="alert">${escapeHtml(data.message || "Ringkasan Manage PC gagal dimuat.")}</p>
-      </section>
-    `;
-  }
-
-  const summary = data.summary;
-
+function renderSummary(data, moduleKey, isLoading = false) {
+  const summary = data?.summary || {};
   const moduleRowsByKey = {
     "manage-pc-kaspersky": [
     {
       label: "Kaspersky",
-      ok: data.kaspersky?.ok ?? summary.totalManage,
-      nok: data.kaspersky?.nok ?? summary.totalNok
+      ok: data?.kaspersky?.ok ?? summary.totalManage,
+      nok: data?.kaspersky?.nok ?? summary.totalNok
     },
     {
       label: "Versi Kaspersky",
-      ok: data.kaspersky?.versionOk,
-      nok: data.kaspersky?.versionNok
+      ok: data?.kaspersky?.versionOk,
+      nok: data?.kaspersky?.versionNok
     }],
     "manage-pc-itam": [
     {
       label: "ITAM",
-      ok: data.itam?.ok,
-      nok: data.itam?.nok
+      ok: data?.itam?.ok,
+      nok: data?.itam?.nok
     },
     {
       label: "Privilege ITAM",
-      ok: data.itam?.privilegeOk,
-      nok: data.itam?.privilegeNok
+      ok: data?.itam?.privilegeOk,
+      nok: data?.itam?.privilegeNok
     }],
     "manage-pc-kace": [
     {
       label: "KACE",
-      ok: data.kace?.ok,
-      nok: data.kace?.nok
+      ok: data?.kace?.ok,
+      nok: data?.kace?.nok
     }
     ]
   };
@@ -269,17 +252,24 @@ function renderSummary(data, moduleKey) {
     <article class="mpc-summary__module-card">
       <h3>${escapeHtml(row.label)}</h3>
       <div class="mpc-summary__module-values">
-        <div><small>OK</small><strong>${row.ok == null ? "&mdash;" : Number(row.ok).toLocaleString()}</strong></div>
-        <div><small>NOK</small><strong>${row.nok == null ? "&mdash;" : Number(row.nok).toLocaleString()}</strong></div>
+        <div><small>OK</small><strong>${renderMetricValue(row.ok, isLoading)}</strong></div>
+        <div><small>NOK</small><strong>${renderMetricValue(row.nok, isLoading)}</strong></div>
       </div>
     </article>
   `).join("");
+  const errorMessage = data && !data.summary ? data.message || "Ringkasan Manage PC gagal dimuat." : "";
 
   return `
     <section class="mpc-summary" data-mpc-summary aria-live="polite">
+      ${errorMessage ? `<p class="mpc-summary__error" role="alert">${escapeHtml(errorMessage)}</p>` : ""}
       <div class="mpc-summary__module-cards">${moduleCards}</div>
     </section>
   `;
+}
+
+function renderMetricValue(value, isLoading) {
+  if (isLoading) return '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>';
+  return value == null ? "&mdash;" : Number(value).toLocaleString();
 }
 
 /* Panel konten utama per (modul + scope). Saat backend modul siap,
@@ -370,7 +360,7 @@ export function renderManagePcPage(container, routeInfo) {
     <div class="mpc-page">
       ${renderPageHeader(module, accessibleScopes, activeScope)}
       ${renderControlBar(module, activeScope)}
-      ${activeScope === "store" ? renderScopePending() : renderSummary(null)}
+      ${activeScope === "store" ? renderScopePending() : renderSummary(null, module.key, true)}
       ${renderScopePanel(module, activeScope)}
     </div>
   `;
@@ -395,7 +385,7 @@ export function renderManagePcPage(container, routeInfo) {
       if (summaryElement) {
         summaryElement.outerHTML = renderSummary({
           message: error.message || "Ringkasan Manage PC gagal dimuat."
-        });
+        }, module.key);
       }
     });
 }
