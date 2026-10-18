@@ -249,7 +249,45 @@ function renderSummary(data) {
   const totalManage = summary.totalManage ?? 0;
   const totalNok = summary.totalNok ?? 0;
 
-  const moduleLines = (summary.modules || [])
+  const summaryModules = new Map(
+    (summary.modules || []).map((moduleSummary) => [moduleSummary.label, moduleSummary])
+  );
+  const moduleRows = [
+    {
+      label: "Kaspersky (Manage)",
+      ok: data.kaspersky?.ok ?? summary.totalManage,
+      nok: data.kaspersky?.nok ?? summary.totalNok
+    },
+    {
+      label: "Versi Kaspersky",
+      ok: data.kaspersky?.versionOk,
+      nok: data.kaspersky?.versionNok
+    },
+    {
+      label: "ITAM",
+      ok: data.itam?.ok,
+      nok: data.itam?.nok
+    },
+    {
+      label: "Privilege ITAM",
+      ok: data.itam?.privilegeOk,
+      nok: data.itam?.privilegeNok
+    },
+    {
+      label: "KACE",
+      ok: data.kace?.ok,
+      nok: data.kace?.nok
+    }
+  ].map((moduleRow) => {
+    const backendRow = summaryModules.get(moduleRow.label);
+    return {
+      label: moduleRow.label,
+      ok: moduleRow.ok ?? backendRow?.ok,
+      nok: moduleRow.nok ?? backendRow?.nok
+    };
+  });
+
+  const moduleLines = moduleRows
     .map((m) => `
       <div class="mpc-summary__module">
         <span class="mpc-summary__module-label">${escapeHtml(m.label)}</span>
