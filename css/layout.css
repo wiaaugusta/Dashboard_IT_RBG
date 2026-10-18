@@ -4594,7 +4594,7 @@ html, body {
   .app-shell:has(.app-sidebar:hover)
   .app-shell__main {
 
-    margin-left: 252px;
+    margin-left: 224px;
   }
 
 
@@ -4874,7 +4874,7 @@ html, body {
   .app-shell.sidebar-expanded
   .app-shell__main {
 
-    margin-left: 252px !important;
+    margin-left: 224px !important;
   }
 
 
@@ -5227,6 +5227,103 @@ html, body {
     opacity: 0;
     overflow: hidden;
     pointer-events: none;
+  }
+}
+
+/* Final desktop sidebar polish: consistent parent rows and compact active states. */
+@media (min-width: 821px) {
+  .app-nav-item--group {
+    min-height: 48px !important;
+    height: 48px;
+    align-items: center;
+    border-radius: 12px !important;
+  }
+
+  .app-nav-item--group .app-nav-item__main {
+    height: 48px;
+    padding: 0;
+    gap: 0;
+  }
+
+  .app-nav-item--group .app-nav-item__toggle {
+    width: 36px;
+    height: 48px;
+    padding: 0;
+    border-radius: 0 12px 12px 0;
+  }
+
+  .app-sidebar:not(.is-expanded) .app-nav-item--group .app-nav-item__toggle {
+    width: 0;
+    height: 48px;
+  }
+
+  .app-nav-item--group .app-nav-item__toggle .app-nav-item__chevron {
+    margin: 0 !important;
+  }
+
+  .app-nav-item.is-active {
+    background: rgba(37, 99, 235, 0.07) !important;
+    box-shadow: none !important;
+  }
+
+  .app-nav-item.is-active::before {
+    display: none !important;
+  }
+
+  .app-nav-item.is-active .app-nav-item__icon {
+    color: #1d4ed8;
+  }
+
+  .app-nav-item--group.is-active {
+    background: transparent !important;
+  }
+
+  .app-nav-item--group.is-active .app-nav-item__main,
+  .app-nav-item--group.is-active .app-nav-item__toggle {
+    background: rgba(37, 99, 235, 0.07) !important;
+    color: #1d4ed8 !important;
+    box-shadow: none !important;
+  }
+
+  .app-nav-item--group:hover {
+    background: transparent !important;
+  }
+
+  .app-nav-item--group:hover .app-nav-item__main,
+  .app-nav-item--group:hover .app-nav-item__toggle {
+    background: rgba(37, 99, 235, 0.06) !important;
+    color: #1d4ed8 !important;
+    box-shadow: none !important;
+  }
+
+  .app-sidebar:not(.is-expanded) .app-nav-item.is-active {
+    background: transparent !important;
+  }
+
+  .app-sidebar:not(.is-expanded) .app-nav-item.is-active .app-nav-item__icon {
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 40px;
+    margin: 0 auto;
+    border-radius: 12px;
+    background: rgba(37, 99, 235, 0.11);
+  }
+
+  .app-sidebar:not(.is-expanded) .app-nav-item--group.is-active .app-nav-item__main {
+    background: transparent !important;
+  }
+
+  .app-sidebar:not(.is-expanded) .app-nav-item--group.is-active .app-nav-item__icon {
+    background: rgba(37, 99, 235, 0.11);
+  }
+
+  .app-sidebar:not(.is-expanded) .app-nav-item--group:hover .app-nav-item__main {
+    background: transparent !important;
+  }
+
+  .app-sidebar:not(.is-expanded) .app-nav-item--group:hover .app-nav-item__icon {
+    border-radius: 12px;
+    background: rgba(37, 99, 235, 0.08);
   }
 }
 
