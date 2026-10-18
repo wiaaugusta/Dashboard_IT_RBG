@@ -97,9 +97,32 @@ const GROUP_META = {
    ditandai "Tersedia". Tambahkan key di sini saat modul baru selesai. */
 const AVAILABLE_CHILD_KEYS = new Set([
   "manage-pc-kaspersky",
+  "manage-pc-kaspersky-version",
   "manage-pc-itam",
+  "manage-pc-itam-privilege",
   "manage-pc-kace"
 ]);
+
+const MANAGE_PC_EXTRA_CARDS = {
+  "manage-pc-kaspersky-version": {
+    key: "manage-pc-kaspersky-version",
+    label: "Versi Kaspersky",
+    path: "/manage-pc/kaspersky",
+    icon: "kaspersky",
+    accent: "blue",
+    description: "Status OK dan NOK versi Kaspersky pada seluruh device.",
+    stats: ["Total Device", "Version OK", "Version NOK"]
+  },
+  "manage-pc-itam-privilege": {
+    key: "manage-pc-itam-privilege",
+    label: "Privilege ITAM",
+    path: "/manage-pc/itam",
+    icon: "itam",
+    accent: "teal",
+    description: "Status OK dan NOK privilege ITAM pada seluruh device.",
+    stats: ["Total Device", "Privilege OK", "Privilege NOK"]
+  }
+};
 
 /**
  * Catatan lingkup data per menu parent sesuai role login.
@@ -136,14 +159,13 @@ export function renderGroupSummaryPage(container, routeInfo) {
   const visibleChildren = group.children
     .filter((child) => isVisibleForRole(child, session.role));
   const isManagePc = routeInfo.key === "manage-pc";
-  const cards = visibleChildren
-    .map((child) => renderSummaryCard(child, meta.children[child.key], null, isManagePc));
+  const cards = renderGroupCards(visibleChildren, meta, null, isManagePc);
 
   const contentHtml = `
     <div class="gsp-page">
       ${renderHero(group, meta)}
 
-      <section class="gsp-cards" data-group-summary-cards aria-label="Rangkuman submenu ${escapeHtml(group.label)}">
+      <section class="gsp-cards${isManagePc ? " gsp-cards--manage-pc" : ""}" data-group-summary-cards aria-label="Rangkuman submenu ${escapeHtml(group.label)}">
         ${cards.join("")}
       </section>
 
@@ -169,9 +191,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
         const messageElement = container.querySelector("[data-group-summary-message] span");
         if (result.success && result.data) {
           if (cardsElement) {
-            cardsElement.innerHTML = visibleChildren
-              .map((child) => renderSummaryCard(child, meta.children[child.key], result.data, true))
-              .join("");
+            cardsElement.innerHTML = renderGroupCards(visibleChildren, meta, result.data, true).join("");
           }
           if (messageElement) messageElement.textContent = "Status OK dihitung sebagai Device Manage; status selain OK dihitung sebagai Not Manage.";
         } else if (messageElement) {
@@ -183,6 +203,32 @@ export function renderGroupSummaryPage(container, routeInfo) {
         if (messageElement) messageElement.textContent = error.message || "Ringkasan Manage PC gagal dimuat.";
       });
   }
+}
+
+function renderGroupCards(children, meta, summaryData, isManagePc) {
+  const cards = [];
+  children.forEach((child) => {
+    cards.push(renderSummaryCard(child, meta.children[child.key], summaryData, isManagePc));
+
+    if (isManagePc && child.key === "manage-pc-kaspersky") {
+      cards.push(renderSummaryCard(
+        MANAGE_PC_EXTRA_CARDS["manage-pc-kaspersky-version"],
+        MANAGE_PC_EXTRA_CARDS["manage-pc-kaspersky-version"],
+        summaryData,
+        true
+      ));
+    }
+
+    if (isManagePc && child.key === "manage-pc-itam") {
+      cards.push(renderSummaryCard(
+        MANAGE_PC_EXTRA_CARDS["manage-pc-itam-privilege"],
+        MANAGE_PC_EXTRA_CARDS["manage-pc-itam-privilege"],
+        summaryData,
+        true
+      ));
+    }
+  });
+  return cards;
 }
 
 function renderHero(group, meta) {
@@ -207,7 +253,17 @@ function renderHero(group, meta) {
 
 function renderSummaryCard(child, childMeta = {}, summaryData = null, showManageStats = false) {
   const isAvailable = AVAILABLE_CHILD_KEYS.has(child.key);
-  const moduleData = child.key === "manage-pc-kaspersky"
+  const moduleData = child.key === "manage-pc-kaspersky-version"
+    ? {
+        ok: summaryData?.kaspersky?.versionOk,
+        nok: summaryData?.kaspersky?.versionNok
+      }
+    : child.key === "manage-pc-itam-privilege"
+      ? {
+          ok: summaryData?.itam?.privilegeOk,
+          nok: summaryData?.itam?.privilegeNok
+        }
+      : child.key === "manage-pc-kaspersky"
     ? summaryData?.kaspersky
     : child.key === "manage-pc-itam"
       ? summaryData?.itam
@@ -225,31 +281,6 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
       </div>
     `)
     .join("");
-  const secondaryStat = showManageStats && child.key === "manage-pc-kaspersky"
-    ? {
-        label: "Versi Kaspersky",
-        ok: summaryData?.kaspersky?.versionOk,
-        nok: summaryData?.kaspersky?.versionNok
-      }
-    : showManageStats && child.key === "manage-pc-itam"
-      ? {
-          label: "Privilege ITAM",
-          ok: summaryData?.itam?.privilegeOk,
-          nok: summaryData?.itam?.privilegeNok
-        }
-      : null;
-  const secondaryStats = secondaryStat
-    ? `
-      <div class="gsp-card__secondary-stats">
-        <small>${escapeHtml(secondaryStat.label)}</small>
-        <span>
-          ${secondaryStat.ok == null ? "&mdash;" : Number(secondaryStat.ok).toLocaleString()} OK
-          <span aria-hidden="true">·</span>
-          ${secondaryStat.nok == null ? "&mdash;" : Number(secondaryStat.nok).toLocaleString()} NOK
-        </span>
-      </div>
-    `
-    : "";
 
   return `
     <a
@@ -269,7 +300,6 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
       </div>
 
       <div class="gsp-card__stats">${stats}</div>
-      ${secondaryStats}
 
       <div class="gsp-card__footer">
         <span>Buka halaman ${escapeHtml(child.label)}</span>
