@@ -64,8 +64,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Monitoring proteksi, update database, dan compliance endpoint PC.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Managed Kaspersky", icon: "check" },
-      { label: "Not Managed", icon: "alert" }
+      { label: "Manage", icon: "check" },
+      { label: "Not Manage", icon: "alert" }
     ],
     features: [
       "Status proteksi & compliance tiap endpoint",
@@ -89,8 +89,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Inventarisasi, kepemilikan, dan lifecycle aset PC & hardware.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Managed ITAM", icon: "check" },
-      { label: "Not Managed", icon: "alert" }
+      { label: "Manage", icon: "check" },
+      { label: "Not Manage", icon: "alert" }
     ],
     features: [
       "Inventaris hardware & software per perangkat",
@@ -114,8 +114,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Deployment, inventory agent, dan otomasi perangkat PC.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Managed KACE", icon: "check" },
-      { label: "Not Managed", icon: "alert" }
+      { label: "Manage", icon: "check" },
+      { label: "Not Manage", icon: "alert" }
     ],
     features: [
       "Deployment OS & aplikasi secara massal",
@@ -224,43 +224,91 @@ function renderMetricValue(value, isLoading) {
   return value == null ? "&mdash;" : Number(value).toLocaleString();
 }
 
+function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent = "blue") {
+  return `
+    <article class="gsp-card gsp-card--${accent}">
+      <div class="gsp-card__header">
+        <div class="gsp-card__icon">${icon(iconName, { size: 21 })}</div>
+        <div class="gsp-card__body">
+          <h4>${escapeHtml(title)}</h4>
+          <p>${escapeHtml(desc)}</p>
+        </div>
+      </div>
+      <div class="gsp-card__stats">${stats}</div>
+      <div class="gsp-card__footer">
+        <span>${escapeHtml(footerText)}</span>
+        ${icon("arrow-right", { size: 16 })}
+      </div>
+    </article>
+  `;
+}
+
 function renderSummary(data, moduleKey, isLoading = false) {
   const isError = data && data.success === false && data.message;
   const d = data?.data || data || {};
-  const moduleConfig = MANAGE_PC_MODULES[moduleKey] || MANAGE_PC_MODULES["manage-pc"];
+  const totalPc = d.summary?.totalPc ?? d.totalUser ?? (isLoading ? null : 0);
 
-  let total = d.totalUser || d.summary?.totalPc || 0;
-  let managed = 0, nok = 0;
+  const makeStats = (statList) => statList.map(([label, val]) => `
+    <div class="gsp-card__stat">
+      <small>${escapeHtml(label)}</small>
+      <strong>${renderMetricValue(val, isLoading)}</strong>
+    </div>
+  `).join("");
 
-  if (!isLoading) {
-    if (moduleKey === "manage-pc-itam") {
-      managed = d.itam?.ok || 0;
-      nok = d.itam?.nok || 0;
-    } else if (moduleKey === "manage-pc-kace") {
-      managed = d.kace?.ok || 0;
-      nok = d.kace?.nok || 0;
-    } else if (moduleKey === "manage-pc-kaspersky") {
-      managed = d.kaspersky?.ok || 0;
-      nok = d.kaspersky?.nok || 0;
-    } else {
-      managed = d.kaspersky?.ok || d.summary?.managed || 0;
-      nok = d.kaspersky?.nok || d.summary?.nok || 0;
-    }
+  // Submenu Kaspersky: 2 kotak (Kaspersky & Versi Kaspersky) persis menu utama
+  if (moduleKey === "manage-pc-kaspersky") {
+    const kavOk = d.kaspersky?.ok ?? (isLoading ? null : 0);
+    const kavNok = d.kaspersky?.nok ?? (totalPc != null && kavOk != null ? totalPc - kavOk : (isLoading ? null : 0));
+    const verOk = d.kaspersky?.versionOk ?? (isLoading ? null : 0);
+    const verNok = d.kaspersky?.versionNok ?? (totalPc != null && verOk != null ? totalPc - verOk : (isLoading ? null : 0));
+
+    return `
+      <section class="gsp-cards gsp-cards--kaspersky" data-mpc-summary aria-live="polite">
+        ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
+        ${renderSummaryCardItem("kaspersky", "Kaspersky", "Endpoint Security - proteksi, update database & compliance.", makeStats([["Total Device", totalPc], ["Manage", kavOk], ["Not Manage", kavNok]]), "Status Endpoint Security", "blue")}
+        ${renderSummaryCardItem("kaspersky", "Versi Kaspersky", "Status OK dan NOK versi Kaspersky pada seluruh device.", makeStats([["Total Device", totalPc], ["Version OK", verOk], ["Version NOK", verNok]]), "Status Versi Antivirus", "blue")}
+      </section>
+    `;
   }
 
-  const statsConfig = moduleConfig.stats || [
-    { label: "Total Device", icon: "monitor" },
-    { label: "Managed", icon: "check" },
-    { label: "Not Managed", icon: "alert" }
-  ];
+  // Submenu ITAM: 2 kotak (ITAM & Privilege ITAM)
+  if (moduleKey === "manage-pc-itam") {
+    const itamOk = d.itam?.ok ?? (isLoading ? null : 0);
+    const itamNok = d.itam?.nok ?? (totalPc != null && itamOk != null ? totalPc - itamOk : (isLoading ? null : 0));
+    const privOk = d.itam?.privilegeOk ?? (isLoading ? null : 0);
+    const privNok = d.itam?.privilegeNok ?? (totalPc != null && privOk != null ? totalPc - privOk : (isLoading ? null : 0));
 
-  const values = [total, managed, nok];
+    return `
+      <section class="gsp-cards gsp-cards--kaspersky" data-mpc-summary aria-live="polite">
+        ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
+        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]]), "Status Inventaris Aset", "teal")}
+        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]]), "Status Hak Akses ITAM", "teal")}
+      </section>
+    `;
+  }
 
-  const renderStat = (statItem, value) => `
+  // Submenu KACE: 1 kotak (KACE)
+  if (moduleKey === "manage-pc-kace") {
+    const kaceOk = d.kace?.ok ?? (isLoading ? null : 0);
+    const kaceNok = d.kace?.nok ?? (totalPc != null && kaceOk != null ? totalPc - kaceOk : (isLoading ? null : 0));
+
+    return `
+      <section class="gsp-cards gsp-cards--kaspersky" data-mpc-summary aria-live="polite">
+        ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
+        ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]]), "Status Deployment KACE", "purple")}
+      </section>
+    `;
+  }
+
+  // Fallback untuk Overview (manage-pc)
+  let managed = d.kaspersky?.ok || d.summary?.managed || 0;
+  let nok = d.kaspersky?.nok || d.summary?.nok || 0;
+
+  const renderStat = (label, value, iconName) => `
     <article class="mpc-stat">
       <div class="mpc-stat__top">
-        <span class="mpc-stat__label">${escapeHtml(statItem.label)}</span>
-        <div class="mpc-stat__icon">${icon(statItem.icon, { size: 16 })}</div>
+        <span class="mpc-stat__label">${escapeHtml(label)}</span>
+        <div class="mpc-stat__icon">${icon(iconName, { size: 16 })}</div>
       </div>
       <span class="mpc-stat__value">
         ${isLoading ? '<span class="skeleton" style="width:60%; height:32px; display:inline-block"></span>' : Number(value).toLocaleString()}
@@ -271,7 +319,9 @@ function renderSummary(data, moduleKey, isLoading = false) {
   return `
     <div class="mpc-stats" data-mpc-summary aria-live="polite">
       ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-      ${statsConfig.map((stat, idx) => renderStat(stat, values[idx])).join("")}
+      ${renderStat("Total Device", totalPc, "monitor")}
+      ${renderStat("Managed", managed, "check")}
+      ${renderStat("NOK", nok, "alert")}
     </div>
   `;
 }
