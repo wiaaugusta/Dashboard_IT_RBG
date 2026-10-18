@@ -367,12 +367,7 @@ function bindShellEvents(container) {
   container.querySelectorAll("[data-group-toggle]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const key = btn.getAttribute("data-group-toggle");
-      const group = btn.closest(".app-nav-group");
-      expandedGroups.add(key);
-      if (group) {
-        group.classList.add("is-expanded");
-        btn.setAttribute("aria-expanded", "true");
-      }
+      toggleNavGroup(key, btn.closest(".app-nav-group"), btn);
     });
   });
 
@@ -387,6 +382,31 @@ function bindShellEvents(container) {
         if (toggle) {
           toggle.setAttribute("aria-expanded", "true");
         }
+      }
+    });
+  });
+
+  container.querySelectorAll(".app-nav-group").forEach((group) => {
+    const key = group.querySelector("[data-group-link]")?.getAttribute("data-group-link");
+    if (!key) return;
+
+    group.addEventListener("mouseenter", () => {
+      if (window.innerWidth < 769) return;
+      expandedGroups.add(key);
+      group.classList.add("is-expanded");
+      const toggle = group.querySelector("[data-group-toggle]");
+      if (toggle) toggle.setAttribute("aria-expanded", "true");
+    });
+
+    group.addEventListener("mouseleave", () => {
+      if (window.innerWidth < 769) return;
+      const activeKey = options.activeKey;
+      const parentKey = findParentKey(activeKey);
+      if (key !== activeKey && key !== parentKey) {
+        expandedGroups.delete(key);
+        group.classList.remove("is-expanded");
+        const toggle = group.querySelector("[data-group-toggle]");
+        if (toggle) toggle.setAttribute("aria-expanded", "false");
       }
     });
   });
