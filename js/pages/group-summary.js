@@ -22,6 +22,7 @@
 
 import { renderShell } from "../shell.js";
 import { getSession } from "../auth.js";
+import { getQueryParam } from "../router.js";
 import { NAV_ITEMS, isVisibleForRole } from "../nav-config.js";
 import { icon } from "../icons.js";
 import { loadManagePcSummary } from "../api.js";
@@ -149,11 +150,15 @@ export function renderGroupSummaryPage(container, routeInfo) {
   const visibleChildren = group.children
     .filter((child) => isVisibleForRole(child, session.role));
   const isManagePc = routeInfo.key === "manage-pc";
-  const cards = renderGroupCards(visibleChildren, meta, null, isManagePc);
+  const canChooseScope = isManagePc && session.role === "ADMIN";
+  const activeScope = canChooseScope
+    ? (getQueryParam("scope") === "store" ? "store" : "office")
+    : (session.role === "IT_STORE" ? "store" : "office");
+  const cards = renderGroupCards(visibleChildren, meta, null, isManagePc, activeScope);
 
   const contentHtml = `
     <div class="gsp-page">
-      ${renderHero(group, meta)}
+      ${isManagePc ? renderManagePcScopeBar(activeScope, canChooseScope) : renderHero(group, meta)}
 
       <section class="gsp-cards${isManagePc ? " gsp-cards--manage-pc" : ""}" data-group-summary-cards aria-label="Rangkuman submenu ${escapeHtml(group.label)}">
         ${cards.join("")}
@@ -162,7 +167,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
       <div class="mpc-note" data-group-summary-message aria-live="polite">
         ${icon("info", { size: 16 })}
         <span>
-          ${isManagePc ? "Memuat ringkasan data Manage PC..." : `${escapeHtml(getScopeNote(session.role, routeInfo.key))} Angka pada kartu masih placeholder &mdash; menunggu integrasi data backend.`}
+          ${isManagePc ? (activeScope === "store" ? "Ringkasan data Store akan ditampilkan setelah sumber data Store dihubungkan." : "Memuat ringkasan data Manage PC Office...") : `${escapeHtml(getScopeNote(session.role, routeInfo.key))} Angka pada kartu masih placeholder &mdash; menunggu integrasi data backend.`}
         </span>
       </div>
     </div>
@@ -170,18 +175,18 @@ export function renderGroupSummaryPage(container, routeInfo) {
 
   renderShell(container, {
     activeKey: routeInfo.key,
-    pageTitle: routeInfo.label,
+    pageTitle: isManagePc ? "Manage PC" : routeInfo.label,
     contentHtml
   });
 
-  if (isManagePc) {
+  if (isManagePc && activeScope === "office") {
     loadManagePcSummary("office", { sessionToken: session.sessionToken })
       .then((result) => {
         const cardsElement = container.querySelector("[data-group-summary-cards]");
         const messageElement = container.querySelector("[data-group-summary-message] span");
         if (result.success && result.data) {
           if (cardsElement) {
-            cardsElement.innerHTML = renderGroupCards(visibleChildren, meta, result.data, true).join("");
+            cardsElement.innerHTML = renderGroupCards(visibleChildren, meta, result.data, true, activeScope).join("");
           }
           if (messageElement) messageElement.textContent = "Status OK dihitung sebagai Device Manage; status selain OK dihitung sebagai Not Manage.";
         } else if (messageElement) {
@@ -195,17 +200,55 @@ export function renderGroupSummaryPage(container, routeInfo) {
   }
 }
 
-function renderGroupCards(children, meta, summaryData, isManagePc) {
+function renderManagePcScopeBar(activeScope, canChooseScope) {
+  const scopes = ["office", "store"];
+  const tabs = canChooseScope
+    ? `
+      <nav class="mpc-scope-tabs" role="tablist" aria-label="Lingkup Manage PC">
+        ${scopes.map((scope) => `
+          <a
+            href="#/manage-pc?scope=${scope}"
+            class="mpc-scope-tab${activeScope === scope ? " is-active" : ""}"
+            role="tab"
+            aria-selected="${activeScope === scope}"
+            ${activeScope === scope ? 'aria-current="page"' : ""}
+          >
+            ${icon(scope === "office" ? "office" : "store", { size: 17 })}
+            <span>${scope === "office" ? "Office" : "Store"}</span>
+          </a>
+        `).join("")}
+      </nav>
+    `
+    : `
+      <div class="mpc-scope-tabs mpc-scope-tabs--single">
+        ${icon(activeScope === "office" ? "office" : "store", { size: 17 })}
+        <span>${activeScope === "office" ? "Office" : "Store"}</span>
+      </div>
+    `;
+  const description = activeScope === "store"
+    ? "Ringkasan data Manage PC Store akan tersedia setelah sumber datanya terhubung."
+    : "Ringkasan status Kaspersky, ITAM, Privilege ITAM, dan KACE untuk Office.";
+
+  return `
+    <header class="mpc-scope-bar">
+      ${tabs}
+      <p>${escapeHtml(description)}</p>
+    </header>
+  `;
+}
+
+function renderGroupCards(children, meta, summaryData, isManagePc, activeScope = "office") {
   const cards = [];
   children.forEach((child) => {
-    cards.push(renderSummaryCard(child, meta.children[child.key], summaryData, isManagePc));
+    cards.push(renderSummaryCard(child, meta.children[child.key], summaryData, isManagePc, activeScope));
 
     if (isManagePc && child.key === "manage-pc-kaspersky") {
       cards.push(renderSummaryCard(
         MANAGE_PC_EXTRA_CARDS["manage-pc-kaspersky-version"],
         MANAGE_PC_EXTRA_CARDS["manage-pc-kaspersky-version"],
         summaryData,
-        true
+        true,
+        activeScope
       ));
     }
 
@@ -214,7 +257,8 @@ function renderGroupCards(children, meta, summaryData, isManagePc) {
         MANAGE_PC_EXTRA_CARDS["manage-pc-itam-privilege"],
         MANAGE_PC_EXTRA_CARDS["manage-pc-itam-privilege"],
         summaryData,
-        true
+        true,
+        activeScope
       ));
     }
   });
@@ -241,7 +285,7 @@ function renderHero(group, meta) {
   `;
 }
 
-function renderSummaryCard(child, childMeta = {}, summaryData = null, showManageStats = false) {
+function renderSummaryCard(child, childMeta = {}, summaryData = null, showManageStats = false, activeScope = "office") {
   const moduleData = child.key === "manage-pc-kaspersky-version"
     ? {
         ok: summaryData?.kaspersky?.versionOk,
@@ -278,7 +322,7 @@ function renderSummaryCard(child, childMeta = {}, summaryData = null, showManage
 
   return `
     <a
-      href="#${child.path}"
+      href="#${child.path}${getScopeSuffix(showManageStats, activeScope)}"
       class="gsp-card gsp-card--${childMeta.accent || "blue"}"
     >
       <div class="gsp-card__header">
@@ -303,4 +347,8 @@ function escapeHtml(value) {
   const div = document.createElement("div");
   div.textContent = value == null ? "" : String(value);
   return div.innerHTML;
+}
+
+function getScopeSuffix(showManageStats, activeScope) {
+  return showManageStats ? `?scope=${activeScope}` : "";
 }

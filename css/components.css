@@ -2111,31 +2111,26 @@
 
 /* ---------- Page heading + Office/Store tabs ---------- */
 
-.mpc-page-header {
+.mpc-scope-bar {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: var(--space-5);
-  margin-bottom: var(--space-4);
+  gap: var(--space-4);
+  min-height: 48px;
+  margin: 0 0 var(--space-4);
   border-bottom: 1px solid var(--color-border);
 }
 
-.mpc-page-header__title {
+.mpc-scope-bar > p {
   min-width: 0;
-  padding-bottom: var(--space-3);
-}
-
-.mpc-page-header__title h2 {
-  margin: 0 0 4px;
-  color: var(--color-text);
-  font-size: var(--font-size-h2, 22px);
-  font-weight: 700;
-}
-
-.mpc-page-header__title p {
+  overflow: hidden;
   margin: 0;
   color: var(--color-text-secondary);
   font-size: var(--font-size-caption);
+  line-height: 1.4;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mpc-scope-tabs {
@@ -2153,7 +2148,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 14px 13px;
+  padding: 0 12px 12px;
   border: 0;
   color: var(--color-text-secondary);
   background: transparent;
@@ -2273,6 +2268,55 @@
 .mpc-summary__pending-icon {
   display: inline-flex;
   color: var(--color-info);
+}
+
+.mpc-summary__module-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.mpc-summary__module-card {
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.mpc-summary__module-card h3 {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text);
+  font-size: var(--font-size-small, 13px);
+  font-weight: 650;
+}
+
+.mpc-summary__module-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.mpc-summary__module-values > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 8px 10px;
+  border-radius: var(--radius-md);
+  background: var(--color-background-offwhite);
+}
+
+.mpc-summary__module-values small {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-caption);
+}
+
+.mpc-summary__module-values strong {
+  color: var(--color-text);
+  font-size: var(--font-size-small, 13px);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Stat cards (placeholder, menunggu integrasi data) ---------- */
@@ -2517,25 +2561,35 @@
 }
 
 @media (max-width: 768px) {
-  .mpc-page-header {
-    align-items: flex-start;
-    flex-direction: column;
+  .mpc-scope-bar {
     gap: var(--space-2);
   }
 
-  .mpc-page-header__title {
-    padding-bottom: 0;
-  }
-
   .mpc-scope-tabs {
-    width: 100%;
-    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
   }
 
   .mpc-scope-tab,
   .mpc-scope-tabs--single {
-    flex: 1;
-    min-width: 0;
+    min-width: 88px;
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .mpc-scope-bar > p {
+    font-size: 11px;
+  }
+
+  .mpc-summary__module-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mpc-page {
+    gap: var(--space-2);
+  }
+
+  .mpc-controlbar {
+    margin-bottom: var(--space-3);
   }
 
   .mpc-module-tabs {

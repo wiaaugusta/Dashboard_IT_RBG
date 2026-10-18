@@ -165,13 +165,14 @@ function renderPageHeader(module, accessibleScopes, activeScope) {
       </div>
     `;
 
+  const scopeDescription = activeScope === "store"
+    ? "Data Store akan menyusul setelah sumber data dihubungkan."
+    : `Data perangkat ${module.scopes.office.replace(/^.*?lingkup /i, "")}`;
+
   return `
-    <header class="mpc-page-header">
-      <div class="mpc-page-header__title">
-        <h2>Manage PC</h2>
-        <p>${escapeHtml(SCOPE_META[activeScope].label)} · ${escapeHtml(activeScope === "store" ? "Data Store menyusul" : "Endpoint, asset, dan deployment")}</p>
-      </div>
+    <header class="mpc-scope-bar">
       ${scopeTabs}
+      <p>${escapeHtml(scopeDescription)}</p>
     </header>
   `;
 }
@@ -213,7 +214,7 @@ function renderScopePending() {
   `;
 }
 
-function renderSummary(data) {
+function renderSummary(data, moduleKey) {
   if (!data) {
     return `
       <section class="mpc-summary" data-mpc-summary aria-live="polite">
@@ -232,16 +233,10 @@ function renderSummary(data) {
 
   const summary = data.summary;
 
-  const totalPc = summary.totalPc ?? 0;
-  const totalManage = summary.totalManage ?? 0;
-  const totalNok = summary.totalNok ?? 0;
-
-  const summaryModules = new Map(
-    (summary.modules || []).map((moduleSummary) => [moduleSummary.label, moduleSummary])
-  );
-  const moduleRows = [
+  const moduleRowsByKey = {
+    "manage-pc-kaspersky": [
     {
-      label: "Kaspersky (Manage)",
+      label: "Kaspersky",
       ok: data.kaspersky?.ok ?? summary.totalManage,
       nok: data.kaspersky?.nok ?? summary.totalNok
     },
@@ -249,7 +244,8 @@ function renderSummary(data) {
       label: "Versi Kaspersky",
       ok: data.kaspersky?.versionOk,
       nok: data.kaspersky?.versionNok
-    },
+    }],
+    "manage-pc-itam": [
     {
       label: "ITAM",
       ok: data.itam?.ok,
@@ -259,52 +255,29 @@ function renderSummary(data) {
       label: "Privilege ITAM",
       ok: data.itam?.privilegeOk,
       nok: data.itam?.privilegeNok
-    },
+    }],
+    "manage-pc-kace": [
     {
       label: "KACE",
       ok: data.kace?.ok,
       nok: data.kace?.nok
     }
-  ].map((moduleRow) => {
-    const backendRow = summaryModules.get(moduleRow.label);
-    return {
-      label: moduleRow.label,
-      ok: moduleRow.ok ?? backendRow?.ok,
-      nok: moduleRow.nok ?? backendRow?.nok
-    };
-  });
-
-  const moduleLines = moduleRows
-    .map((m) => `
-      <div class="mpc-summary__module">
-        <span class="mpc-summary__module-label">${escapeHtml(m.label)}</span>
-        <span class="mpc-summary__module-digits">
-          <span>${m.ok != null ? m.ok.toLocaleString() : ""} OK</span>
-          <span>${m.nok != null ? m.nok.toLocaleString() : ""} NOK</span>
-        </span>
+    ]
+  };
+  const moduleRows = moduleRowsByKey[moduleKey] || [];
+  const moduleCards = moduleRows.map((row) => `
+    <article class="mpc-summary__module-card">
+      <h3>${escapeHtml(row.label)}</h3>
+      <div class="mpc-summary__module-values">
+        <div><small>OK</small><strong>${row.ok == null ? "&mdash;" : Number(row.ok).toLocaleString()}</strong></div>
+        <div><small>NOK</small><strong>${row.nok == null ? "&mdash;" : Number(row.nok).toLocaleString()}</strong></div>
       </div>
-    `)
-    .join("");
+    </article>
+  `).join("");
 
   return `
     <section class="mpc-summary" data-mpc-summary aria-live="polite">
-      <div class="mpc-summary__cards">
-        <div class="mpc-summary__card mpc-summary__card--total">
-          <span class="mpc-summary__label">Total PC</span>
-          <strong class="mpc-summary__value">${totalPc.toLocaleString()}</strong>
-        </div>
-        <div class="mpc-summary__card mpc-summary__card--manage">
-          <span class="mpc-summary__label">Total Terkelola</span>
-          <strong class="mpc-summary__value">${totalManage.toLocaleString()}</strong>
-        </div>
-        <div class="mpc-summary__card mpc-summary__card--nok">
-          <span class="mpc-summary__label">Total NOK</span>
-          <strong class="mpc-summary__value">${totalNok.toLocaleString()}</strong>
-          <small class="mpc-summary__hint">Status belum "OK"</small>
-        </div>
-      </div>
-
-      ${moduleLines ? `<div class="mpc-summary__modules">${moduleLines}</div>` : ""}
+      <div class="mpc-summary__module-cards">${moduleCards}</div>
     </section>
   `;
 }
@@ -404,7 +377,7 @@ export function renderManagePcPage(container, routeInfo) {
 
   renderShell(container, {
     activeKey: routeInfo.key,
-    pageTitle: `Manage PC · ${module.label}`,
+    pageTitle: "Manage PC",
     contentHtml
   });
 
@@ -414,7 +387,7 @@ export function renderManagePcPage(container, routeInfo) {
     .then((result) => {
       const summaryElement = container.querySelector("[data-mpc-summary]");
       if (summaryElement) {
-        summaryElement.outerHTML = renderSummary(result.success ? result.data : result);
+        summaryElement.outerHTML = renderSummary(result.success ? result.data : result, module.key);
       }
     })
     .catch((error) => {

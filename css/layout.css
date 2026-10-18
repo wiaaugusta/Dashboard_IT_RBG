@@ -5232,6 +5232,11 @@ html, body {
 
 /* Final desktop sidebar polish: consistent parent rows and compact active states. */
 @media (min-width: 821px) {
+  .app-sidebar__brand {
+    height: 76px;
+    min-height: 76px;
+  }
+
   .app-nav-item--group {
     min-height: 48px !important;
     height: 48px;
