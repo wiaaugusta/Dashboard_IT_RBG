@@ -2781,6 +2781,28 @@
   align-items: stretch;
 }
 
+.gsp-cards--kaspersky {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.gsp-cards--kaspersky .gsp-card__stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.gsp-cards--kaspersky .gsp-card__stat {
+  padding: 8px 6px;
+}
+
+.gsp-cards--kaspersky .gsp-card__stat small {
+  font-size: 11px;
+}
+
+.gsp-cards--kaspersky .gsp-card__stat strong {
+  font-size: 15px;
+}
+
 .gsp-card {
   position: relative;
   display: flex;

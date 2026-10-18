@@ -64,8 +64,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Monitoring proteksi, update database, dan compliance endpoint PC.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Managed", icon: "check" },
-      { label: "NOK", icon: "alert" }
+      { label: "Managed Kaspersky", icon: "check" },
+      { label: "Not Managed", icon: "alert" }
     ],
     features: [
       "Status proteksi & compliance tiap endpoint",
@@ -89,8 +89,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Inventarisasi, kepemilikan, dan lifecycle aset PC & hardware.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Managed", icon: "check" },
-      { label: "NOK", icon: "alert" }
+      { label: "Managed ITAM", icon: "check" },
+      { label: "Not Managed", icon: "alert" }
     ],
     features: [
       "Inventaris hardware & software per perangkat",
@@ -114,8 +114,8 @@ const MANAGE_PC_MODULES = {
     subtitle: "Deployment, inventory agent, dan otomasi perangkat PC.",
     stats: [
       { label: "Total Device", icon: "monitor" },
-      { label: "Managed", icon: "check" },
-      { label: "NOK", icon: "alert" }
+      { label: "Managed KACE", icon: "check" },
+      { label: "Not Managed", icon: "alert" }
     ],
     features: [
       "Deployment OS & aplikasi secara massal",
@@ -219,41 +219,48 @@ function renderScopePending() {
   `;
 }
 
+function renderMetricValue(value, isLoading) {
+  if (isLoading) return '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>';
+  return value == null ? "&mdash;" : Number(value).toLocaleString();
+}
+
 function renderSummary(data, moduleKey, isLoading = false) {
-  const isError = data && !data.success && data.message;
-  let total = 0, managed = 0, nok = 0;
+  const isError = data && data.success === false && data.message;
+  const d = data?.data || data || {};
+  const moduleConfig = MANAGE_PC_MODULES[moduleKey] || MANAGE_PC_MODULES["manage-pc"];
 
-  if (!isLoading && data && data.success) {
-    const d = data.data;
-    total = d.totalUser || 0;
+  let total = d.totalUser || d.summary?.totalPc || 0;
+  let managed = 0, nok = 0;
 
-    // Kasus untuk Kaspersky (menambah Versi Kaspersky)
-    if (moduleKey === "manage-pc-kaspersky") {
-      managed = d.kaspersky?.ok || 0;
-      nok = d.kaspersky?.nok || 0;
-      // Perlu tambahan khusus untuk Versi Kaspersky agar muncul
-      // Tapi kita ikuti struktur 3 kartu statis: Total, Managed, NOK
-      // Jika perlu tampilan OK/NOK untuk Versi Kaspersky, 
-      // mungkin perlu kartu statistik keempat atau modifikasi.
-      // Untuk saat ini, ikuti pola 3 kartu sesuai permintaan "samakan presis".
-    } else if (moduleKey === "manage-pc-itam") {
+  if (!isLoading) {
+    if (moduleKey === "manage-pc-itam") {
       managed = d.itam?.ok || 0;
       nok = d.itam?.nok || 0;
     } else if (moduleKey === "manage-pc-kace") {
       managed = d.kace?.ok || 0;
       nok = d.kace?.nok || 0;
-    } else {
-      // Main Manage PC (manage-pc) - Default all
+    } else if (moduleKey === "manage-pc-kaspersky") {
       managed = d.kaspersky?.ok || 0;
       nok = d.kaspersky?.nok || 0;
+    } else {
+      managed = d.kaspersky?.ok || d.summary?.managed || 0;
+      nok = d.kaspersky?.nok || d.summary?.nok || 0;
     }
   }
 
-  const renderStat = (label, value, iconName) => `
+  const statsConfig = moduleConfig.stats || [
+    { label: "Total Device", icon: "monitor" },
+    { label: "Managed", icon: "check" },
+    { label: "Not Managed", icon: "alert" }
+  ];
+
+  const values = [total, managed, nok];
+
+  const renderStat = (statItem, value) => `
     <article class="mpc-stat">
       <div class="mpc-stat__top">
-        <span class="mpc-stat__label">${escapeHtml(label)}</span>
-        <div class="mpc-stat__icon">${icon(iconName, { size: 16 })}</div>
+        <span class="mpc-stat__label">${escapeHtml(statItem.label)}</span>
+        <div class="mpc-stat__icon">${icon(statItem.icon, { size: 16 })}</div>
       </div>
       <span class="mpc-stat__value">
         ${isLoading ? '<span class="skeleton" style="width:60%; height:32px; display:inline-block"></span>' : Number(value).toLocaleString()}
@@ -264,9 +271,7 @@ function renderSummary(data, moduleKey, isLoading = false) {
   return `
     <div class="mpc-stats" data-mpc-summary aria-live="polite">
       ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-      ${renderStat("Total Device", total, "monitor")}
-      ${renderStat("Managed", managed, "check")}
-      ${renderStat("NOK", nok, "alert")}
+      ${statsConfig.map((stat, idx) => renderStat(stat, values[idx])).join("")}
     </div>
   `;
 }
@@ -376,15 +381,16 @@ export function renderManagePcPage(container, routeInfo) {
     .then((result) => {
       const summaryElement = container.querySelector("[data-mpc-summary]");
       if (summaryElement) {
-        summaryElement.outerHTML = renderSummary(result.success ? result.data : result, module.key);
+        summaryElement.outerHTML = renderSummary(result.success ? result.data : result, module.key, false);
       }
     })
     .catch((error) => {
       const summaryElement = container.querySelector("[data-mpc-summary]");
       if (summaryElement) {
         summaryElement.outerHTML = renderSummary({
+          success: false,
           message: error.message || "Ringkasan Manage PC gagal dimuat."
-        }, module.key);
+        }, module.key, false);
       }
     });
 }
