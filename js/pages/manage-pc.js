@@ -237,9 +237,9 @@ function renderSummary(data, moduleKey, isLoading = false) {
       managed = d.kace?.ok || 0;
       nok = d.kace?.nok || 0;
     } else {
-      // Main Manage PC (manage-pc) - Default Kaspersky as reference
+      // Main Manage PC (manage-pc) - Default all
       managed = d.kaspersky?.ok || 0;
-      nok = total - managed;
+      nok = d.kaspersky?.nok || 0;
     }
   }
 
