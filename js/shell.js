@@ -109,20 +109,6 @@ export function renderShell(container, options) {
 
   bindShellEvents(container);
 
-  const initiallyExpandedGroups = Array.from(
-    container.querySelectorAll(".app-nav-group.is-expanded")
-  );
-  initiallyExpandedGroups.forEach((group) => group.classList.remove("is-expanded"));
-  if (initiallyExpandedGroups.length > 0) {
-    void container.offsetHeight;
-    window.requestAnimationFrame(() => {
-      initiallyExpandedGroups.forEach((group) => {
-        const key = group.querySelector("[data-group-link]")?.getAttribute("data-group-link");
-        if (key && expandedGroups.has(key)) group.classList.add("is-expanded");
-      });
-    });
-  }
-
   const contentEl = container.querySelector("#appContent");
   if (options.onContentMount && contentEl) {
     options.onContentMount(contentEl);
