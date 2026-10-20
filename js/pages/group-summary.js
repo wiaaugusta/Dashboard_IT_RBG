@@ -81,13 +81,14 @@ function renderManagePcSpecPanel(item) {
   const fields = MANAGE_PC_SPEC_FIELDS.map((field) => `
     <div class="mpc-spec__item">
       <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
+      <span class="mpc-spec__sep" aria-hidden="true">:</span>
       <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
     </div>
   `).join("");
 
   return `
     <div class="mpc-spec">
-      <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventaris &amp; Spesifikasi Perangkat</span></p>
+      <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventory Device</span></p>
       <div class="mpc-spec__grid">${fields}</div>
     </div>
   `;
@@ -340,8 +341,7 @@ function renderManagePcRows(items, startIndex) {
       <td class="mpc-table__number">${escapeHtml(item.no == null || item.no === "" ? globalIndex + 1 : item.no)}</td>
       <td class="mpc-table__device">
         <button type="button" class="mpc-device-toggle" data-mpc-toggle
-          aria-expanded="false" aria-controls="${detailId}" title="Lihat inventaris &amp; spesifikasi">
-          <span class="mpc-device-toggle__chevron" aria-hidden="true">${icon("chevron", { size: 14 })}</span>
+          aria-expanded="false" aria-controls="${detailId}">
           <span class="mpc-device-toggle__name">${escapeHtml(item.namaKomputer || "—")}</span>
         </button>
       </td>
