@@ -45,7 +45,7 @@ const MANAGE_PC_TABLE_COLUMNS = [
  * Kolom inventaris yang ditampilkan saat Nama Komputer diklik (baris detail).
  * Sumber data: kolom M-U sheet MASTER REPORT OFFICE yang sudah dipetakan
  * backend ke field item getManagePcList. Urutan = urutan tampil; layout
- * grid 2 kolom sehingga turun per 2 baris: M·N, O·P, Q·R, S·T, U.
+ * memanjang 2 baris x 5 kolom (baris 1: M-Q, baris 2: R-U).
  */
 const MANAGE_PC_SPEC_FIELDS = [
   { key: "macAddress", label: "MAC Address" },        // M
@@ -78,6 +78,9 @@ function formatInventoryValue(value) {
 }
 
 function renderManagePcSpecPanel(item) {
+  const deviceName = item.namaKomputer == null || String(item.namaKomputer).trim() === ""
+    ? "—"
+    : String(item.namaKomputer).trim();
   const fields = MANAGE_PC_SPEC_FIELDS.map((field) => `
     <div class="mpc-spec__item">
       <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
@@ -88,7 +91,7 @@ function renderManagePcSpecPanel(item) {
 
   return `
     <div class="mpc-spec">
-      <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventory Device</span></p>
+      <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventory Device</span><span class="mpc-spec__device">[${escapeHtml(deviceName)}]</span></p>
       <div class="mpc-spec__grid">${fields}</div>
     </div>
   `;
