@@ -1383,6 +1383,13 @@ SOURCE
 
 sesuai kebutuhan masing-masing modul.
 
+Manage PC reads the `MASTER REPORT OFFICE` sheet through
+`getManagePcSummary` and `getManagePcList`. The list response's `items`
+include `divisi` and device inventory fields mapped from columns M–U:
+`macAddress`, `serialNumber`, `merk`, `modelKomputer`, `totalRam`,
+`totalHardisk`, `kapasitasDriveC`, `kapasitasDriveD`, and `userLogged`.
+Frontend callers can retrieve these fields through `loadManagePcList`.
+
 
 ---
 

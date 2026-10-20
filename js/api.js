@@ -237,6 +237,10 @@ export async function loadManagePcSummary(scope = "office", options = {}) {
   return apiRequest("getManagePcSummary", { scope }, options);
 }
 
+/**
+ * Ambil data perangkat Manage PC yang sudah dipetakan backend dari sheet.
+ * Setiap item mencakup divisi dan field inventaris perangkat.
+ */
 export async function loadManagePcList(module, scope = "office", options = {}) {
   return apiRequest("getManagePcList", {
     module,
