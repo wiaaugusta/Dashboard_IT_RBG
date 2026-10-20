@@ -1394,6 +1394,21 @@ through `loadManagePcList`. The Manage PC overview table displays columns
 A–G and H, J, L, uses server-side search and sorting, and requests 15 rows
 per page.
 
+**Device inventory detail (columns M–U).** `Nama Komputer` on each table row
+is clickable and expands an inline detail row directly below it, rendered
+from the inventory fields already present on the `getManagePcList` item — no
+extra request is made. The fields are shown two per row in sheet order
+(M·N, O·P, Q·R, S·T, U). Display normalization applied by the frontend:
+
+| Nilai sel | Ditampilkan |
+| --- | --- |
+| keterangan tidak ditemukan (`NOT FOUND`, `TIDAK DITEMUKAN`, `TDK DITEMUKAN`, `BELUM DITEMUKAN`) | `unknown` |
+| kosong, atau tidak mengandung huruf/angka (mis. `-`, `—`, `/`) | `-` |
+| lainnya | sesuai isi sel |
+
+This is presentation-layer normalization only; the spreadsheet and the API
+payload are not modified.
+
 
 ---
 

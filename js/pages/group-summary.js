@@ -42,6 +42,58 @@ const MANAGE_PC_TABLE_COLUMNS = [
 ];
 
 /**
+ * Kolom inventaris yang ditampilkan saat Nama Komputer diklik (baris detail).
+ * Sumber data: kolom M-U sheet MASTER REPORT OFFICE yang sudah dipetakan
+ * backend ke field item getManagePcList. Urutan = urutan tampil; layout
+ * grid 2 kolom sehingga turun per 2 baris: M·N, O·P, Q·R, S·T, U.
+ */
+const MANAGE_PC_SPEC_FIELDS = [
+  { key: "macAddress", label: "MAC Address" },        // M
+  { key: "serialNumber", label: "Serial Number" },     // N
+  { key: "merk", label: "Merk" },                      // O
+  { key: "modelKomputer", label: "Model Komputer" },   // P
+  { key: "totalRam", label: "Total RAM" },             // Q
+  { key: "totalHardisk", label: "Total Harddisk" },    // R
+  { key: "kapasitasDriveC", label: "Kapasitas Drive C" }, // S
+  { key: "kapasitasDriveD", label: "Kapasitas Drive D" }, // T
+  { key: "userLogged", label: "User Logged" }          // U
+];
+
+// Keterangan "tidak ditemukan" di sheet -> tampil sebagai unknown.
+const MANAGE_PC_NOT_FOUND_RE = /^(?:NOT\s*FOUND|(?:TIDAK|TDK|BELUM)\s+(?:DI\s*)?TEMUKAN)$/i;
+
+/**
+ * Nilai sel inventaris M-U untuk ditampilkan.
+ * - kosong -> "-"
+ * - keterangan tidak ditemukan -> "unknown"
+ * - tanpa huruf & angka (mis. "-", "—", "/") -> "-"
+ * - selain itu apa adanya
+ */
+function formatInventoryValue(value) {
+  const text = value == null ? "" : String(value).trim();
+  if (!text) return "-";
+  if (MANAGE_PC_NOT_FOUND_RE.test(text)) return "unknown";
+  if (!/[A-Za-z0-9]/.test(text)) return "-";
+  return text;
+}
+
+function renderManagePcSpecPanel(item) {
+  const fields = MANAGE_PC_SPEC_FIELDS.map((field) => `
+    <div class="mpc-spec__item">
+      <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
+      <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
+    </div>
+  `).join("");
+
+  return `
+    <div class="mpc-spec">
+      <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventaris &amp; Spesifikasi Perangkat</span></p>
+      <div class="mpc-spec__grid">${fields}</div>
+    </div>
+  `;
+}
+
+/**
  * Meta per menu parent: warna aksen hero + deskripsi, aksen, dan label
  * statistik per submenu. Angka statistik masih placeholder (backend
  * belum tersedia) - saat backend siap, cukup hidupkan nilainya tanpa
@@ -280,10 +332,19 @@ function renderManagePcRows(items, startIndex) {
     return `<tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
   }
 
-  return items.map((item, index) => `
-    <tr>
-      <td class="mpc-table__number">${escapeHtml(item.no == null || item.no === "" ? startIndex + index + 1 : item.no)}</td>
-      <td class="mpc-table__device">${escapeHtml(item.namaKomputer || "—")}</td>
+  return items.map((item, index) => {
+    const globalIndex = startIndex + index;
+    const detailId = `mpc-spec-${globalIndex}`;
+    return `
+    <tr class="mpc-table__row">
+      <td class="mpc-table__number">${escapeHtml(item.no == null || item.no === "" ? globalIndex + 1 : item.no)}</td>
+      <td class="mpc-table__device">
+        <button type="button" class="mpc-device-toggle" data-mpc-toggle
+          aria-expanded="false" aria-controls="${detailId}" title="Lihat inventaris &amp; spesifikasi">
+          <span class="mpc-device-toggle__chevron" aria-hidden="true">${icon("chevron", { size: 14 })}</span>
+          <span class="mpc-device-toggle__name">${escapeHtml(item.namaKomputer || "—")}</span>
+        </button>
+      </td>
       <td>${escapeHtml(item.divisi || "—")}</td>
       <td>${escapeHtml(item.alamatIp || "—")}</td>
       <td>${escapeHtml(item.workgroup || "—")}</td>
@@ -293,7 +354,10 @@ function renderManagePcRows(items, startIndex) {
       <td class="mpc-table__status">${renderManagePcStatus(item.manageItam)}</td>
       <td class="mpc-table__status">${renderManagePcStatus(item.manageKace)}</td>
     </tr>
-  `).join("");
+    <tr class="mpc-table__spec" id="${detailId}" hidden>
+      <td class="mpc-table__spec-cell" colspan="${MANAGE_PC_TABLE_COLUMNS.length}">${renderManagePcSpecPanel(item)}</td>
+    </tr>`;
+  }).join("");
 }
 
 function bindManagePcTable(container, session) {
@@ -395,6 +459,20 @@ function bindManagePcTable(container, session) {
     if (!button || button.disabled) return;
     page = Math.max(1, Math.min(totalPages, page + Number(button.getAttribute("data-page-step"))));
     loadPage();
+  });
+
+  /* Nama Komputer diklik -> buka/tutup baris inventaris (kolom M-U) tepat
+     di bawah baris perangkat. Delegasi pada tbody: tetap bekerja setelah
+     rows di-render ulang oleh search / sort / pagination. */
+  rowsElement.addEventListener("click", (event) => {
+    const toggle = event.target.closest("[data-mpc-toggle]");
+    if (!toggle) return;
+    const specRow = document.getElementById(toggle.getAttribute("aria-controls"));
+    if (!specRow) return;
+    const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+    toggle.setAttribute("aria-expanded", String(!isExpanded));
+    specRow.hidden = isExpanded;
+    toggle.closest("tr").classList.toggle("is-expanded", !isExpanded);
   });
 
   loadPage();
