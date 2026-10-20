@@ -861,7 +861,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
   color: #42546b;
   font-size: 10px;
   font-weight: 700;
@@ -878,22 +878,31 @@
 }
 
 /* Satu kotak siku, isi 5 kolom pasangan vertikal (kolom 1: M atas N
-   bawah, dst). Tiap kolom grid sendiri: label max-content ngikut yang
-   terpanjang di pasangannya -> titik dua rapat ke nama, value dapat
-   ruang sisa dan boleh wrap. */
+   bawah, dst). Lebar kolom proporsional mengikuti kebutuhan label +
+   value terpanjang di pasangannya (flex auto). Label nowrap rapat ke
+   titik dua, value nowrap sebaris — wrap hanya kalau ruang benar-benar
+   habis. */
 .mpc-spec__grid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  column-gap: 18px;
+  display: flex;
+  gap: 26px;
   min-width: 0;
 }
 
 .mpc-spec__col {
   display: grid;
-  grid-template-columns: max-content 8px minmax(0, 1fr);
+  grid-template-columns: max-content 8px max-content;
   align-items: start;
   align-content: start;
   min-width: 0;
+  flex: 0 1 auto;
+}
+
+.mpc-spec__col--wide {
+  flex: 1 1 auto;
+}
+
+.mpc-spec__col--fixed {
+  flex: 0 0 auto;
 }
 
 .mpc-spec__item {
@@ -922,18 +931,38 @@
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.5;
+  white-space: nowrap;
+}
+
+.mpc-spec__col--wide .mpc-spec__value {
+  white-space: normal;
   overflow-wrap: anywhere;
+}
+
+/* Garis pemisah satu garis lurus antar baris: hanya di bawah baris atas
+   (item atas, bukan per kolom bawah) supaya tidak berantakan. */
+.mpc-spec__item--top > .mpc-spec__label,
+.mpc-spec__item--top > .mpc-spec__sep,
+.mpc-spec__item--top > .mpc-spec__value {
+  border-bottom: 1px solid #dde2e8;
 }
 
 .mpc-spec__item--bottom > .mpc-spec__label,
 .mpc-spec__item--bottom > .mpc-spec__sep,
 .mpc-spec__item--bottom > .mpc-spec__value {
-  border-top: 1px solid #dde2e8;
+  border-bottom: 0;
 }
 
 @media (max-width: 1100px) {
   .mpc-spec__grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    flex-wrap: wrap;
+    gap: 0 26px;
+  }
+
+  .mpc-spec__col,
+  .mpc-spec__col--wide,
+  .mpc-spec__col--fixed {
+    flex: 0 0 calc(33.333% - 18px);
   }
 }
 
@@ -960,11 +989,14 @@
   }
 
   .mpc-spec__grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    flex-wrap: wrap;
+    gap: 0 26px;
   }
 
-  .mpc-spec__col {
-    grid-template-columns: max-content 8px minmax(0, 1fr);
+  .mpc-spec__col,
+  .mpc-spec__col--wide,
+  .mpc-spec__col--fixed {
+    flex: 0 0 calc(50% - 13px);
   }
 
   .mpc-table td.mpc-table__spec-cell {

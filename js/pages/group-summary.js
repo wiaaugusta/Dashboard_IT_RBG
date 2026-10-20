@@ -83,20 +83,27 @@ function renderManagePcSpecPanel(item) {
   const deviceName = item.namaKomputer == null || String(item.namaKomputer).trim() === ""
     ? "—"
     : String(item.namaKomputer).trim();
-  const renderSpecItem = (field, isBottom) => `
-    <div class="mpc-spec__item${isBottom ? " mpc-spec__item--bottom" : ""}">
+  const renderSpecItem = (field, position) => `
+    <div class="mpc-spec__item mpc-spec__item--${position}">
       <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
       <span class="mpc-spec__sep" aria-hidden="true">:</span>
       <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
     </div>
   `;
-  /* Satu kolom per pasangan vertikal (M/N, O/P, Q/R, S/T, U) supaya
-     titik dua tiap kolom ngikut label terpanjang pasangannya. */
+  /* Satu kolom per pasangan vertikal (M/N, O/P, Q/R, S/T, U). Kolom yang
+     value-nya panjang (merk/model) diberi ruang fleksibel supaya sebaris;
+     kolom pendek dikunci agar tidak menyita ruang. */
+  const colClass = (fields) => {
+    const long = fields.some((f) => ["merk", "modelKomputer"].includes(f.key));
+    if (long) return "mpc-spec__col mpc-spec__col--wide";
+    const fixed = fields.every((f) => ["totalRam", "totalHardisk", "kapasitasDriveC", "kapasitasDriveD", "userLogged", "macAddress", "serialNumber"].includes(f.key));
+    return fixed ? "mpc-spec__col mpc-spec__col--fixed" : "mpc-spec__col";
+  };
   const cols = [];
   for (let i = 0; i < MANAGE_PC_SPEC_FIELDS.length; i += 2) {
-    const top = MANAGE_PC_SPEC_FIELDS[i];
-    const bottom = MANAGE_PC_SPEC_FIELDS[i + 1];
-    cols.push(`<div class="mpc-spec__col">${renderSpecItem(top, false)}${bottom ? renderSpecItem(bottom, true) : ""}</div>`);
+    const pair = [MANAGE_PC_SPEC_FIELDS[i], MANAGE_PC_SPEC_FIELDS[i + 1]].filter(Boolean);
+    const cells = pair.map((field, j) => renderSpecItem(field, j === 0 ? "top" : "bottom")).join("");
+    cols.push(`<div class="${colClass(pair)}">${cells}</div>`);
   }
 
   return `
