@@ -91,13 +91,15 @@ function renderManagePcSpecPanel(item) {
     </div>
   `;
   /* Satu kolom per pasangan vertikal (M/N, O/P, Q/R, S/T, U). Kolom
-     auto ngikut isi terpanjang (flex none): value pendek menyempit,
-     value panjang melebar, tanpa space kosong dan tanpa turun sia-sia. */
+     auto ngikut isi terpanjang (flex none). Lebar label tiap kolom
+     disamakan dengan label terpanjang pasangannya (via --label-w)
+     supaya titik dua atas-bawah segaris. */
   const cols = [];
   for (let i = 0; i < MANAGE_PC_SPEC_FIELDS.length; i += 2) {
     const pair = [MANAGE_PC_SPEC_FIELDS[i], MANAGE_PC_SPEC_FIELDS[i + 1]].filter(Boolean);
+    const labelW = Math.max(...pair.map((f) => f.label.length));
     const cells = pair.map((field, j) => renderSpecItem(field, j === 0 ? "top" : "bottom")).join("");
-    cols.push(`<div class="mpc-spec__col">${cells}</div>`);
+    cols.push(`<div class="mpc-spec__col" style="--label-w:${labelW}ch">${cells}</div>`);
   }
 
   return `

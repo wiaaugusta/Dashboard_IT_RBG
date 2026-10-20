@@ -878,10 +878,10 @@
 }
 
 /* Satu kotak siku, isi 5 kolom pasangan vertikal (kolom 1: M atas N
-   bawah, dst). Tiap kolom flex:none sehingga lebarnya auto ngikut isi
-   terpanjang di pasangannya: value pendek menyempit, value panjang
-   melebar — tidak ada space kosong, value tidak turun sia-sia.
-   Label nowrap, titik dua 1 spasi dari nama, value sebaris. */
+   bawah, dst). Tiap ITEM satu baris flex (label : value sebaris) dengan
+   SATU garis bawah per item — label & value pasti sejajar karena garisnya
+   milik barisnya, bukan milik tiap sel. Tiap kolom flex:none sehingga
+   lebarnya auto ngikut isi terpanjang di pasangannya. */
 .mpc-spec__grid {
   display: flex;
   gap: 0 28px;
@@ -889,20 +889,28 @@
 }
 
 .mpc-spec__col {
-  display: grid;
-  grid-template-columns: max-content max-content max-content;
-  align-items: start;
-  align-content: start;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   flex: 0 0 auto;
 }
 
 .mpc-spec__item {
-  display: contents;
+  display: flex;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid #dde2e8;
+  white-space: nowrap;
+}
+
+.mpc-spec__item--bottom {
+  border-bottom: 0;
 }
 
 .mpc-spec__label {
-  padding: 7px 4px 7px 0;
+  flex: 0 0 auto;
+  min-width: var(--label-w, auto);
+  padding-right: 4px;
   color: #8b96a5;
   font-size: 11px;
   font-weight: 600;
@@ -911,34 +919,20 @@
 }
 
 .mpc-spec__sep {
-  padding: 7px 4px 7px 0;
+  flex: 0 0 auto;
+  padding-right: 4px;
   color: #b3bcc7;
   line-height: 1.5;
 }
 
 .mpc-spec__value {
+  flex: 0 0 auto;
   min-width: 0;
-  padding: 7px 0;
   color: #3c4a5d;
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.5;
   white-space: nowrap;
-}
-
-/* Satu garis lurus pemisah baris atas-bawah: tinggi sel atas selalu
-   sama karena label & value sebaris, jadi garis tidak berantakan.
-   Baris bawah tanpa garis. */
-.mpc-spec__item--top > .mpc-spec__label,
-.mpc-spec__item--top > .mpc-spec__sep,
-.mpc-spec__item--top > .mpc-spec__value {
-  border-bottom: 1px solid #dde2e8;
-}
-
-.mpc-spec__item--bottom > .mpc-spec__label,
-.mpc-spec__item--bottom > .mpc-spec__sep,
-.mpc-spec__item--bottom > .mpc-spec__value {
-  border-bottom: 0;
 }
 
 @media (max-width: 1100px) {
