@@ -83,25 +83,26 @@ function renderManagePcSpecPanel(item) {
   const deviceName = item.namaKomputer == null || String(item.namaKomputer).trim() === ""
     ? "—"
     : String(item.namaKomputer).trim();
-  const topFields = MANAGE_PC_SPEC_FIELDS.filter((_, index) => index % 2 === 0);
-  const bottomFields = MANAGE_PC_SPEC_FIELDS.filter((_, index) => index % 2 === 1);
-  const renderSpecItem = (field) => `
-    <div class="mpc-spec__item">
+  const renderSpecItem = (field, isBottom) => `
+    <div class="mpc-spec__item${isBottom ? " mpc-spec__item--bottom" : ""}">
       <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
       <span class="mpc-spec__sep" aria-hidden="true">:</span>
       <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
     </div>
   `;
-  const topRow = topFields.map(renderSpecItem).join("");
-  const bottomRow = bottomFields.map(renderSpecItem).join("");
+  /* Satu kolom per pasangan vertikal (M/N, O/P, Q/R, S/T, U) supaya
+     titik dua tiap kolom ngikut label terpanjang pasangannya. */
+  const cols = [];
+  for (let i = 0; i < MANAGE_PC_SPEC_FIELDS.length; i += 2) {
+    const top = MANAGE_PC_SPEC_FIELDS[i];
+    const bottom = MANAGE_PC_SPEC_FIELDS[i + 1];
+    cols.push(`<div class="mpc-spec__col">${renderSpecItem(top, false)}${bottom ? renderSpecItem(bottom, true) : ""}</div>`);
+  }
 
   return `
     <div class="mpc-spec">
       <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventory Device</span><span class="mpc-spec__device">[${escapeHtml(deviceName)}]</span></p>
-      <div class="mpc-spec__grid" role="presentation">
-        <div class="mpc-spec__row">${topRow}</div>
-        <div class="mpc-spec__row">${bottomRow}</div>
-      </div>
+      <div class="mpc-spec__grid" role="presentation">${cols.join("")}</div>
     </div>
   `;
 }
