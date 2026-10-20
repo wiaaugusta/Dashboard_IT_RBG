@@ -850,18 +850,18 @@
 .mpc-spec {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
   padding: 10px 14px 12px;
-  border: 1px solid #e3e7ec;
-  border-radius: 8px;
-  background: #fafbfc;
+  border: 1px solid #dfe3e8;
+  border-radius: 0;
+  background: #eef1f4;
 }
 
 .mpc-spec__title {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  margin: 0;
+  margin: 0 0 8px;
   color: #42546b;
   font-size: 10px;
   font-weight: 700;
@@ -877,63 +877,61 @@
   overflow-wrap: anywhere;
 }
 
-/* Satu kotak soft, isi memanjang 2 baris x 5 kolom (baris 1: M-Q,
-   baris 2: R-U). Tiap sel format label : value dengan garis pemisah. */
+/* Satu kotak siku, isi pasangan vertikal 5 kolom x 2 baris (kolom 1:
+   M atas N bawah, dst). Tiap baris format label : value; titik dua
+   antar baris disejajarkan via lebar kolom label yang sama. */
 .mpc-spec__grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   grid-template-rows: repeat(2, auto);
-  grid-auto-flow: row;
-  column-gap: 22px;
+  row-gap: 0;
+  min-width: 0;
+}
+
+.mpc-spec__row {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  column-gap: 18px;
+  min-width: 0;
+}
+
+.mpc-spec__row + .mpc-spec__row {
+  border-top: 1px solid #dde2e8;
 }
 
 .mpc-spec__item {
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 104px) 10px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 2px;
   min-width: 0;
-  padding: 6px 0;
-  border-bottom: 1px solid #e8ebef;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.mpc-spec__item:nth-child(-n+5) {
-  border-bottom: 1px solid #e8ebef;
-}
-
-.mpc-spec__item:nth-child(n+6) {
-  border-bottom: 0;
+  padding: 7px 0;
 }
 
 .mpc-spec__label {
   color: #8b96a5;
   font-size: 11px;
   font-weight: 600;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 .mpc-spec__sep {
   color: #b3bcc7;
-  margin: 0 3px;
+  line-height: 1.5;
 }
 
 .mpc-spec__value {
   color: #3c4a5d;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
 @media (max-width: 1100px) {
-  .mpc-spec__grid {
+  .mpc-spec__row {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
-  .mpc-spec__item:nth-child(n+6) {
-    border-bottom: 1px solid #e8ebef;
-  }
-
-  .mpc-spec__item:nth-last-child(-n+3) {
-    border-bottom: 0;
+    row-gap: 0;
   }
 }
 
@@ -959,22 +957,12 @@
     padding: 12px 16px;
   }
 
-  .mpc-spec__grid {
+  .mpc-spec__row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: none;
-    grid-auto-flow: row;
   }
 
-  .mpc-spec__item:nth-child(-n+5) {
-    border-bottom: 1px solid #e8ebef;
-  }
-
-  .mpc-spec__item:nth-last-child(-n+2) {
-    border-bottom: 0;
-  }
-
-  .mpc-spec__item:last-child {
-    border-bottom: 0;
+  .mpc-spec__item {
+    grid-template-columns: minmax(0, 96px) 10px minmax(0, 1fr);
   }
 
   .mpc-table td.mpc-table__spec-cell {

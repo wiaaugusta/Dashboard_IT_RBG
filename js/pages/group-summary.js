@@ -45,7 +45,9 @@ const MANAGE_PC_TABLE_COLUMNS = [
  * Kolom inventaris yang ditampilkan saat Nama Komputer diklik (baris detail).
  * Sumber data: kolom M-U sheet MASTER REPORT OFFICE yang sudah dipetakan
  * backend ke field item getManagePcList. Urutan = urutan tampil; layout
- * memanjang 2 baris x 5 kolom (baris 1: M-Q, baris 2: R-U).
+ * pasangan vertikal 5 kolom x 2 baris (kolom 1: M atas N bawah, kolom 2:
+ * O atas P bawah, kolom 3: Q atas R bawah, kolom 4: S atas T bawah,
+ * kolom 5: U atas).
  */
 const MANAGE_PC_SPEC_FIELDS = [
   { key: "macAddress", label: "MAC Address" },        // M
@@ -81,18 +83,25 @@ function renderManagePcSpecPanel(item) {
   const deviceName = item.namaKomputer == null || String(item.namaKomputer).trim() === ""
     ? "—"
     : String(item.namaKomputer).trim();
-  const fields = MANAGE_PC_SPEC_FIELDS.map((field) => `
+  const topFields = MANAGE_PC_SPEC_FIELDS.filter((_, index) => index % 2 === 0);
+  const bottomFields = MANAGE_PC_SPEC_FIELDS.filter((_, index) => index % 2 === 1);
+  const renderSpecItem = (field) => `
     <div class="mpc-spec__item">
       <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
       <span class="mpc-spec__sep" aria-hidden="true">:</span>
       <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
     </div>
-  `).join("");
+  `;
+  const topRow = topFields.map(renderSpecItem).join("");
+  const bottomRow = bottomFields.map(renderSpecItem).join("");
 
   return `
     <div class="mpc-spec">
       <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventory Device</span><span class="mpc-spec__device">[${escapeHtml(deviceName)}]</span></p>
-      <div class="mpc-spec__grid">${fields}</div>
+      <div class="mpc-spec__grid" role="presentation">
+        <div class="mpc-spec__row">${topRow}</div>
+        <div class="mpc-spec__row">${bottomRow}</div>
+      </div>
     </div>
   `;
 }
