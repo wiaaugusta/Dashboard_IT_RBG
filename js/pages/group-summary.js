@@ -25,7 +25,21 @@ import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { NAV_ITEMS, isVisibleForRole } from "../nav-config.js";
 import { icon } from "../icons.js";
-import { loadManagePcSummary } from "../api.js";
+import { loadManagePcList, loadManagePcSummary } from "../api.js";
+
+const MANAGE_PC_PAGE_SIZE = 15;
+const MANAGE_PC_TABLE_COLUMNS = [
+  { key: "no", label: "No" },
+  { key: "namaKomputer", label: "Nama Komputer" },
+  { key: "divisi", label: "Divisi" },
+  { key: "alamatIp", label: "Alamat IP" },
+  { key: "workgroup", label: "Workgroup" },
+  { key: "model", label: "Model" },
+  { key: "sistemOperasi", label: "Sistem Operasi" },
+  { key: "manageKav", label: "Kaspersky" },
+  { key: "manageItam", label: "ITAM" },
+  { key: "manageKace", label: "KACE" }
+];
 
 /**
  * Meta per menu parent: warna aksen hero + deskripsi, aksen, dan label
@@ -164,12 +178,14 @@ export function renderGroupSummaryPage(container, routeInfo) {
         ${cards.join("")}
       </section>
 
-      <div class="mpc-note" data-group-summary-message aria-live="polite">
-        ${icon("info", { size: 16 })}
-        <span>
-          ${isManagePc ? (activeScope === "store" ? "Ringkasan data Store akan ditampilkan setelah sumber data Store dihubungkan." : "Memuat ringkasan data Manage PC Office...") : `${escapeHtml(getScopeNote(session.role, routeInfo.key))} Angka pada kartu masih placeholder &mdash; menunggu integrasi data backend.`}
-        </span>
-      </div>
+      ${isManagePc && activeScope === "office" ? '<p class="mpc-table__summary-error" data-manage-pc-summary-error role="alert" hidden></p>' : ""}
+      ${isManagePc && activeScope === "office" ? renderManagePcTable() : ""}
+      ${!isManagePc ? `
+        <div class="mpc-note" aria-live="polite">
+          ${icon("info", { size: 16 })}
+          <span>${escapeHtml(getScopeNote(session.role, routeInfo.key))} Angka pada kartu masih placeholder &mdash; menunggu integrasi data backend.</span>
+        </div>
+      ` : ""}
     </div>
   `;
 
@@ -180,24 +196,208 @@ export function renderGroupSummaryPage(container, routeInfo) {
   });
 
   if (isManagePc && activeScope === "office") {
+    bindManagePcTable(container, session);
+  }
+
+  if (isManagePc && activeScope === "office") {
     loadManagePcSummary("office", { sessionToken: session.sessionToken })
       .then((result) => {
         const cardsElement = container.querySelector("[data-group-summary-cards]");
-        const messageElement = container.querySelector("[data-group-summary-message] span");
+        const errorElement = container.querySelector("[data-manage-pc-summary-error]");
         if (result.success && result.data) {
           if (cardsElement) {
             cardsElement.innerHTML = renderGroupCards(visibleChildren, meta, result.data, true, activeScope).join("");
           }
-          if (messageElement) messageElement.textContent = "Status OK dihitung sebagai Device Manage; status selain OK dihitung sebagai Not Manage.";
-        } else if (messageElement) {
-          messageElement.textContent = result.message || "Ringkasan Manage PC gagal dimuat.";
+        } else if (errorElement) {
+          errorElement.textContent = result.message || "Ringkasan Manage PC gagal dimuat.";
+          errorElement.hidden = false;
         }
       })
       .catch((error) => {
-        const messageElement = container.querySelector("[data-group-summary-message] span");
-        if (messageElement) messageElement.textContent = error.message || "Ringkasan Manage PC gagal dimuat.";
+        const errorElement = container.querySelector("[data-manage-pc-summary-error]");
+        if (errorElement) {
+          errorElement.textContent = error.message || "Ringkasan Manage PC gagal dimuat.";
+          errorElement.hidden = false;
+        }
+        console.error("[group-summary.js] Ringkasan Manage PC gagal dimuat:", error);
       });
   }
+}
+
+function renderManagePcTable() {
+  const headers = MANAGE_PC_TABLE_COLUMNS.map((column) => `
+    <th scope="col" aria-sort="none" data-sort-header="${column.key}">
+      <button type="button" class="mpc-table__sort" data-sort-by="${column.key}">
+        <span>${escapeHtml(column.label)}</span>
+        <span class="mpc-table__sort-indicator" aria-hidden="true">↕</span>
+      </button>
+    </th>
+  `).join("");
+
+  return `
+    <section class="mpc-table-card" aria-labelledby="mpcTableTitle">
+      <header class="mpc-table-card__header">
+        <div>
+          <h2 id="mpcTableTitle">Daftar Perangkat</h2>
+          <p>Data perangkat Office dari Manage PC.</p>
+        </div>
+        <label class="mpc-table-search">
+          ${icon("search", { size: 17 })}
+          <span class="visually-hidden">Cari perangkat</span>
+          <input type="search" data-mpc-search placeholder="Cari perangkat..." autocomplete="off">
+        </label>
+      </header>
+      <div class="mpc-table__count" data-mpc-count aria-live="polite"></div>
+      <div class="mpc-table-wrapper">
+        <table class="mpc-table">
+          <thead><tr>${headers}</tr></thead>
+          <tbody data-mpc-rows>
+            <tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state">Memuat data perangkat...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <footer class="mpc-table__footer" data-mpc-pagination></footer>
+    </section>
+  `;
+}
+
+function renderManagePcStatus(value) {
+  const status = value == null ? "" : String(value).trim().toUpperCase();
+  if (status === "OK") {
+    return '<span class="mpc-status mpc-status--ok" role="img" aria-label="OK" title="OK">✓</span>';
+  }
+  if (status === "NOK") {
+    return '<span class="mpc-status mpc-status--nok" role="img" aria-label="NOK" title="NOK">×</span>';
+  }
+  if (!status || status === "-" || status === "NOT FOUND" || /^TIDAK\s+(?:DI\s*)?TEMUKAN$/.test(status)) {
+    return '<span class="mpc-status mpc-status--empty" role="img" aria-label="Tidak ditemukan" title="Tidak ditemukan">−</span>';
+  }
+  return `<span class="mpc-status mpc-status--other" title="${escapeHtml(value)}">${escapeHtml(value)}</span>`;
+}
+
+function renderManagePcRows(items, startIndex) {
+  if (items.length === 0) {
+    return `<tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
+  }
+
+  return items.map((item, index) => `
+    <tr>
+      <td class="mpc-table__number">${escapeHtml(item.no == null || item.no === "" ? startIndex + index + 1 : item.no)}</td>
+      <td class="mpc-table__device">${escapeHtml(item.namaKomputer || "—")}</td>
+      <td>${escapeHtml(item.divisi || "—")}</td>
+      <td>${escapeHtml(item.alamatIp || "—")}</td>
+      <td>${escapeHtml(item.workgroup || "—")}</td>
+      <td>${escapeHtml(item.model || "—")}</td>
+      <td>${escapeHtml(item.sistemOperasi || "—")}</td>
+      <td class="mpc-table__status">${renderManagePcStatus(item.manageKav)}</td>
+      <td class="mpc-table__status">${renderManagePcStatus(item.manageItam)}</td>
+      <td class="mpc-table__status">${renderManagePcStatus(item.manageKace)}</td>
+    </tr>
+  `).join("");
+}
+
+function bindManagePcTable(container, session) {
+  const table = container.querySelector(".mpc-table-card");
+  if (!table) return;
+
+  const searchInput = table.querySelector("[data-mpc-search]");
+  const rowsElement = table.querySelector("[data-mpc-rows]");
+  const countElement = table.querySelector("[data-mpc-count]");
+  const paginationElement = table.querySelector("[data-mpc-pagination]");
+  let page = 1;
+  let search = "";
+  let sortBy = "";
+  let sortDirection = "asc";
+  let requestId = 0;
+  let searchTimer = null;
+  let totalPages = 1;
+
+  function updateSortHeaders() {
+    table.querySelectorAll("[data-sort-header]").forEach((header) => {
+      const key = header.getAttribute("data-sort-header");
+      const button = header.querySelector("[data-sort-by]");
+      const indicator = button.querySelector(".mpc-table__sort-indicator");
+      const label = button.querySelector("span").textContent;
+      const isSorted = key === sortBy;
+      header.setAttribute("aria-sort", isSorted ? (sortDirection === "asc" ? "ascending" : "descending") : "none");
+      indicator.textContent = isSorted ? (sortDirection === "asc" ? "↑" : "↓") : "↕";
+      button.setAttribute("aria-label", `Urutkan berdasarkan ${label}${isSorted ? (sortDirection === "asc" ? ", naik" : ", turun") : ""}`);
+    });
+  }
+
+  function updatePagination(data) {
+    const total = Number(data.total) || 0;
+    totalPages = Math.max(1, Number(data.totalPages) || 1);
+    const first = total ? ((page - 1) * MANAGE_PC_PAGE_SIZE) + 1 : 0;
+    const last = Math.min(page * MANAGE_PC_PAGE_SIZE, total);
+    countElement.textContent = `Menampilkan ${first}–${last} dari ${total} perangkat`;
+    paginationElement.innerHTML = `
+      <span class="mpc-table__page-info">Halaman ${page} dari ${totalPages}</span>
+      <div class="mpc-table__page-actions">
+        <button type="button" data-page-step="-1" aria-label="Halaman sebelumnya" ${page <= 1 ? "disabled" : ""}>Sebelumnya</button>
+        <button type="button" data-page-step="1" aria-label="Halaman berikutnya" ${page >= totalPages ? "disabled" : ""}>Berikutnya</button>
+      </div>
+    `;
+  }
+
+  async function loadPage() {
+    const thisRequest = ++requestId;
+    rowsElement.innerHTML = `<tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state">Memuat data perangkat...</td></tr>`;
+    countElement.textContent = "";
+    paginationElement.innerHTML = "";
+    const result = await loadManagePcList("kaspersky", "office", {
+      page,
+      limit: MANAGE_PC_PAGE_SIZE,
+      search,
+      sortBy,
+      sortDirection,
+      sessionToken: session.sessionToken
+    });
+    if (thisRequest !== requestId) return;
+    if (!result.success) {
+      rowsElement.innerHTML = `<tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(result.message || "Data perangkat gagal dimuat.")}</td></tr>`;
+      countElement.textContent = "";
+      return;
+    }
+
+    const data = result.data || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+    page = Number(data.page) || page;
+    rowsElement.innerHTML = renderManagePcRows(items, (page - 1) * MANAGE_PC_PAGE_SIZE);
+    updatePagination(data);
+    updateSortHeaders();
+  }
+
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      search = searchInput.value.trim();
+      page = 1;
+      loadPage();
+    }, 250);
+  });
+
+  table.querySelector("thead").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-sort-by]");
+    if (!button) return;
+    const key = button.getAttribute("data-sort-by");
+    if (sortBy === key) sortDirection = sortDirection === "asc" ? "desc" : "asc";
+    else {
+      sortBy = key;
+      sortDirection = "asc";
+    }
+    page = 1;
+    loadPage();
+  });
+
+  paginationElement.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-page-step]");
+    if (!button || button.disabled) return;
+    page = Math.max(1, Math.min(totalPages, page + Number(button.getAttribute("data-page-step"))));
+    loadPage();
+  });
+
+  loadPage();
 }
 
 function renderManagePcScopeBar(activeScope, canChooseScope) {

@@ -248,6 +248,8 @@ export async function loadManagePcList(module, scope = "office", options = {}) {
     page: options.page ?? 1,
     limit: options.limit ?? 25,
     status: options.status,
-    search: options.search ?? ""
+    search: options.search ?? "",
+    sortBy: options.sortBy,
+    sortDirection: options.sortDirection
   }, options);
 }

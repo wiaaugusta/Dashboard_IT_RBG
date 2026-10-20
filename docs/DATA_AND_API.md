@@ -1385,10 +1385,14 @@ sesuai kebutuhan masing-masing modul.
 
 Manage PC reads the `MASTER REPORT OFFICE` sheet through
 `getManagePcSummary` and `getManagePcList`. The list response's `items`
-include `divisi` and device inventory fields mapped from columns M–U:
+include the sheet row number, `divisi`, and device inventory fields mapped from columns M–U:
 `macAddress`, `serialNumber`, `merk`, `modelKomputer`, `totalRam`,
 `totalHardisk`, `kapasitasDriveC`, `kapasitasDriveD`, and `userLogged`.
-Frontend callers can retrieve these fields through `loadManagePcList`.
+`getManagePcList` accepts `sortBy` and `sortDirection` for sorting the
+complete filtered result before pagination. The frontend retrieves records
+through `loadManagePcList`. The Manage PC overview table displays columns
+A–G and H, J, L, uses server-side search and sorting, and requests 15 rows
+per page.
 
 
 ---
