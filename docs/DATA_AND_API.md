@@ -1476,7 +1476,12 @@ because that tab is a filtered status list rather than the sheet order.
 
 **Table layout.** Column widths follow the data length (`table-layout:
 auto`); the status columns only hold an icon, so they stay narrow instead of
-taking a fixed wide slot. No cell content is truncated.
+taking a fixed wide slot. The table has no hard minimum width, so it always
+fits the card even when the content area shrinks (for example when the
+sidebar is hovered and expands). In that case the header and the cell text
+wrap instead of being cut, so no column or data is ever truncated. On small
+screens (below 600px) the table keeps a minimum width and is scrolled
+horizontally.
 
 The active tab is stored in the page hash query (`?view=inventory|unmanaged`)
 next to the existing scope parameter (`?scope=office|store`), so it is

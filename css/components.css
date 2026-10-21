@@ -726,11 +726,13 @@
   scrollbar-width: thin;
 }
 
-/* Lebar kolom mengikuti panjang data (auto layout). Kolom status hanya
-   selebar isinya (ikon centang/silang), bukan memakai lebar tetap. */
+/* Lebar kolom mengikuti panjang data (auto layout). Tabel TIDAK memakai
+   lebar minimum tetap, supaya tetap muut di card walau area konten
+   menyempit (mis. sidebar saat di-hover) - kolom terakhir tidak terpotong.
+   Kolom status hanya selebar isinya (ikon centang/silang). */
 .mpc-table {
   width: 100%;
-  min-width: 1040px;
+  min-width: 0;
   border-collapse: separate;
   border-spacing: 0;
   color: #344256;
@@ -748,7 +750,7 @@
   letter-spacing: .045em;
   text-align: left;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 /* Header sortable memakai tombol agar tetap bisa dioperasikan dengan keyboard. */
@@ -762,7 +764,8 @@
   letter-spacing: inherit;
   text-align: left;
   text-transform: inherit;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .mpc-table__th-sort {
@@ -779,7 +782,7 @@
   letter-spacing: inherit;
   text-align: left;
   text-transform: inherit;
-  white-space: nowrap;
+  white-space: normal;
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
@@ -818,11 +821,14 @@
   opacity: 1;
 }
 
+/* Isi sel boleh membungkus baris (bukan dipotong) ketika area konten
+   menyempit - dengan begitu tidak ada kolom yang terpotong. */
 .mpc-table td {
   height: 42px;
   padding: 8px 13px;
   border-bottom: 1px solid #edf1f5;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .mpc-table tbody tr:last-child td {
@@ -1104,6 +1110,11 @@
 }
 
 @media (max-width: 600px) {
+  /* Di layar kecil tabel digeser horizontal (bukan dijejelin). */
+  .mpc-table {
+    min-width: 1040px;
+  }
+
   .mpc-table-card__header {
     align-items: stretch;
     flex-direction: column;
