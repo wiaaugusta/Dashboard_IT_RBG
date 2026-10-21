@@ -1392,7 +1392,9 @@ include the sheet row number, `divisi`, and device inventory fields mapped from 
 `getManagePcList` accepts `sortBy` and `sortDirection` for sorting the
 complete filtered result before pagination. The frontend retrieves records
 through `loadManagePcList`. The Manage PC overview table displays columns
-A–G and H, J, L, uses server-side search, and requests 15 rows per page.
+A–G and H, J, L (tab Inventory), uses server-side search, and requests 15
+rows per page. The tab Unmanaged reads columns H–L and shows only the status
+columns that contain a non-`OK` value (see the inventory tabs section below).
 
 **Sorting (sortable column headers).** Every column except `No` sorts when
 its header is clicked, following the CCTV table's three-state cycle:
@@ -1431,15 +1433,38 @@ Management` table on the Manage PC overview page is split into two tabs:
 
 | Tab | `view` | Isi |
 | --- | --- | --- |
-| Inventory (default) | `inventory` | Perangkat yang sudah punya data inventaris (minimal satu nilai valid pada kolom M–V) |
-| Unmanaged | `unmanaged` | Perangkat yang belum diinventarisasi (seluruh kolom M–V kosong, ditandai "tidak ditemukan", atau tanpa alfanumerik) |
+| Inventory (default) | `inventory` | Semua perangkat (total device), managed atau tidak |
+| Unmanaged | `unmanaged` | Perangkat yang punya minimal satu status manajemen (kolom H–L) yang selain `OK` |
 
 `getManagePcList` accepts the optional `view` parameter (`inventory` |
 `unmanaged`, default `inventory`) and filters the result set server-side
-before search, sort, and pagination. `getManagePcSummary` returns the split
-in `inventory: { total, managed, unmanaged }`, which the frontend uses for the
-count badge on each tab. The two tabs partition the device list, so
-`inventory.managed + inventory.unmanaged` equals the total device count.
+before search, sort, and pagination. `getManagePcSummary` returns the recap
+in `inventory: { total, unmanaged }`, which the frontend uses for the count
+badge on each tab.
+
+**Status management columns (H–L).** Sheet columns H–L map to the device
+management status and drive the `unmanaged` filter:
+
+| Kolom | Sheet | Field item |
+| --- | --- | --- |
+| H | MANAGE KAV | `manageKav` |
+| I | VERSI KAV | `versiKav` |
+| J | MANAGE ITAM | `manageItam` |
+| K | PRIVILEGE ITAM | `privilegeItam` / `privilegeItamNorm` |
+| L | MANAGE KACE | `manageKace` |
+
+A status counts as managed only when its value is exactly `OK`
+(case-insensitive). `NOK`, `TIDAK DITEMUKAN`, an empty cell, or any other
+label all count as not OK, so the device appears in the `unmanaged` tab.
+Privilege ITAM uses the normalized value (`privilegeItamNorm`), which maps an
+empty cell and `TIDAK DITEMUKAN` to `NOK`.
+
+**Dynamic status headers.** On the `unmanaged` tab only the H–L columns that
+actually contain a non-`OK` value are shown. `getManagePcList` returns the
+column list in `statusColumns` (computed over the whole filtered result, not
+per page), so a column whose values are all `OK` has no header at all. The
+`inventory` tab always shows the fixed status columns (KAV, ITAM, KACE)
+beside the base device columns.
 
 The active tab is stored in the page hash query (`?view=inventory|unmanaged`)
 next to the existing scope parameter (`?scope=office|store`), so it is

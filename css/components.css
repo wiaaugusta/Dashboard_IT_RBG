@@ -842,7 +842,7 @@
 }
 
 .mpc-table__status {
-  width: 76px;
+  min-width: 76px;
   text-align: center;
 }
 

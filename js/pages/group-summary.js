@@ -29,28 +29,41 @@ import { loadManagePcList, loadManagePcSummary } from "../api.js";
 
 const MANAGE_PC_PAGE_SIZE = 15;
 /* Tab tampilan tabel "IT Asset & Device Inventory Management".
- *   inventory : perangkat yang SUDAH punya data inventaris (kolom M-V)
- *   unmanaged : perangkat yang BELUM diinventarisasi
+ *   inventory : SEMUA perangkat (total device), managed atau tidak
+ *   unmanaged : perangkat yang punya minimal satu status manajemen
+ *               (kolom H-L) yang selain "OK"
  * Tab aktif disimpan di hash query (?view=inventory|unmanaged) supaya
  * deep-linkable: refresh / back button tetap berada di tab yang sama. */
 const MANAGE_PC_TABLE_TABS = [
   { key: "inventory", label: "Inventory", icon: "itam" },
   { key: "unmanaged", label: "Unmanaged", icon: "alert" }
 ];
-/* Kolom tabel. Kolom "No" (penomoran baris) TIDAK punya fitur sort -
+/* Kolom dasar (identitas perangkat) - selalu tampil di kedua tab.
+   Kolom "No" (penomoran baris) TIDAK punya fitur sort -
    urutannya mengikuti urutan data. */
-const MANAGE_PC_TABLE_COLUMNS = [
+const MANAGE_PC_BASE_COLUMNS = [
   { key: "no", label: "No", sortable: false },
   { key: "namaKomputer", label: "Nama Komputer", sortable: true },
   { key: "divisi", label: "Divisi", sortable: true },
   { key: "alamatIp", label: "Alamat IP", sortable: true },
   { key: "workgroup", label: "Workgroup", sortable: true },
   { key: "model", label: "Model", sortable: true },
-  { key: "sistemOperasi", label: "Sistem Operasi", sortable: true },
-  { key: "manageKav", label: "Kaspersky", sortable: true },
-  { key: "manageItam", label: "ITAM", sortable: true },
-  { key: "manageKace", label: "KACE", sortable: true }
+  { key: "sistemOperasi", label: "Sistem Operasi", sortable: true }
 ];
+/* Kolom status manajemen perangkat (sheet MASTER REPORT OFFICE kolom H-L):
+ *   H = MANAGE KAV, I = VERSI KAV, J = MANAGE ITAM, K = PRIVILEGE ITAM, L = MANAGE KACE
+ * Pada tab Unmanaged HANYA kolom yang punya nilai selain "OK" yang ditampilkan
+ * - daftar kolom dikirim backend pada field "statusColumns".
+ * Tab Inventory memakai kolom status tetap (KAV, ITAM, KACE). */
+const MANAGE_PC_STATUS_COLUMNS = [
+  { key: "manageKav", label: "KAV", inventoryLabel: "Kaspersky", value: "manageKav" },
+  { key: "versiKav", label: "Versi KAV", value: "versiKav" },
+  { key: "manageItam", label: "ITAM", value: "manageItam" },
+  { key: "privilegeItam", label: "Privilege", value: "privilegeItamNorm" },
+  { key: "manageKace", label: "KACE", value: "manageKace" }
+];
+/* Kolom status tetap pada tab Inventory. */
+const MANAGE_PC_INVENTORY_STATUS_KEYS = ["manageKav", "manageItam", "manageKace"];
 
 /**
  * Kolom inventaris yang ditampilkan saat Nama Komputer diklik (baris detail).
@@ -325,14 +338,15 @@ function getManagePcActiveView() {
 
 /**
  * Isi angka jumlah perangkat pada badge tiap tab (Inventory / Unmanaged).
- * Sumber: ringkasan backend (summary.inventory).
+ * Inventory = total device, Unmanaged = perangkat dengan status H-L
+ * yang selain "OK".
  * @param {HTMLElement} container
  * @param {object} summaryData
  */
 function updateManagePcViewCounts(container, summaryData) {
   const inventory = summaryData?.inventory || {};
   const counts = {
-    inventory: inventory.managed,
+    inventory: inventory.total,
     unmanaged: inventory.unmanaged
   };
   container.querySelectorAll("[data-mpc-view-count]").forEach((element) => {
@@ -377,27 +391,8 @@ function renderManagePcTableTabs(activeView, activeScope) {
  * @param {string} activeScope - scope aktif (office | store)
  */
 function renderManagePcTable(activeView, activeScope) {
-  const headers = MANAGE_PC_TABLE_COLUMNS.map((column) => {
-    if (!column.sortable) {
-      return `
-        <th scope="col">
-          <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
-        </th>
-      `;
-    }
-    return `
-      <th scope="col" aria-sort="none" data-sort-header="${column.key}">
-        <button type="button" class="mpc-table__th-sort" data-sort-key="${column.key}"
-          aria-label="Urutkan berdasarkan ${escapeHtml(column.label)}">
-          <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
-          <span class="mpc-table__sort-arrows" aria-hidden="true">
-            <span class="mpc-table__sort-arrow" data-sort-direction="asc">${icon("arrow-up", { size: 10 })}</span>
-            <span class="mpc-table__sort-arrow" data-sort-direction="desc">${icon("arrow-down", { size: 10 })}</span>
-          </span>
-        </button>
-      </th>
-    `;
-  }).join("");
+  const statusColumns = managePcInitialStatusColumns(activeView);
+  const headers = renderManagePcTableHead(activeView, statusColumns);
 
   return `
     <section class="mpc-table-card" aria-labelledby="mpcTableTitle">
@@ -417,9 +412,9 @@ function renderManagePcTable(activeView, activeScope) {
       ${renderManagePcTableTabs(activeView, activeScope)}
       <div class="mpc-table-wrapper">
         <table class="mpc-table">
-          <thead><tr>${headers}</tr></thead>
+          <thead>${headers}</thead>
           <tbody data-mpc-rows>
-            <tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state">Memuat data perangkat...</td></tr>
+            <tr><td colspan="${MANAGE_PC_BASE_COLUMNS.length + statusColumns.length}" class="mpc-table__state">Memuat data perangkat...</td></tr>
           </tbody>
         </table>
       </div>
@@ -429,6 +424,76 @@ function renderManagePcTable(activeView, activeScope) {
       </footer>
     </section>
   `;
+}
+
+/**
+ * Label kolom sesuai tab aktif.
+ * @param {object} column - definisi kolom
+ * @param {string} activeView - tab aktif (inventory | unmanaged)
+ */
+function managePcColumnLabel(column, activeView) {
+  if (activeView === "inventory" && column.inventoryLabel) return column.inventoryLabel;
+  return column.label;
+}
+
+/**
+ * Daftar kolom status yang tampil sebelum data arrived.
+ * Tab Inventory memakai kolom status tetap; tab Unmanaged menunggu
+ * daftar kolom dari backend (hanya kolom H-L yang ada nilai != "OK").
+ * @param {string} activeView - tab aktif (inventory | unmanaged)
+ */
+function managePcInitialStatusColumns(activeView) {
+  if (activeView === "unmanaged") return [];
+  return MANAGE_PC_STATUS_COLUMNS.filter((column) =>
+    MANAGE_PC_INVENTORY_STATUS_KEYS.indexOf(column.key) !== -1);
+}
+
+/**
+ * Daftar kolom status dari response backend (field statusColumns).
+ * @param {string} activeView - tab aktif (inventory | unmanaged)
+ * @param {object} data - response getManagePcList
+ */
+function managePcStatusColumnsFor(activeView, data) {
+  const keys = data && Array.isArray(data.statusColumns) ? data.statusColumns : [];
+  const columns = [];
+  keys.forEach((key) => {
+    const column = MANAGE_PC_STATUS_COLUMNS.find((item) => item.key === key);
+    if (column) columns.push(column);
+  });
+  return columns.length ? columns : managePcInitialStatusColumns(activeView);
+}
+
+function renderManagePcHeaderCell(column, label) {
+  if (column.sortable === false) {
+    return `
+        <th scope="col">
+          <span class="mpc-table__th-label">${escapeHtml(label)}</span>
+        </th>
+      `;
+  }
+  return `
+        <th scope="col" aria-sort="none" data-sort-header="${column.key}">
+          <button type="button" class="mpc-table__th-sort" data-sort-key="${column.key}"
+            aria-label="Urutkan berdasarkan ${escapeHtml(label)}">
+            <span class="mpc-table__th-label">${escapeHtml(label)}</span>
+            <span class="mpc-table__sort-arrows" aria-hidden="true">
+              <span class="mpc-table__sort-arrow" data-sort-direction="asc">${icon("arrow-up", { size: 10 })}</span>
+              <span class="mpc-table__sort-arrow" data-sort-direction="desc">${icon("arrow-down", { size: 10 })}</span>
+            </span>
+          </button>
+        </th>
+      `;
+}
+
+/**
+ * Header tabel: kolom dasar + kolom status yang sedang tampil.
+ * @param {string} activeView - tab aktif (inventory | unmanaged)
+ * @param {Array} statusColumns - kolom status yang tampil
+ */
+function renderManagePcTableHead(activeView, statusColumns) {
+  const columns = MANAGE_PC_BASE_COLUMNS.concat(statusColumns);
+  return `<tr>${columns.map((column) =>
+    renderManagePcHeaderCell(column, managePcColumnLabel(column, activeView))).join("")}</tr>`;
 }
 
 function renderManagePcStatus(value) {
@@ -445,14 +510,24 @@ function renderManagePcStatus(value) {
   return `<span class="mpc-status mpc-status--other" title="${escapeHtml(value)}">${escapeHtml(value)}</span>`;
 }
 
-function renderManagePcRows(items, startIndex) {
+/**
+ * Baris tabel perangkat.
+ * @param {Array} items - perangkat pada halaman ini
+ * @param {number} startIndex - index baris pertama pada seluruh hasil
+ * @param {Array} statusColumns - kolom status yang tampil
+ */
+function renderManagePcRows(items, startIndex, statusColumns) {
+  const columnCount = MANAGE_PC_BASE_COLUMNS.length + statusColumns.length;
   if (items.length === 0) {
-    return `<tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
+    return `<tr><td colspan="${columnCount}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
   }
 
   return items.map((item, index) => {
     const globalIndex = startIndex + index;
     const detailId = `mpc-spec-${globalIndex}`;
+    const statusCells = statusColumns.map((column) => `
+      <td class="mpc-table__status">${renderManagePcStatus(item[column.value])}</td>
+    `).join("");
     return `
     <tr class="mpc-table__row">
       <td class="mpc-table__number">${escapeHtml(item.no == null || item.no === "" ? globalIndex + 1 : item.no)}</td>
@@ -467,12 +542,10 @@ function renderManagePcRows(items, startIndex) {
       <td>${escapeHtml(item.workgroup || "—")}</td>
       <td>${escapeHtml(item.model || "—")}</td>
       <td>${escapeHtml(item.sistemOperasi || "—")}</td>
-      <td class="mpc-table__status">${renderManagePcStatus(item.manageKav)}</td>
-      <td class="mpc-table__status">${renderManagePcStatus(item.manageItam)}</td>
-      <td class="mpc-table__status">${renderManagePcStatus(item.manageKace)}</td>
+      ${statusCells}
     </tr>
     <tr class="mpc-table__spec" id="${detailId}" hidden>
-      <td class="mpc-table__spec-cell" colspan="${MANAGE_PC_TABLE_COLUMNS.length}">${renderManagePcSpecPanel(item)}</td>
+      <td class="mpc-table__spec-cell" colspan="${columnCount}">${renderManagePcSpecPanel(item)}</td>
     </tr>`;
   }).join("");
 }
@@ -483,6 +556,7 @@ function bindManagePcTable(container, session, activeView = "inventory") {
 
   const searchInput = table.querySelector("[data-mpc-search]");
   const rowsElement = table.querySelector("[data-mpc-rows]");
+  const headElement = table.querySelector("thead");
   const countElement = table.querySelector("[data-mpc-count]");
   const paginationElement = table.querySelector("[data-mpc-pagination]");
   let page = 1;
@@ -492,6 +566,13 @@ function bindManagePcTable(container, session, activeView = "inventory") {
   let requestId = 0;
   let searchTimer = null;
   let totalPages = 1;
+  /* Kolom status yang tampil. Pada tab Unmanaged kolomnya ditentukan backend:
+     hanya kolom H-L yang punya nilai selain "OK". */
+  let statusColumns = managePcInitialStatusColumns(activeView);
+
+  function columnCount() {
+    return MANAGE_PC_BASE_COLUMNS.length + statusColumns.length;
+  }
 
   function updateSortHeaders() {
     table.querySelectorAll("[data-sort-key]").forEach((button) => {
@@ -536,7 +617,7 @@ function bindManagePcTable(container, session, activeView = "inventory") {
 
   async function loadPage() {
     const thisRequest = ++requestId;
-    rowsElement.innerHTML = `<tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state">Memuat data perangkat...</td></tr>`;
+    rowsElement.innerHTML = `<tr><td colspan="${columnCount()}" class="mpc-table__state">Memuat data perangkat...</td></tr>`;
     countElement.textContent = "";
     paginationElement.innerHTML = "";
     const result = await loadManagePcList("kaspersky", "office", {
@@ -550,7 +631,7 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     });
     if (thisRequest !== requestId) return;
     if (!result.success) {
-      rowsElement.innerHTML = `<tr><td colspan="${MANAGE_PC_TABLE_COLUMNS.length}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(result.message || "Data perangkat gagal dimuat.")}</td></tr>`;
+      rowsElement.innerHTML = `<tr><td colspan="${columnCount()}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(result.message || "Data perangkat gagal dimuat.")}</td></tr>`;
       countElement.textContent = "";
       return;
     }
@@ -558,7 +639,13 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     const data = result.data || {};
     const items = Array.isArray(data.items) ? data.items : [];
     page = Number(data.page) || page;
-    rowsElement.innerHTML = renderManagePcRows(items, (page - 1) * MANAGE_PC_PAGE_SIZE);
+    /* Kolom status (dan header-nya) mengikuti data: pada tab Unmanaged
+       hanya kolom H-L dengan nilai selain "OK" yang ditampilkan. */
+    statusColumns = managePcStatusColumnsFor(activeView, data);
+    if (headElement) {
+      headElement.innerHTML = renderManagePcTableHead(activeView, statusColumns);
+    }
+    rowsElement.innerHTML = renderManagePcRows(items, (page - 1) * MANAGE_PC_PAGE_SIZE, statusColumns);
     updatePagination(data);
     updateSortHeaders();
   }
