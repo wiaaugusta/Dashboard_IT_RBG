@@ -240,6 +240,9 @@ export async function loadManagePcSummary(scope = "office", options = {}) {
 /**
  * Ambil data perangkat Manage PC yang sudah dipetakan backend dari sheet.
  * Setiap item mencakup divisi dan field inventaris perangkat.
+ *
+ * options.view : "inventory" (default, perangkat yang sudah diinventarisasi)
+ *                | "unmanaged" (perangkat yang belum diinventarisasi).
  */
 export async function loadManagePcList(module, scope = "office", options = {}) {
   return apiRequest("getManagePcList", {
@@ -250,6 +253,7 @@ export async function loadManagePcList(module, scope = "office", options = {}) {
     status: options.status,
     search: options.search ?? "",
     sortBy: options.sortBy,
-    sortDirection: options.sortDirection
+    sortDirection: options.sortDirection,
+    view: options.view ?? "inventory"
   }, options);
 }

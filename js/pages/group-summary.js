@@ -28,6 +28,15 @@ import { icon } from "../icons.js";
 import { loadManagePcList, loadManagePcSummary } from "../api.js";
 
 const MANAGE_PC_PAGE_SIZE = 15;
+/* Tab tampilan tabel "IT Asset & Device Inventory Management".
+ *   inventory : perangkat yang SUDAH punya data inventaris (kolom M-V)
+ *   unmanaged : perangkat yang BELUM diinventarisasi
+ * Tab aktif disimpan di hash query (?view=inventory|unmanaged) supaya
+ * deep-linkable: refresh / back button tetap berada di tab yang sama. */
+const MANAGE_PC_TABLE_TABS = [
+  { key: "inventory", label: "Inventory", icon: "itam" },
+  { key: "unmanaged", label: "Unmanaged", icon: "alert" }
+];
 /* Kolom tabel. Kolom "No" (penomoran baris) TIDAK punya fitur sort -
    urutannya mengikuti urutan data. */
 const MANAGE_PC_TABLE_COLUMNS = [
@@ -244,18 +253,19 @@ export function renderGroupSummaryPage(container, routeInfo) {
   const activeScope = canChooseScope
     ? (getQueryParam("scope") === "store" ? "store" : "office")
     : (session.role === "IT_STORE" ? "store" : "office");
+  const activeView = getManagePcActiveView();
   const cards = renderGroupCards(visibleChildren, meta, null, isManagePc, activeScope, isManagePc && activeScope === "office");
 
   const contentHtml = `
     <div class="gsp-page">
-      ${isManagePc ? renderManagePcScopeBar(activeScope, canChooseScope) : renderHero(group, meta)}
+      ${isManagePc ? renderManagePcScopeBar(activeScope, canChooseScope, activeView) : renderHero(group, meta)}
 
       <section class="gsp-cards${isManagePc ? " gsp-cards--manage-pc" : ""}" data-group-summary-cards aria-label="Rangkuman submenu ${escapeHtml(group.label)}">
         ${cards.join("")}
       </section>
 
       ${isManagePc && activeScope === "office" ? '<p class="mpc-table__summary-error" data-manage-pc-summary-error role="alert" hidden></p>' : ""}
-      ${isManagePc && activeScope === "office" ? renderManagePcTable() : ""}
+      ${isManagePc && activeScope === "office" ? renderManagePcTable(activeView, activeScope) : ""}
       ${!isManagePc ? `
         <div class="mpc-note" aria-live="polite">
           ${icon("info", { size: 16 })}
@@ -272,7 +282,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
   });
 
   if (isManagePc && activeScope === "office") {
-    bindManagePcTable(container, session);
+    bindManagePcTable(container, session, activeView);
   }
 
   if (isManagePc && activeScope === "office") {
@@ -284,6 +294,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
           if (cardsElement) {
             cardsElement.innerHTML = renderGroupCards(visibleChildren, meta, result.data, true, activeScope).join("");
           }
+          updateManagePcViewCounts(container, result.data);
         } else if (errorElement) {
           errorElement.textContent = result.message || "Ringkasan Manage PC gagal dimuat.";
           errorElement.hidden = false;
@@ -300,7 +311,72 @@ export function renderGroupSummaryPage(container, routeInfo) {
   }
 }
 
-function renderManagePcTable() {
+/**
+ * Tab inventaris yang sedang aktif (dari hash query ?view=...).
+ * Nilai yang tidak dikenal -> tab utama "Inventory".
+ * @returns {string} key tab aktif
+ */
+function getManagePcActiveView() {
+  const requested = getQueryParam("view");
+  return MANAGE_PC_TABLE_TABS.some((tab) => tab.key === requested)
+    ? requested
+    : MANAGE_PC_TABLE_TABS[0].key;
+}
+
+/**
+ * Isi angka jumlah perangkat pada badge tiap tab (Inventory / Unmanaged).
+ * Sumber: ringkasan backend (summary.inventory).
+ * @param {HTMLElement} container
+ * @param {object} summaryData
+ */
+function updateManagePcViewCounts(container, summaryData) {
+  const inventory = summaryData?.inventory || {};
+  const counts = {
+    inventory: inventory.managed,
+    unmanaged: inventory.unmanaged
+  };
+  container.querySelectorAll("[data-mpc-view-count]").forEach((element) => {
+    const key = element.getAttribute("data-mpc-view-count");
+    const value = counts[key];
+    element.textContent = value == null ? "" : Number(value).toLocaleString();
+  });
+}
+
+/**
+ * Tab tampilan di dalam card tabel inventaris.
+ * @param {string} activeView - tab aktif (inventory | unmanaged)
+ * @param {string} activeScope - scope aktif (office | store)
+ */
+function renderManagePcTableTabs(activeView, activeScope) {
+  return `
+    <nav class="mpc-table-tabs" role="tablist" aria-label="Tampilan inventaris perangkat">
+      ${MANAGE_PC_TABLE_TABS.map((tab) => {
+        const isActive = tab.key === activeView;
+        return `
+          <a
+            href="#/manage-pc?scope=${encodeURIComponent(activeScope)}&view=${encodeURIComponent(tab.key)}"
+            class="mpc-table-tab${isActive ? " is-active" : ""}"
+            role="tab"
+            aria-selected="${isActive}"
+            ${isActive ? 'aria-current="page"' : ""}
+            data-mpc-view="${tab.key}"
+          >
+            ${icon(tab.icon, { size: 15 })}
+            <span>${escapeHtml(tab.label)}</span>
+            <span class="mpc-table-tab__count" data-mpc-view-count="${tab.key}"></span>
+          </a>
+        `;
+      }).join("")}
+    </nav>
+  `;
+}
+
+/**
+ * Card tabel "IT Asset & Device Inventory Management".
+ * @param {string} activeView - tab aktif (inventory | unmanaged)
+ * @param {string} activeScope - scope aktif (office | store)
+ */
+function renderManagePcTable(activeView, activeScope) {
   const headers = MANAGE_PC_TABLE_COLUMNS.map((column) => {
     if (!column.sortable) {
       return `
@@ -338,6 +414,7 @@ function renderManagePcTable() {
           </label>
         </div>
       </header>
+      ${renderManagePcTableTabs(activeView, activeScope)}
       <div class="mpc-table-wrapper">
         <table class="mpc-table">
           <thead><tr>${headers}</tr></thead>
@@ -400,7 +477,7 @@ function renderManagePcRows(items, startIndex) {
   }).join("");
 }
 
-function bindManagePcTable(container, session) {
+function bindManagePcTable(container, session, activeView = "inventory") {
   const table = container.querySelector(".mpc-table-card");
   if (!table) return;
 
@@ -468,6 +545,7 @@ function bindManagePcTable(container, session) {
       search,
       sortBy,
       sortDirection,
+      view: activeView,
       sessionToken: session.sessionToken
     });
     if (thisRequest !== requestId) return;
@@ -565,14 +643,14 @@ function renderManagePcPageNumbers(page, totalPages) {
   ).join("");
 }
 
-function renderManagePcScopeBar(activeScope, canChooseScope) {
+function renderManagePcScopeBar(activeScope, canChooseScope, activeView = "inventory") {
   const scopes = ["office", "store"];
   const tabs = canChooseScope
     ? `
       <nav class="mpc-scope-tabs" role="tablist" aria-label="Lingkup Manage PC">
         ${scopes.map((scope) => `
           <a
-            href="#/manage-pc?scope=${scope}"
+            href="#/manage-pc?scope=${scope}&view=${activeView}"
             class="mpc-scope-tab${activeScope === scope ? " is-active" : ""}"
             role="tab"
             aria-selected="${activeScope === scope}"

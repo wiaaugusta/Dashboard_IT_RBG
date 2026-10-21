@@ -644,6 +644,80 @@
   gap: 10px;
 }
 
+/* ---------- Tab tampilan inventaris (Inventory / Unmanaged) ---------- */
+.mpc-table-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  padding: 0 22px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.mpc-table-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 12px;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small, 13px);
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+
+.mpc-table-tab .icon {
+  color: var(--color-text-muted);
+}
+
+.mpc-table-tab:hover {
+  color: var(--color-text);
+}
+
+.mpc-table-tab.is-active {
+  color: var(--color-primary);
+}
+
+.mpc-table-tab.is-active .icon {
+  color: var(--color-primary);
+}
+
+.mpc-table-tab.is-active::after {
+  position: absolute;
+  right: 8px;
+  bottom: -1px;
+  left: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--color-primary);
+  content: "";
+}
+
+.mpc-table-tab__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #eef2f7;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+
+.mpc-table-tab.is-active .mpc-table-tab__count {
+  background: var(--color-primary-soft, #e8edfb);
+  color: var(--color-primary);
+}
+
+.mpc-table-tab__count:empty {
+  display: none;
+}
+
 .mpc-table-wrapper {
   overflow-x: auto;
   border-top: 1px solid #edf1f6;
@@ -1034,6 +1108,17 @@
   .mpc-table-card__controls {
     flex-wrap: wrap;
     width: 100%;
+  }
+
+  .mpc-table-tabs {
+    gap: 0;
+    padding: 0 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .mpc-table-tab {
+    padding: 10px 10px 12px;
   }
 
   .mpc-table-search {

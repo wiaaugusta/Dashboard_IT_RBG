@@ -1426,6 +1426,24 @@ frontend:
 This is presentation-layer normalization only; the spreadsheet and the API
 payload are not modified.
 
+**Inventory tabs (`view` parameter).** The `IT Asset & Device Inventory
+Management` table on the Manage PC overview page is split into two tabs:
+
+| Tab | `view` | Isi |
+| --- | --- | --- |
+| Inventory (default) | `inventory` | Perangkat yang sudah punya data inventaris (minimal satu nilai valid pada kolom M–V) |
+| Unmanaged | `unmanaged` | Perangkat yang belum diinventarisasi (seluruh kolom M–V kosong, ditandai "tidak ditemukan", atau tanpa alfanumerik) |
+
+`getManagePcList` accepts the optional `view` parameter (`inventory` |
+`unmanaged`, default `inventory`) and filters the result set server-side
+before search, sort, and pagination. `getManagePcSummary` returns the split
+in `inventory: { total, managed, unmanaged }`, which the frontend uses for the
+count badge on each tab. The two tabs partition the device list, so
+`inventory.managed + inventory.unmanaged` equals the total device count.
+
+The active tab is stored in the page hash query (`?view=inventory|unmanaged`)
+next to the existing scope parameter (`?scope=office|store`), so it is
+deep-linkable and survives a refresh or the browser back button.
 
 ---
 
