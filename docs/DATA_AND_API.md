@@ -1478,10 +1478,21 @@ because that tab is a filtered status list rather than the sheet order.
 auto`); the status columns only hold an icon, so they stay narrow instead of
 taking a fixed wide slot. The table has no hard minimum width, so it always
 fits the card even when the content area shrinks (for example when the
-sidebar is hovered and expands). In that case the header and the cell text
-wrap instead of being cut, so no column or data is ever truncated. On small
-screens (below 600px) the table keeps a minimum width and is scrolled
-horizontally.
+sidebar is hovered and expands). Header labels always stay on one line; if
+the table still does not fit, the lowest priority columns are hidden one by
+one (`Sistem Operasi` first, then `Model` and `Workgroup`) so the remaining
+headers still fit and no column is cut off. Cell text wraps instead of being
+truncated, so no data is lost. On small screens (below 600px) the table keeps
+a minimum width and is scrolled horizontally.
+
+**Loading state.** While the device list is loading, the table shows
+skeleton rows (the same grey shimmer blocks used by the CCTV table) instead
+of a plain text row.
+
+**Tooltips.** The status marks use the shared custom tooltip
+(`data-tooltip` attribute, `initTooltips()` in `ui.js`) instead of the
+browser's default tooltip, so it renders in a light tone that blends with
+the table instead of the default black box.
 
 The active tab is stored in the page hash query (`?view=inventory|unmanaged`)
 next to the existing scope parameter (`?scope=office|store`), so it is

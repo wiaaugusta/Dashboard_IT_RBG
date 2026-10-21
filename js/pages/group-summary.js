@@ -25,6 +25,7 @@ import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { NAV_ITEMS, isVisibleForRole } from "../nav-config.js";
 import { icon } from "../icons.js";
+import { initTooltips } from "../ui.js";
 import { loadManagePcList, loadManagePcSummary } from "../api.js";
 
 const MANAGE_PC_PAGE_SIZE = 15;
@@ -70,6 +71,10 @@ const MANAGE_PC_STATUS_COLUMNS = [
 }));
 /* Kolom status tetap pada tab Inventory. */
 const MANAGE_PC_INVENTORY_STATUS_KEYS = ["manageKav", "manageItam", "manageKace"];
+/* Kolom yang boleh disembunyikan kalau tabel terlalu sempit (urutan prioritas:
+   "Sistem Operasi" lebih dulu, lalu "Model" dan "Workgroup"), supaya judul
+   kolom lain tetap muat dan tidak ada kolom yang terpotong. */
+const MANAGE_PC_HIDEABLE_COLUMNS = ["sistemOperasi", "model", "workgroup"];
 
 /**
  * Kolom inventaris yang ditampilkan saat Nama Komputer diklik (baris detail).
@@ -304,6 +309,9 @@ export function renderGroupSummaryPage(container, routeInfo) {
     bindManagePcTable(container, session, activeView);
   }
 
+  /* Tooltip kustom (data-tooltip) untuk ikon status. */
+  initTooltips(document);
+
   if (isManagePc && activeScope === "office") {
     loadManagePcSummary("office", { sessionToken: session.sessionToken })
       .then((result) => {
@@ -420,7 +428,7 @@ function renderManagePcTable(activeView, activeScope) {
         <table class="mpc-table">
           <thead>${headers}</thead>
           <tbody data-mpc-rows>
-            <tr><td colspan="${MANAGE_PC_BASE_COLUMNS.length + statusColumns.length}" class="mpc-table__state">Memuat data perangkat...</td></tr>
+            ${renderManagePcSkeletonRows(MANAGE_PC_BASE_COLUMNS.length + statusColumns.length)}
           </tbody>
         </table>
       </div>
@@ -472,13 +480,13 @@ function managePcStatusColumnsFor(activeView, data) {
 function renderManagePcHeaderCell(column, label) {
   if (column.sortable === false) {
     return `
-        <th scope="col">
+        <th scope="col" data-mpc-col="${column.key}">
           <span class="mpc-table__th-label">${escapeHtml(label)}</span>
         </th>
       `;
   }
   return `
-        <th scope="col" aria-sort="none" data-sort-header="${column.key}">
+        <th scope="col" data-mpc-col="${column.key}" aria-sort="none" data-sort-header="${column.key}">
           <button type="button" class="mpc-table__th-sort" data-sort-key="${column.key}"
             aria-label="Urutkan berdasarkan ${escapeHtml(label)}">
             <span class="mpc-table__th-label">${escapeHtml(label)}</span>
@@ -505,15 +513,34 @@ function renderManagePcTableHead(activeView, statusColumns) {
 function renderManagePcStatus(value) {
   const status = value == null ? "" : String(value).trim().toUpperCase();
   if (status === "OK") {
-    return '<span class="mpc-status mpc-status--ok" role="img" aria-label="OK" title="OK">✓</span>';
+    return '<span class="mpc-status mpc-status--ok" role="img" aria-label="OK" data-tooltip="OK">✓</span>';
   }
   if (status === "NOK") {
-    return '<span class="mpc-status mpc-status--nok" role="img" aria-label="NOK" title="NOK">×</span>';
+    return '<span class="mpc-status mpc-status--nok" role="img" aria-label="NOK" data-tooltip="NOK">×</span>';
   }
   if (!status || status === "-" || status === "NOT FOUND" || /^TIDAK\s+(?:DI\s*)?TEMUKAN$/.test(status)) {
-    return '<span class="mpc-status mpc-status--empty" role="img" aria-label="Tidak ditemukan" title="Tidak ditemukan">−</span>';
+    return '<span class="mpc-status mpc-status--empty" role="img" aria-label="Tidak ditemukan" data-tooltip="Tidak ditemukan">−</span>';
   }
   return `<span class="mpc-status mpc-status--other">${escapeHtml(value)}</span>`;
+}
+
+/**
+ * Baris skeleton saat tabel sedang memuat data (pola sama dengan tabel
+ * CCTV: blok abu-abu beranimasi, bukan teks "Memuat data...").
+ * @param {number} columnCount - jumlah kolom yang tampil
+ */
+function renderManagePcSkeletonRows(columnCount) {
+  const rowCount = 6;
+  const rows = [];
+  for (let row = 0; row < rowCount; row++) {
+    const cells = [];
+    for (let col = 0; col < columnCount; col++) {
+      const width = col === 0 ? 55 : col === 1 ? 85 : 62 + ((row + col) % 3) * 12;
+      cells.push(`<td><span class="skeleton mpc-table__skeleton-bar" style="width:${width}%"></span></td>`);
+    }
+    rows.push(`<tr class="mpc-table__skeleton-row">${cells.join("")}</tr>`);
+  }
+  return rows.join("");
 }
 
 /**
@@ -542,18 +569,18 @@ function renderManagePcRows(items, startIndex, statusColumns, activeView = "inve
     `).join("");
     return `
     <tr class="mpc-table__row">
-      <td class="mpc-table__number">${escapeHtml(rowNumber)}</td>
-      <td class="mpc-table__device">
+      <td class="mpc-table__number" data-mpc-col="no">${escapeHtml(rowNumber)}</td>
+      <td class="mpc-table__device" data-mpc-col="namaKomputer">
         <button type="button" class="mpc-device-toggle" data-mpc-toggle
           aria-expanded="false" aria-controls="${detailId}">
           <span class="mpc-device-toggle__name">${escapeHtml(item.namaKomputer || "—")}</span>
         </button>
       </td>
-      <td>${escapeHtml(item.divisi || "—")}</td>
-      <td>${escapeHtml(item.alamatIp || "—")}</td>
-      <td>${escapeHtml(item.workgroup || "—")}</td>
-      <td>${escapeHtml(item.model || "—")}</td>
-      <td>${escapeHtml(item.sistemOperasi || "—")}</td>
+      <td data-mpc-col="divisi">${escapeHtml(item.divisi || "—")}</td>
+      <td data-mpc-col="alamatIp">${escapeHtml(item.alamatIp || "—")}</td>
+      <td data-mpc-col="workgroup">${escapeHtml(item.workgroup || "—")}</td>
+      <td data-mpc-col="model">${escapeHtml(item.model || "—")}</td>
+      <td data-mpc-col="sistemOperasi">${escapeHtml(item.sistemOperasi || "—")}</td>
       ${statusCells}
     </tr>
     <tr class="mpc-table__spec" id="${detailId}" hidden>
@@ -569,6 +596,8 @@ function bindManagePcTable(container, session, activeView = "inventory") {
   const searchInput = table.querySelector("[data-mpc-search]");
   const rowsElement = table.querySelector("[data-mpc-rows]");
   const headElement = table.querySelector("thead");
+  const tableElement = table.querySelector(".mpc-table");
+  const tableWrapper = table.querySelector(".mpc-table-wrapper");
   const countElement = table.querySelector("[data-mpc-count]");
   const paginationElement = table.querySelector("[data-mpc-pagination]");
   let page = 1;
@@ -581,9 +610,36 @@ function bindManagePcTable(container, session, activeView = "inventory") {
   /* Kolom status yang tampil. Pada tab Unmanaged kolomnya ditentukan backend:
      hanya kolom H-L yang punya nilai selain "OK". */
   let statusColumns = managePcInitialStatusColumns(activeView);
+  const hiddenColumns = new Set();
 
   function columnCount() {
     return MANAGE_PC_BASE_COLUMNS.length + statusColumns.length;
+  }
+
+  /* ---------- Penyesuaian kolom saat tabel menyempit ----------
+     Kalau lebar tabel melebihi card (mis. sidebar di-hover sehingga area
+     konten menyempit), kolom dengan prioritas terendah disembunyikan satu
+     per satu -|System Operasi dulu- supaya judul kolom lain tetap muat
+     dan tidak ada kolom yang terpotong. */
+  function applyHiddenColumns() {
+    MANAGE_PC_HIDEABLE_COLUMNS.forEach((key) => {
+      const isHidden = hiddenColumns.has(key);
+      table.querySelectorAll(`[data-mpc-col="${key}"]`).forEach((element) => {
+        element.classList.toggle("is-hidden-column", isHidden);
+      });
+    });
+  }
+
+  function updateColumnFit() {
+    if (!tableElement || !tableWrapper) return;
+    hiddenColumns.clear();
+    applyHiddenColumns();
+    const available = tableWrapper.clientWidth;
+    for (const key of MANAGE_PC_HIDEABLE_COLUMNS) {
+      if (tableElement.getBoundingClientRect().width <= available + 1) break;
+      hiddenColumns.add(key);
+      applyHiddenColumns();
+    }
   }
 
   function updateSortHeaders() {
@@ -629,7 +685,7 @@ function bindManagePcTable(container, session, activeView = "inventory") {
 
   async function loadPage() {
     const thisRequest = ++requestId;
-    rowsElement.innerHTML = `<tr><td colspan="${columnCount()}" class="mpc-table__state">Memuat data perangkat...</td></tr>`;
+    rowsElement.innerHTML = renderManagePcSkeletonRows(columnCount());
     countElement.textContent = "";
     paginationElement.innerHTML = "";
     const result = await loadManagePcList("kaspersky", "office", {
@@ -658,6 +714,7 @@ function bindManagePcTable(container, session, activeView = "inventory") {
       headElement.innerHTML = renderManagePcTableHead(activeView, statusColumns);
     }
     rowsElement.innerHTML = renderManagePcRows(items, (page - 1) * MANAGE_PC_PAGE_SIZE, statusColumns, activeView);
+    updateColumnFit();
     updatePagination(data);
     updateSortHeaders();
   }
@@ -716,6 +773,19 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     specRow.hidden = isExpanded;
     toggle.closest("tr").classList.toggle("is-expanded", !isExpanded);
   });
+
+  /* Lebar card berubah (mis. sidebar di-hover) -> sesuaikan kolom yang
+     disembunyikan supaya tabel tetap muut tanpa kolom terpotong. */
+  if (typeof ResizeObserver !== "undefined" && tableWrapper) {
+    let lastWidth = 0;
+    const observer = new ResizeObserver((entries) => {
+      const width = Math.round(entries[0].contentRect.width);
+      if (width === lastWidth) return;
+      lastWidth = width;
+      updateColumnFit();
+    });
+    observer.observe(tableWrapper);
+  }
 
   loadPage();
 }

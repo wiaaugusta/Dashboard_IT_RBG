@@ -528,6 +528,32 @@
   font-size: var(--font-size-caption);
 }
 
+/* =========================================================
+   TOOLTIP (custom, gaya terang - menyatu dengan tabel)
+   ========================================================= */
+.app-tooltip {
+  position: fixed;
+  z-index: 1200;
+  max-width: 260px;
+  padding: 5px 10px;
+  border: 1px solid #d8e2f2;
+  border-radius: 8px;
+  background: #eef3fb;
+  color: #1e3a5f;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .12);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+
+.app-tooltip.is-visible {
+  opacity: 1;
+}
+
 /* ---------- MANAGE PC DEVICE GRID ---------- */
 /* overflow TIDAK hidden di card supaya popover dropdown urutan (sort)
    tidak terpotong;instead sudut membulat diberikan pada wrapper tabel. */
@@ -750,7 +776,7 @@
   letter-spacing: .045em;
   text-align: left;
   text-transform: uppercase;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 /* Header sortable memakai tombol agar tetap bisa dioperasikan dengan keyboard. */
@@ -764,8 +790,7 @@
   letter-spacing: inherit;
   text-align: left;
   text-transform: inherit;
-  white-space: normal;
-  overflow-wrap: break-word;
+  white-space: nowrap;
 }
 
 .mpc-table__th-sort {
@@ -782,7 +807,7 @@
   letter-spacing: inherit;
   text-align: left;
   text-transform: inherit;
-  white-space: normal;
+  white-space: nowrap;
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
@@ -899,6 +924,22 @@
 
 .mpc-table__state--error {
   color: #b42318;
+}
+
+/* Skeleton loading tabel (pola yang sama dengan tabel CCTV). */
+.mpc-table__skeleton-bar {
+  display: block;
+  height: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.mpc-table tbody tr.mpc-table__skeleton-row:hover {
+  background: transparent;
+}
+
+/* Kolom yang disembunyikan saat tabel menyempit (judul + data). */
+.mpc-table .is-hidden-column {
+  display: none;
 }
 
 /* Footer tabel: jumlah data ("Menampilkan 1-15 dari x") di KIRI bawah,
