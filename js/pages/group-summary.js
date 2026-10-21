@@ -45,11 +45,11 @@ const MANAGE_PC_TABLE_COLUMNS = [
 
 /**
  * Kolom inventaris yang ditampilkan saat Nama Komputer diklik (baris detail).
- * Sumber data: kolom M-U sheet MASTER REPORT OFFICE yang sudah dipetakan
+ * Sumber data: kolom M-V sheet MASTER REPORT OFFICE yang sudah dipetakan
  * backend ke field item getManagePcList. Urutan = urutan tampil; layout
  * pasangan vertikal 5 kolom x 2 baris (kolom 1: M atas N bawah, kolom 2:
  * O atas P bawah, kolom 3: Q atas R bawah, kolom 4: S atas T bawah,
- * kolom 5: U atas).
+ * kolom 5: U atas V bawah).
  */
 const MANAGE_PC_SPEC_FIELDS = [
   { key: "macAddress", label: "MAC Address" },        // M
@@ -60,14 +60,15 @@ const MANAGE_PC_SPEC_FIELDS = [
   { key: "totalHardisk", label: "Total Harddisk" },    // R
   { key: "kapasitasDriveC", label: "Kapasitas Drive C" }, // S
   { key: "kapasitasDriveD", label: "Kapasitas Drive D" }, // T
-  { key: "userLogged", label: "User Logged" }          // U
+  { key: "userLogged", label: "User Logged" },         // U
+  { key: "processors", label: "Processors" }           // V
 ];
 
 // Keterangan "tidak ditemukan" di sheet -> tampil sebagai unknown.
 const MANAGE_PC_NOT_FOUND_RE = /^(?:NOT\s*FOUND|(?:TIDAK|TDK|BELUM)\s+(?:DI\s*)?TEMUKAN)$/i;
 
 /**
- * Nilai sel inventaris M-U untuk ditampilkan.
+ * Nilai sel inventaris M-V untuk ditampilkan.
  * - kosong -> "-"
  * - keterangan tidak ditemukan -> "unknown"
  * - tanpa huruf & angka (mis. "-", "—", "/") -> "-"
@@ -326,8 +327,8 @@ function renderManagePcTable() {
     <section class="mpc-table-card" aria-labelledby="mpcTableTitle">
       <header class="mpc-table-card__header">
         <div class="mpc-table-card__title-group">
-          <span class="mpc-table-card__title-icon" aria-hidden="true">${icon("monitor", { size: 18 })}</span>
-          <h2 id="mpcTableTitle">PC INVENTORY DEVICE OFFICE</h2>
+          <span class="mpc-table-card__title-icon" aria-hidden="true">${icon("pc", { size: 18 })}</span>
+          <h2 id="mpcTableTitle">IT Asset &amp; Device Inventory Management</h2>
         </div>
         <div class="mpc-table-card__controls">
           <label class="mpc-table-search">
@@ -525,7 +526,7 @@ function bindManagePcTable(container, session) {
     loadPage();
   });
 
-  /* Nama Komputer diklik -> buka/tutup baris inventaris (kolom M-U) tepat
+  /* Nama Komputer diklik -> buka/tutup baris inventaris (kolom M-V) tepat
      di bawah baris perangkat. Delegasi pada tbody: tetap bekerja setelah
      rows di-render ulang oleh search / sort / pagination. */
   rowsElement.addEventListener("click", (event) => {
