@@ -36,17 +36,14 @@ const MANAGE_PC_PAGE_SIZE = 15;
  * Tab aktif disimpan di hash query (?view=inventory|unmanaged) supaya
  * deep-linkable: refresh / back button tetap berada di tab yang sama. */
 const MANAGE_PC_TABLE_TABS = [
-  { key: "inventory", label: "Inventory", icon: "itam",
-    hint: "Semua perangkat (total device) dengan kolom status Kaspersky, ITAM, dan KACE." },
-  { key: "unmanaged", label: "Unmanaged", icon: "alert",
-    hint: "Semua perangkat dengan kolom status H-L (KAV, Versi KAV, ITAM, Privilege, KACE). Angka pada badge = perangkat yang statusnya belum OK." }
+  { key: "inventory", label: "Inventory", icon: "itam" },
+  { key: "unmanaged", label: "Unmanaged", icon: "alert" }
 ];
 /* Kolom dasar (identitas perangkat) - selalu tampil di kedua tab.
    Kolom "No" (penomoran baris) TIDAK punya fitur sort -
-   urutannya mengikuti urutan data.
-   width = lebar kolom dalam persen (sisanya dibagi rata otomatis). */
+   urutannya mengikuti urutan data. */
 const MANAGE_PC_BASE_COLUMNS = [
-  { key: "no", label: "No", sortable: false, width: "5%", widthClass: "mpc-table__th--number" },
+  { key: "no", label: "No", sortable: false },
   { key: "namaKomputer", label: "Nama Komputer", sortable: true },
   { key: "divisi", label: "Divisi", sortable: true },
   { key: "alamatIp", label: "Alamat IP", sortable: true },
@@ -62,15 +59,14 @@ const MANAGE_PC_BASE_COLUMNS = [
  * Privilege ITAM memakai nilai mentah sel supaya "tidak ditemukan" tetap
  * tampil sebagai ikon "tidak ditemukan" (bukan NOK). */
 const MANAGE_PC_STATUS_COLUMNS = [
-  { key: "manageKav", label: "KAV", inventoryLabel: "Kaspersky", value: "manageKav", width: "8%" },
-  { key: "versiKav", label: "Versi KAV", value: "versiKav", width: "10%" },
-  { key: "manageItam", label: "ITAM", value: "manageItam", width: "8%" },
-  { key: "privilegeItam", label: "Privilege", value: "privilegeItam", width: "12%" },
-  { key: "manageKace", label: "KACE", value: "manageKace", width: "8%" }
+  { key: "manageKav", label: "KAV", inventoryLabel: "Kaspersky", value: "manageKav" },
+  { key: "versiKav", label: "Versi KAV", value: "versiKav" },
+  { key: "manageItam", label: "ITAM", value: "manageItam" },
+  { key: "privilegeItam", label: "Privilege", value: "privilegeItam" },
+  { key: "manageKace", label: "KACE", value: "manageKace" }
 ].map((column) => ({
   ...column,
-  sortable: true,
-  widthClass: "mpc-table__th--status"
+  sortable: true
 }));
 /* Kolom status tetap pada tab Inventory. */
 const MANAGE_PC_INVENTORY_STATUS_KEYS = ["manageKav", "manageItam", "manageKace"];
@@ -384,7 +380,6 @@ function renderManagePcTableTabs(activeView, activeScope) {
             aria-selected="${isActive}"
             ${isActive ? 'aria-current="page"' : ""}
             data-mpc-view="${tab.key}"
-            title="${escapeHtml(tab.hint || "")}"
           >
             ${icon(tab.icon, { size: 15 })}
             <span>${escapeHtml(tab.label)}</span>
@@ -475,23 +470,21 @@ function managePcStatusColumnsFor(activeView, data) {
 }
 
 function renderManagePcHeaderCell(column, label) {
-  const widthStyle = column.width ? ` style="width: ${column.width}"` : "";
-  const widthClass = column.widthClass ? ` ${column.widthClass}` : "";
   if (column.sortable === false) {
     return `
-        <th scope="col" class="mpc-table__th${widthClass}"${widthStyle}>
+        <th scope="col">
           <span class="mpc-table__th-label">${escapeHtml(label)}</span>
         </th>
       `;
   }
   return `
-        <th scope="col" class="mpc-table__th${widthClass}"${widthStyle} aria-sort="none" data-sort-header="${column.key}">
+        <th scope="col" aria-sort="none" data-sort-header="${column.key}">
           <button type="button" class="mpc-table__th-sort" data-sort-key="${column.key}"
             aria-label="Urutkan berdasarkan ${escapeHtml(label)}">
             <span class="mpc-table__th-label">${escapeHtml(label)}</span>
             <span class="mpc-table__sort-arrows" aria-hidden="true">
-              <span class="mpc-table__sort-arrow" data-sort-direction="asc">${icon("arrow-up", { size: 9 })}</span>
-              <span class="mpc-table__sort-arrow" data-sort-direction="desc">${icon("arrow-down", { size: 9 })}</span>
+              <span class="mpc-table__sort-arrow" data-sort-direction="asc">${icon("arrow-up", { size: 10 })}</span>
+              <span class="mpc-table__sort-arrow" data-sort-direction="desc">${icon("arrow-down", { size: 10 })}</span>
             </span>
           </button>
         </th>
@@ -520,7 +513,7 @@ function renderManagePcStatus(value) {
   if (!status || status === "-" || status === "NOT FOUND" || /^TIDAK\s+(?:DI\s*)?TEMUKAN$/.test(status)) {
     return '<span class="mpc-status mpc-status--empty" role="img" aria-label="Tidak ditemukan" title="Tidak ditemukan">−</span>';
   }
-  return `<span class="mpc-status mpc-status--other" title="${escapeHtml(value)}">${escapeHtml(value)}</span>`;
+  return `<span class="mpc-status mpc-status--other">${escapeHtml(value)}</span>`;
 }
 
 /**
@@ -547,27 +540,20 @@ function renderManagePcRows(items, startIndex, statusColumns, activeView = "inve
     const statusCells = statusColumns.map((column) => `
       <td class="mpc-table__status">${renderManagePcStatus(item[column.value])}</td>
     `).join("");
-    /* Nilai teks pendek bisa terpotong (ellipsis) -> judul sel memuat
-       nilai lengkapnya. */
-    const textCell = (value) => {
-      const text = value == null ? "" : String(value);
-      return `<td title="${escapeHtml(text)}">${escapeHtml(text || "—")}</td>`;
-    };
     return `
     <tr class="mpc-table__row">
       <td class="mpc-table__number">${escapeHtml(rowNumber)}</td>
       <td class="mpc-table__device">
         <button type="button" class="mpc-device-toggle" data-mpc-toggle
-          aria-expanded="false" aria-controls="${detailId}"
-          title="${escapeHtml(item.namaKomputer || "—")}">
+          aria-expanded="false" aria-controls="${detailId}">
           <span class="mpc-device-toggle__name">${escapeHtml(item.namaKomputer || "—")}</span>
         </button>
       </td>
-      ${textCell(item.divisi)}
-      ${textCell(item.alamatIp)}
-      ${textCell(item.workgroup)}
-      ${textCell(item.model)}
-      ${textCell(item.sistemOperasi)}
+      <td>${escapeHtml(item.divisi || "—")}</td>
+      <td>${escapeHtml(item.alamatIp || "—")}</td>
+      <td>${escapeHtml(item.workgroup || "—")}</td>
+      <td>${escapeHtml(item.model || "—")}</td>
+      <td>${escapeHtml(item.sistemOperasi || "—")}</td>
       ${statusCells}
     </tr>
     <tr class="mpc-table__spec" id="${detailId}" hidden>

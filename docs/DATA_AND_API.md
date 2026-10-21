@@ -1393,8 +1393,9 @@ include the sheet row number, `divisi`, and device inventory fields mapped from 
 complete filtered result before pagination. The frontend retrieves records
 through `loadManagePcList`. The Manage PC overview table displays columns
 A–G and H, J, L (tab Inventory), uses server-side search, and requests 15
-rows per page. The tab Unmanaged shows the same device list with the status
-columns H–L instead (see the inventory tabs section below).
+rows per page. The tab Unmanaged lists only the devices with a non-`OK`
+status and shows the status columns H–L (see the inventory tabs section
+below).
 
 **Sorting (sortable column headers).** Every column except `No` sorts when
 its header is clicked, following the CCTV table's three-state cycle:
@@ -1434,17 +1435,17 @@ Management` table on the Manage PC overview page is split into two tabs:
 | Tab | `view` | Isi |
 | --- | --- | --- |
 | Inventory (default) | `inventory` | Semua perangkat (total device) dengan kolom status Kaspersky, ITAM, KACE |
-| Unmanaged | `unmanaged` | Semua perangkat dengan kolom status H–L (KAV, Versi KAV, ITAM, Privilege, KACE) |
+| Unmanaged | `unmanaged` | Perangkat yang punya minimal satu status manajemen (kolom H–L) yang selain `OK` |
 
-Both tabs list the complete device list; the difference is the status columns
-that are shown. `getManagePcList` accepts the optional `view` parameter
-(`inventory` | `unmanaged`, default `inventory`). `getManagePcSummary` returns
-the recap in `inventory: { total, unmanaged }`, where `total` is the device
-count (badge of the Inventory tab) and `unmanaged` is the number of devices
-with at least one non-`OK` status (badge of the Unmanaged tab).
+`getManagePcList` accepts the optional `view` parameter (`inventory` |
+`unmanaged`, default `inventory`) and filters the result set server-side
+before search, sort, and pagination. `getManagePcSummary` returns the recap
+in `inventory: { total, unmanaged }`, where `total` is the device count
+(badge of the Inventory tab) and `unmanaged` is the number of devices shown
+in the Unmanaged tab.
 
 **Status management columns (H–L).** Sheet columns H–L map to the device
-management status and drive the status columns of the Unmanaged tab:
+management status and drive the `unmanaged` filter:
 
 | Kolom | Sheet | Field item |
 | --- | --- | --- |
@@ -1456,27 +1457,26 @@ management status and drive the status columns of the Unmanaged tab:
 
 A status counts as managed only when its value is exactly `OK`
 (case-insensitive). `NOK`, `TIDAK DITEMUKAN`, an empty cell, or any other
-label all count as not OK. The frontend renders each status cell as `✓` (OK),
-`×` (NOK) or `−` (not found), and Privilege ITAM uses the raw cell value so
-`TIDAK DITEMUKAN` still shows the `−` marker instead of `×`.
+label all count as not OK, so the device appears in the `unmanaged` tab.
+The frontend renders each status cell as `✓` (OK), `×` (NOK) or `−` (not
+found), and Privilege ITAM uses the raw cell value so `TIDAK DITEMUKAN` still
+shows the `−` marker instead of `×`. Only these status markers carry a
+tooltip.
 
 **Dynamic status headers.** On the `unmanaged` tab only the H–L columns that
 actually contain a non-`OK` value are shown. `getManagePcList` returns the
-column list in `statusColumns` (computed over the whole result, not per page),
-so a column whose values are all `OK` has no header at all. The `inventory`
-tab always shows the fixed status columns (KAV, ITAM, KACE) beside the base
-device columns.
+column list in `statusColumns` (computed over the whole filtered result, not
+per page), so a column whose values are all `OK` has no header at all. The
+`inventory` tab always shows the fixed status columns (KAV, ITAM, KACE) beside
+the base device columns.
 
 **Row numbering.** The Inventory tab shows the sheet row number in the `No`
 column. The Unmanaged tab shows a plain sequence number starting at 1,
-because that tab is a status overview rather than the sheet order.
+because that tab is a filtered status list rather than the sheet order.
 
-**Table layout.** The table always fits the card: column widths are
-percentage based (`No` 5%, status columns 8–12% each, the remaining width is
-divided equally between the device identity columns) and the table uses
-`table-layout: fixed`. Text that does not fit is cut with an ellipsis inside
-the cell (the full value stays available in the cell tooltip) instead of
-pushing the table past the right edge of the card.
+**Table layout.** Column widths follow the data length (`table-layout:
+auto`); the status columns only hold an icon, so they stay narrow instead of
+taking a fixed wide slot. No cell content is truncated.
 
 The active tab is stored in the page hash query (`?view=inventory|unmanaged`)
 next to the existing scope parameter (`?scope=office|store`), so it is
