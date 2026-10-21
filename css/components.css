@@ -726,13 +726,27 @@
   scrollbar-width: thin;
 }
 
+/* Tabel mengikuti lebar card (auto-resize). Lebar kolom dalam persen
+   supaya jumlah kolom yang berbeda (Inventory / Unmanaged) tetap muat
+   tanpa menumpuk ke kanan; isi sel yang kepanjangan dipotong ellipsis. */
 .mpc-table {
   width: 100%;
-  min-width: 1040px;
+  min-width: 0;
   border-collapse: separate;
   border-spacing: 0;
   color: #344256;
   font-size: 12px;
+  table-layout: fixed;
+}
+
+/* Lebar kolom: No 5%, kolom status 8% masing-masing, sisanya(auto) dibagi
+   rata untuk kolom identitas perangkat. */
+.mpc-table__th--number {
+  width: 5%;
+}
+
+.mpc-table__th--status {
+  width: 8%;
 }
 
 .mpc-table th {
@@ -745,7 +759,7 @@
   letter-spacing: .045em;
   text-align: left;
   text-transform: uppercase;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 /* Header sortable memakai tombol agar tetap bisa dioperasikan dengan keyboard. */
@@ -759,13 +773,14 @@
   letter-spacing: inherit;
   text-align: left;
   text-transform: inherit;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 .mpc-table__th-sort {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   width: 100%;
   min-height: 42px;
   padding: 0 13px;
@@ -776,15 +791,23 @@
   letter-spacing: inherit;
   text-align: left;
   text-transform: inherit;
-  white-space: nowrap;
+  white-space: normal;
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;
 }
 
 .mpc-table__th-sort .mpc-table__th-label {
+  min-width: 0;
   min-height: 0;
   padding: 0;
+}
+
+/* Kolom status lebih sempit, jadi label header memakai padding minimal
+   supaya label + panah sort tidak melewati lebar kolom. */
+.mpc-table__th--status .mpc-table__th-label {
+  padding-right: 0;
+  padding-left: 0;
 }
 
 .mpc-table__th-sort:hover,
@@ -820,6 +843,15 @@
   padding: 8px 13px;
   border-bottom: 1px solid #edf1f5;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Baris detail inventaris (kolom M-V) tidak boleh dipotong: panelnya
+   dibiarkan utuh dan membungkus sendiri kalau space tidak cukup. */
+.mpc-table td.mpc-table__spec-cell {
+  overflow: visible;
+  text-overflow: clip;
 }
 
 .mpc-table tbody tr:last-child td {
@@ -842,7 +874,7 @@
 }
 
 .mpc-table__status {
-  min-width: 76px;
+  max-width: 100%;
   text-align: center;
 }
 
@@ -874,7 +906,9 @@
 
 .mpc-status--other {
   min-width: 0;
+  max-width: 100%;
   padding: 0 7px;
+  overflow: hidden;
   background: #f1f5f9;
   color: #526277;
   font-size: 10px;
@@ -961,6 +995,8 @@
 
 /* ---- MANAGE PC: Nama Komputer -> baris inventory device ---- */
 .mpc-device-toggle {
+  display: block;
+  width: 100%;
   max-width: 100%;
   padding: 0;
   border: 0;
@@ -969,11 +1005,14 @@
   font: inherit;
   text-align: left;
   cursor: pointer;
+  overflow: hidden;
 }
 
 .mpc-device-toggle__name {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mpc-device-toggle:hover .mpc-device-toggle__name,
@@ -1007,6 +1046,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
+  max-width: 100%;
   padding: 10px 14px 12px;
   border: 1px solid #dfe3e8;
   border-radius: 0;
@@ -1041,6 +1081,7 @@
    sama. */
 .mpc-spec__grid {
   display: flex;
+  flex-wrap: wrap;
   gap: 0 28px;
   min-width: 0;
 }
@@ -1099,6 +1140,10 @@
 }
 
 @media (max-width: 600px) {
+  .mpc-table {
+    min-width: 1040px;
+  }
+
   .mpc-table-card__header {
     align-items: stretch;
     flex-direction: column;
