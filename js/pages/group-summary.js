@@ -28,17 +28,32 @@ import { icon } from "../icons.js";
 import { loadManagePcList, loadManagePcSummary } from "../api.js";
 
 const MANAGE_PC_PAGE_SIZE = 15;
+/* Kolom tabel. Kolom "No" (penomoran baris) TIDAK punya fitur sort -
+   urutannya mengikuti urutan data. */
 const MANAGE_PC_TABLE_COLUMNS = [
-  { key: "no", label: "No" },
-  { key: "namaKomputer", label: "Nama Komputer" },
-  { key: "divisi", label: "Divisi" },
-  { key: "alamatIp", label: "Alamat IP" },
-  { key: "workgroup", label: "Workgroup" },
-  { key: "model", label: "Model" },
-  { key: "sistemOperasi", label: "Sistem Operasi" },
-  { key: "manageKav", label: "Kaspersky" },
-  { key: "manageItam", label: "ITAM" },
-  { key: "manageKace", label: "KACE" }
+  { key: "no", label: "No", sortable: false },
+  { key: "namaKomputer", label: "Nama Komputer", sortable: true },
+  { key: "divisi", label: "Divisi", sortable: true },
+  { key: "alamatIp", label: "Alamat IP", sortable: true },
+  { key: "workgroup", label: "Workgroup", sortable: true },
+  { key: "model", label: "Model", sortable: true },
+  { key: "sistemOperasi", label: "Sistem Operasi", sortable: true },
+  { key: "manageKav", label: "Kaspersky", sortable: true },
+  { key: "manageItam", label: "ITAM", sortable: true },
+  { key: "manageKace", label: "KACE", sortable: true }
+];
+
+/**
+ * Mode pengurutan tabel perangkat (3 mode), ditampilkan lewat dropdown
+ * seperti pola dropdown status di menu CCTV.
+ * - "default" : urutan asli dari server (tanpa sortBy).
+ * - "asc"     : Nama Komputer A - Z.
+ * - "desc"    : Nama Komputer Z - A.
+ */
+const MANAGE_PC_SORT_MODES = [
+  { id: "default", label: "Urutan Asli", sortBy: "", sortDirection: "asc" },
+  { id: "asc", label: "Nama Komputer (A - Z)", sortBy: "namaKomputer", sortDirection: "asc" },
+  { id: "desc", label: "Nama Komputer (Z - A)", sortBy: "namaKomputer", sortDirection: "desc" }
 ];
 
 /**
@@ -84,22 +99,26 @@ function renderManagePcSpecPanel(item) {
     ? "—"
     : String(item.namaKomputer).trim();
   const renderSpecItem = (field, position) => `
-    <div class="mpc-spec__item mpc-spec__item--${position}">
-      <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
-      <span class="mpc-spec__sep" aria-hidden="true">:</span>
-      <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
-    </div>
+    <tr class="mpc-spec__row mpc-spec__row--${position}">
+      <td class="mpc-spec__label">${escapeHtml(field.label)}</td>
+      <td class="mpc-spec__sep" aria-hidden="true">:</td>
+      <td class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</td>
+    </tr>
   `;
-  /* Satu kolom per pasangan vertikal (M/N, O/P, Q/R, S/T, U). Kolom
-     auto ngikut isi terpanjang (flex none). Lebar label tiap kolom
-     disamakan dengan label terpanjang pasangannya (via --label-w)
-     supaya titik dua atas-bawah segaris. */
+  /* Satu TABEL per pasangan vertikal (M/N, O/P, Q/R, S/T, U). Table
+     auto-layout membuat lebar kolom label otomatis mengikuti label
+     terpanjang di pasangan itu (mis. "Merk" & "Model Komputer"), sehingga
+     TITIK DUA selalu segaris. Garis bawah satu per baris (td), jadi
+     label & value punya garis yang sama. */
   const cols = [];
   for (let i = 0; i < MANAGE_PC_SPEC_FIELDS.length; i += 2) {
     const pair = [MANAGE_PC_SPEC_FIELDS[i], MANAGE_PC_SPEC_FIELDS[i + 1]].filter(Boolean);
-    const labelW = Math.max(...pair.map((f) => f.label.length));
-    const cells = pair.map((field, j) => renderSpecItem(field, j === 0 ? "top" : "bottom")).join("");
-    cols.push(`<div class="mpc-spec__col" style="--label-w:${labelW}ch">${cells}</div>`);
+    const rows = pair.map((field, j) => renderSpecItem(field, j === 0 ? "top" : "bottom")).join("");
+    cols.push(`
+      <table class="mpc-spec__table">
+        <tbody>${rows}</tbody>
+      </table>
+    `);
   }
 
   return `
@@ -294,29 +313,55 @@ export function renderGroupSummaryPage(container, routeInfo) {
 }
 
 function renderManagePcTable() {
+  /* Header: semua kolom label biasa (tidak ada tombol sort per kolom).
+     Pengurutan memakai DROPDOWN 3 mode di control bar (pola dropdown
+     status menu CCTV). Kolom "No" juga tidak punya fitur sort. */
   const headers = MANAGE_PC_TABLE_COLUMNS.map((column) => `
-    <th scope="col" aria-sort="none" data-sort-header="${column.key}">
-      <button type="button" class="mpc-table__sort" data-sort-by="${column.key}">
-        <span>${escapeHtml(column.label)}</span>
-        <span class="mpc-table__sort-indicator" aria-hidden="true">↕</span>
-      </button>
+    <th scope="col"${column.sortable ? ` aria-sort="none" data-sort-header="${column.key}"` : ""}>
+      <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
     </th>
+  `).join("");
+
+  const sortOptions = MANAGE_PC_SORT_MODES.map((mode) => `
+    <button
+      type="button"
+      class="status-dropdown__item${mode.id === "default" ? " is-selected" : ""}"
+      data-sort-mode="${mode.id}"
+      role="option"
+      aria-selected="${mode.id === "default"}"
+    >${escapeHtml(mode.label)}</button>
   `).join("");
 
   return `
     <section class="mpc-table-card" aria-labelledby="mpcTableTitle">
       <header class="mpc-table-card__header">
-        <div>
-          <h2 id="mpcTableTitle">Daftar Perangkat</h2>
-          <p>Data perangkat Office dari Manage PC.</p>
+        <div class="mpc-table-card__title-group">
+          <span class="mpc-table-card__title-icon" aria-hidden="true">${icon("monitor", { size: 18 })}</span>
+          <h2 id="mpcTableTitle">PC INVENTORY DEVICE OFFICE</h2>
         </div>
-        <label class="mpc-table-search">
-          ${icon("search", { size: 17 })}
-          <span class="visually-hidden">Cari perangkat</span>
-          <input type="search" data-mpc-search placeholder="Cari perangkat..." autocomplete="off">
-        </label>
+        <div class="mpc-table-card__controls">
+          <div class="status-dropdown mpc-sort-dropdown">
+            <button
+              type="button"
+              class="input status-dropdown__trigger mpc-sort-dropdown__trigger"
+              id="mpcSortTrigger"
+              aria-haspopup="listbox"
+              aria-expanded="false"
+            >
+              <span id="mpcSortValue">Urutan: Urutan Asli</span>
+              ${icon("chevron", { size: 14 })}
+            </button>
+            <div class="status-dropdown__popover mpc-sort-dropdown__popover" id="mpcSortPopover" role="listbox">
+              ${sortOptions}
+            </div>
+          </div>
+          <label class="mpc-table-search">
+            ${icon("search", { size: 17 })}
+            <span class="visually-hidden">Cari perangkat</span>
+            <input type="search" data-mpc-search placeholder="Cari perangkat..." autocomplete="off">
+          </label>
+        </div>
       </header>
-      <div class="mpc-table__count" data-mpc-count aria-live="polite"></div>
       <div class="mpc-table-wrapper">
         <table class="mpc-table">
           <thead><tr>${headers}</tr></thead>
@@ -325,7 +370,10 @@ function renderManagePcTable() {
           </tbody>
         </table>
       </div>
-      <footer class="mpc-table__footer" data-mpc-pagination></footer>
+      <footer class="mpc-table__footer">
+        <div class="mpc-table__count" data-mpc-count aria-live="polite"></div>
+        <div class="mpc-table__footer-right" data-mpc-pagination></div>
+      </footer>
     </section>
   `;
 }
@@ -392,16 +440,64 @@ function bindManagePcTable(container, session) {
   let searchTimer = null;
   let totalPages = 1;
 
+  /* Dropdown 3 mode urutan (pola dropdown status CCTV): klik pemicu ->
+     buka/tutup popover; klik opsi -> terapkan mode + muat ulang data. */
+  const sortTrigger = table.querySelector("#mpcSortTrigger");
+  const sortPopover = table.querySelector("#mpcSortPopover");
+  const sortValueElement = table.querySelector("#mpcSortValue");
+
+  function closeSortPopover() {
+    if (!sortPopover) return;
+    sortPopover.classList.remove("is-visible");
+    if (sortTrigger) sortTrigger.setAttribute("aria-expanded", "false");
+  }
+
+  function applySortMode(modeId) {
+    const mode = MANAGE_PC_SORT_MODES.find((item) => item.id === modeId) || MANAGE_PC_SORT_MODES[0];
+    sortBy = mode.sortBy;
+    sortDirection = mode.sortDirection;
+    if (sortValueElement) sortValueElement.textContent = `Urutan: ${mode.label}`;
+    if (sortPopover) {
+      sortPopover.querySelectorAll("[data-sort-mode]").forEach((option) => {
+        const isSelected = option.getAttribute("data-sort-mode") === mode.id;
+        option.classList.toggle("is-selected", isSelected);
+        option.setAttribute("aria-selected", String(isSelected));
+      });
+    }
+    page = 1;
+    loadPage();
+  }
+
+  if (sortTrigger && sortPopover) {
+    sortTrigger.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const isOpen = sortPopover.classList.toggle("is-visible");
+      sortTrigger.setAttribute("aria-expanded", String(isOpen));
+    });
+
+    sortPopover.addEventListener("click", (event) => {
+      const option = event.target.closest("[data-sort-mode]");
+      if (!option) return;
+      applySortMode(option.getAttribute("data-sort-mode"));
+      closeSortPopover();
+    });
+
+    /* Klik di luar dropdown -> tutup. Listener dilepas saat halaman
+       di-render ulang (element tidak lagi terhubung ke DOM). */
+    document.addEventListener("click", function outsideSortClick(event) {
+      if (!table.isConnected) {
+        document.removeEventListener("click", outsideSortClick);
+        return;
+      }
+      if (!event.target.closest(".mpc-sort-dropdown")) closeSortPopover();
+    });
+  }
+
   function updateSortHeaders() {
     table.querySelectorAll("[data-sort-header]").forEach((header) => {
       const key = header.getAttribute("data-sort-header");
-      const button = header.querySelector("[data-sort-by]");
-      const indicator = button.querySelector(".mpc-table__sort-indicator");
-      const label = button.querySelector("span").textContent;
       const isSorted = key === sortBy;
       header.setAttribute("aria-sort", isSorted ? (sortDirection === "asc" ? "ascending" : "descending") : "none");
-      indicator.textContent = isSorted ? (sortDirection === "asc" ? "↑" : "↓") : "↕";
-      button.setAttribute("aria-label", `Urutkan berdasarkan ${label}${isSorted ? (sortDirection === "asc" ? ", naik" : ", turun") : ""}`);
     });
   }
 
@@ -457,18 +553,8 @@ function bindManagePcTable(container, session) {
     }, 250);
   });
 
-  table.querySelector("thead").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-sort-by]");
-    if (!button) return;
-    const key = button.getAttribute("data-sort-by");
-    if (sortBy === key) sortDirection = sortDirection === "asc" ? "desc" : "asc";
-    else {
-      sortBy = key;
-      sortDirection = "asc";
-    }
-    page = 1;
-    loadPage();
-  });
+  /* Sorting TIDAK lewat klik header - memakai dropdown 3 mode di atas.
+     Header kolom hanya label (aria-sort disinkronkan untuk a11y). */
 
   paginationElement.addEventListener("click", (event) => {
     const button = event.target.closest("[data-page-step]");

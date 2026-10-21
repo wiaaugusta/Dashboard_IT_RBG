@@ -365,6 +365,8 @@ Page 3:
 
 Jangan reset nomor menjadi 1 setiap page. dan menampilkan total record secara keseluruhan, agar user tetap tau walaupun pagination, namun total record secara keseluruhan jelas.
 
+Ringkasan jumlah data (mis. "Menampilkan 1-15 dari 175 perangkat") diletakkan di KIRI bawah tabel, sementara kontrol navigasi halaman di kanan bawah.
+
 Table harus memiliki:
 
 - clear header

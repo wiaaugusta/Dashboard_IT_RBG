@@ -1391,14 +1391,30 @@ include the sheet row number, `divisi`, and device inventory fields mapped from 
 `getManagePcList` accepts `sortBy` and `sortDirection` for sorting the
 complete filtered result before pagination. The frontend retrieves records
 through `loadManagePcList`. The Manage PC overview table displays columns
-A–G and H, J, L, uses server-side search and sorting, and requests 15 rows
-per page.
+A–G and H, J, L, uses server-side search, and requests 15 rows per page.
+
+**Sorting (dropdown 3 mode).** Sorting is not done by clicking the column
+header. The table header exposes a single dropdown with three modes, in the
+same popover pattern as the CCTV status dropdown:
+
+| Mode | `sortBy` | `sortDirection` |
+| --- | --- | --- |
+| Urutan Asli (default) | *(empty)* | `asc` |
+| Nama Komputer (A - Z) | `namaKomputer` | `asc` |
+| Nama Komputer (Z - A) | `namaKomputer` | `desc` |
+
+The `No` column is not sortable and has no sort affordance; its numbering
+follows the row order of the active sort.
 
 **Device inventory detail (columns M–U).** `Nama Komputer` on each table row
 is clickable and expands an inline detail row directly below it, rendered
 from the inventory fields already present on the `getManagePcList` item — no
 extra request is made. The fields are shown two per row in sheet order
-(M·N, O·P, Q·R, S·T, U). Display normalization applied by the frontend:
+(M·N, O·P, Q·R, S·T, U). Each pair is rendered as its own auto-layout
+`<table>`, so the label column auto-sizes to the longest label in the pair
+(e.g. `Merk` vs `Model Komputer`) and the colons stay on the same vertical
+line. Each row carries a single bottom border across label, colon, and
+value. Display normalization applied by the frontend:
 
 | Nilai sel | Ditampilkan |
 | --- | --- |
