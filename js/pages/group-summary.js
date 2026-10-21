@@ -44,19 +44,6 @@ const MANAGE_PC_TABLE_COLUMNS = [
 ];
 
 /**
- * Mode pengurutan tabel perangkat (3 mode), ditampilkan lewat dropdown
- * seperti pola dropdown status di menu CCTV.
- * - "default" : urutan asli dari server (tanpa sortBy).
- * - "asc"     : Nama Komputer A - Z.
- * - "desc"    : Nama Komputer Z - A.
- */
-const MANAGE_PC_SORT_MODES = [
-  { id: "default", label: "Urutan Asli", sortBy: "", sortDirection: "asc" },
-  { id: "asc", label: "Nama Komputer (A - Z)", sortBy: "namaKomputer", sortDirection: "asc" },
-  { id: "desc", label: "Nama Komputer (Z - A)", sortBy: "namaKomputer", sortDirection: "desc" }
-];
-
-/**
  * Kolom inventaris yang ditampilkan saat Nama Komputer diklik (baris detail).
  * Sumber data: kolom M-U sheet MASTER REPORT OFFICE yang sudah dipetakan
  * backend ke field item getManagePcList. Urutan = urutan tampil; layout
@@ -313,24 +300,27 @@ export function renderGroupSummaryPage(container, routeInfo) {
 }
 
 function renderManagePcTable() {
-  /* Header: semua kolom label biasa (tidak ada tombol sort per kolom).
-     Pengurutan memakai DROPDOWN 3 mode di control bar (pola dropdown
-     status menu CCTV). Kolom "No" juga tidak punya fitur sort. */
-  const headers = MANAGE_PC_TABLE_COLUMNS.map((column) => `
-    <th scope="col"${column.sortable ? ` aria-sort="none" data-sort-header="${column.key}"` : ""}>
-      <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
-    </th>
-  `).join("");
-
-  const sortOptions = MANAGE_PC_SORT_MODES.map((mode) => `
-    <button
-      type="button"
-      class="status-dropdown__item${mode.id === "default" ? " is-selected" : ""}"
-      data-sort-mode="${mode.id}"
-      role="option"
-      aria-selected="${mode.id === "default"}"
-    >${escapeHtml(mode.label)}</button>
-  `).join("");
+  const headers = MANAGE_PC_TABLE_COLUMNS.map((column) => {
+    if (!column.sortable) {
+      return `
+        <th scope="col">
+          <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
+        </th>
+      `;
+    }
+    return `
+      <th scope="col" aria-sort="none" data-sort-header="${column.key}">
+        <button type="button" class="mpc-table__th-sort" data-sort-key="${column.key}"
+          aria-label="Urutkan berdasarkan ${escapeHtml(column.label)}">
+          <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
+          <span class="mpc-table__sort-arrows" aria-hidden="true">
+            <span class="mpc-table__sort-arrow" data-sort-direction="asc">${icon("arrow-up", { size: 10 })}</span>
+            <span class="mpc-table__sort-arrow" data-sort-direction="desc">${icon("arrow-down", { size: 10 })}</span>
+          </span>
+        </button>
+      </th>
+    `;
+  }).join("");
 
   return `
     <section class="mpc-table-card" aria-labelledby="mpcTableTitle">
@@ -340,21 +330,6 @@ function renderManagePcTable() {
           <h2 id="mpcTableTitle">PC INVENTORY DEVICE OFFICE</h2>
         </div>
         <div class="mpc-table-card__controls">
-          <div class="status-dropdown mpc-sort-dropdown">
-            <button
-              type="button"
-              class="input status-dropdown__trigger mpc-sort-dropdown__trigger"
-              id="mpcSortTrigger"
-              aria-haspopup="listbox"
-              aria-expanded="false"
-            >
-              <span id="mpcSortValue">Urutan: Urutan Asli</span>
-              ${icon("chevron", { size: 14 })}
-            </button>
-            <div class="status-dropdown__popover mpc-sort-dropdown__popover" id="mpcSortPopover" role="listbox">
-              ${sortOptions}
-            </div>
-          </div>
           <label class="mpc-table-search">
             ${icon("search", { size: 17 })}
             <span class="visually-hidden">Cari perangkat</span>
@@ -440,64 +415,27 @@ function bindManagePcTable(container, session) {
   let searchTimer = null;
   let totalPages = 1;
 
-  /* Dropdown 3 mode urutan (pola dropdown status CCTV): klik pemicu ->
-     buka/tutup popover; klik opsi -> terapkan mode + muat ulang data. */
-  const sortTrigger = table.querySelector("#mpcSortTrigger");
-  const sortPopover = table.querySelector("#mpcSortPopover");
-  const sortValueElement = table.querySelector("#mpcSortValue");
-
-  function closeSortPopover() {
-    if (!sortPopover) return;
-    sortPopover.classList.remove("is-visible");
-    if (sortTrigger) sortTrigger.setAttribute("aria-expanded", "false");
-  }
-
-  function applySortMode(modeId) {
-    const mode = MANAGE_PC_SORT_MODES.find((item) => item.id === modeId) || MANAGE_PC_SORT_MODES[0];
-    sortBy = mode.sortBy;
-    sortDirection = mode.sortDirection;
-    if (sortValueElement) sortValueElement.textContent = `Urutan: ${mode.label}`;
-    if (sortPopover) {
-      sortPopover.querySelectorAll("[data-sort-mode]").forEach((option) => {
-        const isSelected = option.getAttribute("data-sort-mode") === mode.id;
-        option.classList.toggle("is-selected", isSelected);
-        option.setAttribute("aria-selected", String(isSelected));
-      });
-    }
-    page = 1;
-    loadPage();
-  }
-
-  if (sortTrigger && sortPopover) {
-    sortTrigger.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const isOpen = sortPopover.classList.toggle("is-visible");
-      sortTrigger.setAttribute("aria-expanded", String(isOpen));
-    });
-
-    sortPopover.addEventListener("click", (event) => {
-      const option = event.target.closest("[data-sort-mode]");
-      if (!option) return;
-      applySortMode(option.getAttribute("data-sort-mode"));
-      closeSortPopover();
-    });
-
-    /* Klik di luar dropdown -> tutup. Listener dilepas saat halaman
-       di-render ulang (element tidak lagi terhubung ke DOM). */
-    document.addEventListener("click", function outsideSortClick(event) {
-      if (!table.isConnected) {
-        document.removeEventListener("click", outsideSortClick);
-        return;
-      }
-      if (!event.target.closest(".mpc-sort-dropdown")) closeSortPopover();
-    });
-  }
-
   function updateSortHeaders() {
-    table.querySelectorAll("[data-sort-header]").forEach((header) => {
-      const key = header.getAttribute("data-sort-header");
+    table.querySelectorAll("[data-sort-key]").forEach((button) => {
+      const key = button.getAttribute("data-sort-key");
+      const header = button.closest("[data-sort-header]");
       const isSorted = key === sortBy;
-      header.setAttribute("aria-sort", isSorted ? (sortDirection === "asc" ? "ascending" : "descending") : "none");
+      const activeDirection = isSorted ? sortDirection : "";
+      const label = button.querySelector(".mpc-table__th-label").textContent;
+      header.setAttribute(
+        "aria-sort",
+        activeDirection === "asc" ? "ascending" : activeDirection === "desc" ? "descending" : "none"
+      );
+      header.classList.toggle("is-active", isSorted);
+      button.setAttribute(
+        "aria-label",
+        isSorted
+          ? `Urutkan berdasarkan ${label}, saat ini ${activeDirection === "asc" ? "naik" : "turun"}`
+          : `Urutkan berdasarkan ${label}`
+      );
+      button.querySelectorAll("[data-sort-direction]").forEach((arrow) => {
+        arrow.classList.toggle("is-active", arrow.getAttribute("data-sort-direction") === activeDirection);
+      });
     });
   }
 
@@ -507,13 +445,15 @@ function bindManagePcTable(container, session) {
     const first = total ? ((page - 1) * MANAGE_PC_PAGE_SIZE) + 1 : 0;
     const last = Math.min(page * MANAGE_PC_PAGE_SIZE, total);
     countElement.textContent = `Menampilkan ${first}–${last} dari ${total} perangkat`;
-    paginationElement.innerHTML = `
-      <span class="mpc-table__page-info">Halaman ${page} dari ${totalPages}</span>
-      <div class="mpc-table__page-actions">
-        <button type="button" data-page-step="-1" aria-label="Halaman sebelumnya" ${page <= 1 ? "disabled" : ""}>Sebelumnya</button>
-        <button type="button" data-page-step="1" aria-label="Halaman berikutnya" ${page >= totalPages ? "disabled" : ""}>Berikutnya</button>
+    paginationElement.innerHTML = totalPages > 1 ? `
+      <div class="mpc-table__page-actions" role="navigation" aria-label="Navigasi halaman perangkat">
+        <button type="button" class="mpc-table__page-button" data-page="prev"
+          aria-label="Halaman sebelumnya" ${page <= 1 ? "disabled" : ""}>&lsaquo;</button>
+        ${renderManagePcPageNumbers(page, totalPages)}
+        <button type="button" class="mpc-table__page-button" data-page="next"
+          aria-label="Halaman berikutnya" ${page >= totalPages ? "disabled" : ""}>&rsaquo;</button>
       </div>
-    `;
+    ` : "";
   }
 
   async function loadPage() {
@@ -553,13 +493,35 @@ function bindManagePcTable(container, session) {
     }, 250);
   });
 
-  /* Sorting TIDAK lewat klik header - memakai dropdown 3 mode di atas.
-     Header kolom hanya label (aria-sort disinkronkan untuk a11y). */
+  table.querySelector("thead").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-sort-key]");
+    if (!button) return;
+    const key = button.getAttribute("data-sort-key");
+    // Siklus: ascending -> descending -> urutan asli.
+    if (sortBy !== key) {
+      sortBy = key;
+      sortDirection = "asc";
+    } else if (sortDirection === "asc") {
+      sortDirection = "desc";
+    } else if (sortDirection === "desc") {
+      sortBy = "";
+      sortDirection = "asc";
+    } else {
+      sortDirection = "asc";
+    }
+    page = 1;
+    updateSortHeaders();
+    loadPage();
+  });
 
   paginationElement.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-page-step]");
+    const button = event.target.closest("[data-page]");
     if (!button || button.disabled) return;
-    page = Math.max(1, Math.min(totalPages, page + Number(button.getAttribute("data-page-step"))));
+    const pageValue = button.getAttribute("data-page");
+    if (pageValue === "prev") page -= 1;
+    else if (pageValue === "next") page += 1;
+    else page = Number(pageValue);
+    page = Math.max(1, Math.min(totalPages, page));
     loadPage();
   });
 
@@ -578,6 +540,28 @@ function bindManagePcTable(container, session) {
   });
 
   loadPage();
+}
+
+function renderManagePcPageNumbers(page, totalPages) {
+  const pages = totalPages <= 7
+    ? Array.from({ length: totalPages }, (_, index) => index + 1)
+    : Array.from(new Set([1, totalPages, page - 1, page, page + 1]))
+      .filter((number) => number >= 1 && number <= totalPages)
+      .sort((a, b) => a - b);
+  const entries = [];
+  let previousPage = 0;
+
+  pages.forEach((pageNumber) => {
+    if (pageNumber - previousPage > 1) entries.push("ellipsis");
+    entries.push(pageNumber);
+    previousPage = pageNumber;
+  });
+
+  return entries.map((entry) => entry === "ellipsis"
+    ? '<span class="mpc-table__page-ellipsis" aria-hidden="true">&hellip;</span>'
+    : `<button type="button" class="mpc-table__page-button${entry === page ? " is-active" : ""}"
+        data-page="${entry}" aria-label="Halaman ${entry}"${entry === page ? ' aria-current="page"' : ""}>${entry}</button>`
+  ).join("");
 }
 
 function renderManagePcScopeBar(activeScope, canChooseScope) {
