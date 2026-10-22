@@ -115,6 +115,47 @@ function formatInventoryValue(value) {
   return text;
 }
 
+/**
+ * Panel detail inventaris: kalau lima pasangan kolom tidak muat dalam satu
+ * baris, pasangan terakhir dipisah - baris bawahnya (mis. "Processors")
+ * dipindahkan ke tabel pasangan pertama, sehingga posisinya tepat di bawah
+ * "Serial Number" dan titik dua-nya tetap segaris. Dengan begitu tepi kanan
+ * kotak tidak terpotong dan tabel utama tidak ikut bergeser.
+ * @param {HTMLElement} panel - elemen .mpc-spec
+ */
+function fitManagePcSpecPanel(panel) {
+  const grid = panel.querySelector(".mpc-spec__grid");
+  if (!grid) return;
+  const tables = Array.from(grid.querySelectorAll(".mpc-spec__table"));
+  if (tables.length < 2) return;
+
+  /* Lebar isi seluruh pasangan + jarak antar kolom. */
+  const gap = 28;
+  let contentWidth = 0;
+  tables.forEach((table) => {
+    contentWidth += Math.max(table.getBoundingClientRect().width, table.scrollWidth);
+  });
+  contentWidth += gap * (tables.length - 1);
+  if (contentWidth <= grid.clientWidth + 1) return;
+
+  const lastTable = tables[tables.length - 1];
+  const lastBody = lastTable.querySelector("tbody");
+  const lastRows = lastBody ? lastBody.querySelectorAll("tr") : [];
+  if (lastRows.length < 2) return;
+  const firstBody = tables[0].querySelector("tbody");
+  if (!firstBody) return;
+
+  /* Baris bawah pasangan terakhir pindah ke pasangan pertama; gaya baris
+     ditukar supaya garis bawahnya tetap rapi. */
+  const moved = lastRows[1];
+  const staying = lastRows[0];
+  moved.classList.remove("mpc-spec__row--bottom");
+  moved.classList.add("mpc-spec__row--top");
+  staying.classList.remove("mpc-spec__row--top");
+  staying.classList.add("mpc-spec__row--bottom");
+  firstBody.appendChild(moved);
+}
+
 function renderManagePcSpecPanel(item) {
   const deviceName = item.namaKomputer == null || String(item.namaKomputer).trim() === ""
     ? "—"
@@ -772,6 +813,12 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     toggle.setAttribute("aria-expanded", String(!isExpanded));
     specRow.hidden = isExpanded;
     toggle.closest("tr").classList.toggle("is-expanded", !isExpanded);
+    /* Panel detail: pasangan kolom yang tidak muat dipisah, supaya tepi
+       kotak tidak terpotong dan tabel utama tidak ikut bergeser. */
+    if (!isExpanded) {
+      const panel = specRow.querySelector(".mpc-spec");
+      if (panel) fitManagePcSpecPanel(panel);
+    }
   });
 
   /* Lebar card berubah (mis. sidebar di-hover) -> sesuaikan kolom yang

@@ -1144,7 +1144,7 @@
   line-height: 1.5;
   /* Nilai panjang boleh membungkus baris, tidak boleh meluber keluar kotak. */
   white-space: normal;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 .mpc-table tbody tr.mpc-spec__row:hover {

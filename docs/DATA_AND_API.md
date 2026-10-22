@@ -1486,11 +1486,14 @@ truncated, so no data is lost. On small screens (below 600px) the table keeps
 a minimum width and is scrolled horizontally.
 
 **Inventory detail panel.** The expanded device row (columns M–V) shows five
-vertical pairs (M/N, O/P, Q/R, S/T, U/V). The pair grid wraps: when the data
-is long, the last pair (`User Logged` / `Processors`) moves to the next line
-so the right border of the panel is never cut and the main table is not
-pushed sideways. Long values may also break across lines inside their own
-cell, so the panel can never overflow the card.
+vertical pairs (M/N, O/P, Q/R, S/T, U/V). When the five pairs no longer fit
+on one line, the pair grid is re-arranged: the bottom row of the last pair
+(`Processors`) is moved into the first pair table, so it lands exactly under
+`Serial Number` with its colon still aligned to the `Serial Number` colon.
+Only the item that would be cut moves - `User Logged` keeps its place. The
+right border of the panel is never cut and the main table is not pushed
+sideways. Long values may also break across lines inside their own cell, so
+the panel can never overflow the card.
 
 **Loading state.** While the device list is loading, the table shows
 skeleton rows (the same grey shimmer blocks used by the CCTV table) instead
