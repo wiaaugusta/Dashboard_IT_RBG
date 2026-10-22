@@ -308,7 +308,7 @@ function renderSpecCells(item, fields) {
   return fields.map((field) => `
     <div class="mpc-spec__item" data-spec-key="${field.key}">
       <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
-      <span class="mpc-spec__sep" aria-hidden="true">:</span>
+      <span class="mpc-spec__sep" aria-hidden="true">: </span>
       <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
     </div>
   `).join("");
