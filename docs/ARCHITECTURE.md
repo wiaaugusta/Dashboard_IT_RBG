@@ -679,6 +679,10 @@ Komponen utama:
 - installable application
 - standalone mode
 
+Service worker memakai strategi network-first dengan validasi ulang cache
+browser, lalu cache offline sebagai fallback. Saat mekanisme cache berubah,
+versi `CACHE_NAME` di `service-worker.js` dan parameter versi registrasi di
+`js/app.js` harus dinaikkan bersama.
 
 PWA harus tetap dapat digunakan melalui browser biasa.
 

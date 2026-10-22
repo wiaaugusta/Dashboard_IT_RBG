@@ -90,7 +90,7 @@ const MANAGE_PC_SPEC_FIELDS = [
   { key: "merk", label: "Merk" },                      // O
   { key: "modelKomputer", label: "Model Komputer" },   // P
   { key: "totalRam", label: "Total RAM" },             // Q
-  { key: "totalHardisk", label: "Total Harddisk" },    // R
+  { key: "totalHardisk", label: "Total Hardisk" },     // R
   { key: "kapasitasDriveC", label: "Kapasitas Drive C" }, // S
   { key: "kapasitasDriveD", label: "Kapasitas Drive D" }, // T
   { key: "userLogged", label: "User Logged" },         // U
@@ -1180,4 +1180,3 @@ function escapeHtml(value) {
 function getScopeSuffix(showManageStats, activeScope) {
   return showManageStats ? `?scope=${activeScope}` : "";
 }
-

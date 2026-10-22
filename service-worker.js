@@ -8,7 +8,7 @@
  * Cache hanya menjadi fallback jika network gagal.
  */
 
-const CACHE_NAME = "it-platform-shell-v15";
+const CACHE_NAME = "it-platform-shell-v16";
 
 const APP_SHELL_FILES = [
   "./index.html",
@@ -45,7 +45,9 @@ self.addEventListener("install", (event) => {
 
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL_FILES))
+      .then((cache) => cache.addAll(
+        APP_SHELL_FILES.map((file) => new Request(file, { cache: "reload" }))
+      ))
       .catch((error) => {
         console.warn("[SW] Cache install gagal:", error);
       })
@@ -106,7 +108,7 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
 
-    fetch(request)
+    fetch(request, { cache: "no-cache" })
 
       .then((response) => {
 
