@@ -1485,8 +1485,15 @@ headers still fit and no column is cut off. Cell text wraps instead of being
 truncated, so no data is lost. On small screens (below 600px) the table keeps
 a minimum width and is scrolled horizontally.
 
-**Inventory detail panel.** The expanded device row (columns M–V) is a grid of
-5 columns x 2 rows (row 1 = M, O, Q, S, U; row 2 = N, P, R, T, V).
+**Inventory detail panel.** The expanded device row shows device data in two
+tabs using the same label:value grid concept:
+
+- **Tab `Inventory`** (utama): kolom inventaris perangkat M–V ditambah W–Y
+  (`Administrator`, `Group User`, `Last Inventory`), disusun 5 kolom per baris
+  (baris 1 = M, O, Q, S, U; baris 2 = N, P, R, T, V; baris 3 = W, X, Y).
+- **Tab `Kaspersky`**: data dari kolom gsheet Z–AE
+  (`Agent Version`, `Version KES`, `Last Connected`, `Database Date`, `Reason`,
+  `Update Status`), format label:value yang sama seperti tab `Inventory`.
 
 - **Adaptive layout** (`layoutManagePcSpecPanel`): column widths follow the
   content, label widths are equalised per column so the colons always line
@@ -1497,8 +1504,7 @@ a minimum width and is scrolled horizontally.
   becomes empty, the other columns keep their position). Only the item that
   would be cut moves - the rest of the group stays. If two items are too
   long, they are spread over the next row (column 1 and column 2), not
-  stacked in the same column. The moved item lands under `Serial Number`
-  with its colon aligned to the `Serial Number` colon.
+  stacked in the same column.
 - **Re-layout on resize**: a `ResizeObserver` re-runs the layout when the
   panel width changes (for example when the sidebar is hovered and the
   content area narrows), and once more after the web fonts are ready.

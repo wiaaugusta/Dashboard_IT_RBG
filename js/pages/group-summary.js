@@ -106,6 +106,28 @@ const MANAGE_PC_SPEC_LAYOUT = [
   "macAddress", "merk", "totalRam", "kapasitasDriveC", "userLogged",
   "serialNumber", "modelKomputer", "totalHardisk", "kapasitasDriveD", "processors"
 ];
+/* Field panel detail tab "Inventory": kolom M-V yang ada (urutan sheet)
+   ditambah W-Y (Administrator, Group User, Last Inventory). */
+const MANAGE_PC_SPEC_FIELDS_INVENTORY = MANAGE_PC_SPEC_FIELDS.concat(
+  { key: "administrator", label: "Administrator" },   // W
+  { key: "groupUser", label: "Group User" },          // X
+  { key: "lastInventory", label: "Last Inventory" }   // Y
+);
+/* Kolom Z-AE (gsheet) untuk tab "Kaspersky" pada panel detail inventaris. */
+const MANAGE_PC_SPEC_FIELDS_KASPERSKY = [
+  { key: "agentVersion", label: "Agent Version" },      // Z
+  { key: "versionKes", label: "Version KES" },          // AA
+  { key: "lastConnected", label: "Last Connected" },    // AB
+  { key: "databaseDate", label: "Database Date" },      // AC
+  { key: "reason", label: "Reason" },                   // AD
+  { key: "updateStatus", label: "Update Status" }       // AE
+];
+/* Urutan field panel detail per tab (inventory mempertahankan urutan M-V
+   yang ada lalu menambahkan W-Y di akhir). */
+const MANAGE_PC_SPEC_TAB_ORDER = {
+  inventory: MANAGE_PC_SPEC_LAYOUT.concat(["administrator", "groupUser", "lastInventory"]),
+  kaspersky: ["agentVersion", "versionKes", "lastConnected", "databaseDate", "reason", "updateStatus"]
+};
 
 // Keterangan "tidak ditemukan" di sheet -> tampil sebagai unknown.
 const MANAGE_PC_NOT_FOUND_RE = /^(?:NOT\s*FOUND|(?:TIDAK|TDK|BELUM)\s+(?:DI\s*)?TEMUKAN)$/i;
@@ -134,15 +156,17 @@ function formatInventoryValue(value) {
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
 function layoutManagePcSpecPanel(panel) {
-  const grid = panel.querySelector(".mpc-spec__grid");
+  const grid = panel.querySelector(".mpc-spec__grid:not([hidden])");
   if (!grid) return;
+  const tabKey = grid.getAttribute("data-mpc-spec-tab");
   const byKey = new Map();
   grid.querySelectorAll(".mpc-spec__item").forEach((item) => {
     byKey.set(item.getAttribute("data-spec-key"), item);
   });
-  /* Urutan item mengikuti urutan dasar (bukan urutan DOM), supaya hasil
-     susunan tidak berubah saat fungsi ini dijalankan ulang. */
-  const items = MANAGE_PC_SPEC_LAYOUT.map((key) => byKey.get(key)).filter(Boolean);
+  /* Urutan item mengikuti urutan dasar per tab (bukan urutan DOM), supaya
+     hasil susunan tidak berubah saat fungsi ini dijalankan ulang. */
+  const order = MANAGE_PC_SPEC_TAB_ORDER[tabKey] || MANAGE_PC_SPEC_LAYOUT;
+  const items = order.map((key) => byKey.get(key)).filter(Boolean);
   if (items.length < MANAGE_PC_SPEC_COLUMNS) return;
   const available = grid.clientWidth;
   if (!available) return;
@@ -280,30 +304,31 @@ function observeManagePcSpecPanel(panel) {
   observer.observe(grid);
 }
 
+function renderSpecCells(item, fields) {
+  return fields.map((field) => `
+    <div class="mpc-spec__item" data-spec-key="${field.key}">
+      <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
+      <span class="mpc-spec__sep" aria-hidden="true">:</span>
+      <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
+    </div>
+  `).join("");
+}
+
 function renderManagePcSpecPanel(item) {
   const deviceName = item.namaKomputer == null || String(item.namaKomputer).trim() === ""
     ? "—"
     : String(item.namaKomputer).trim();
-  /* Layout 5 kolom x 2 baris. Isi kolom M-V (urutan sheet) disusun:
-     baris 1 = M, O, Q, S, U; baris 2 = N, P, R, T, V.
-     Item yang tidak muat turun ke baris berikutnya (lihat
-     layoutManagePcSpecPanel). */
-  const order = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9];
-  const cells = order.map((index) => {
-    const field = MANAGE_PC_SPEC_FIELDS[index];
-    return `
-      <div class="mpc-spec__item" data-spec-key="${field.key}">
-        <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
-        <span class="mpc-spec__sep" aria-hidden="true">:</span>
-        <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
-      </div>
-    `;
-  }).join("");
-
+  const inventoryCells = renderSpecCells(item, MANAGE_PC_SPEC_FIELDS_INVENTORY);
+  const kasperskyCells = renderSpecCells(item, MANAGE_PC_SPEC_FIELDS_KASPERSKY);
   return `
     <div class="mpc-spec">
       <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventory Device</span><span class="mpc-spec__device">[${escapeHtml(deviceName)}]</span></p>
-      <div class="mpc-spec__grid" role="presentation">${cells}</div>
+      <div class="mpc-spec__tabs" role="tablist">
+        <button type="button" class="mpc-spec__tab is-active" data-mpc-spec-tab="inventory" role="tab" aria-selected="true">Inventory</button>
+        <button type="button" class="mpc-spec__tab" data-mpc-spec-tab="kaspersky" role="tab" aria-selected="false">Kaspersky</button>
+      </div>
+      <div class="mpc-spec__grid" data-mpc-spec-tab="inventory" role="tabpanel">${inventoryCells}</div>
+      <div class="mpc-spec__grid" data-mpc-spec-tab="kaspersky" role="tabpanel" hidden>${kasperskyCells}</div>
     </div>
   `;
 }
@@ -922,6 +947,21 @@ function bindManagePcTable(container, session, activeView = "inventory") {
      di bawah baris perangkat. Delegasi pada tbody: tetap bekerja setelah
      rows di-render ulang oleh search / sort / pagination. */
   rowsElement.addEventListener("click", (event) => {
+    const specTab = event.target.closest("[data-mpc-spec-tab]");
+    if (specTab) {
+      const panel = specTab.closest(".mpc-spec");
+      const activeKey = specTab.getAttribute("data-mpc-spec-tab");
+      panel.querySelectorAll(".mpc-spec__tab").forEach((button) => {
+        const isActive = button === specTab;
+        button.classList.toggle("is-active", isActive);
+        button.setAttribute("aria-selected", String(isActive));
+      });
+      panel.querySelectorAll(".mpc-spec__grid").forEach((grid) => {
+        grid.hidden = grid.getAttribute("data-mpc-spec-tab") !== activeKey;
+      });
+      layoutManagePcSpecPanel(panel);
+      return;
+    }
     const toggle = event.target.closest("[data-mpc-toggle]");
     if (!toggle) return;
     const specRow = document.getElementById(toggle.getAttribute("aria-controls"));
