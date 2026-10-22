@@ -1,0 +1,12 @@
+# Sembunyikan kredensial login rahasia Google
+.clasprc.json
+.clasp.json
+
+# Sembunyikan seluruh isi folder APPSCRIPT dari GitHub
+APPSCRIPT/
+
+# Sembunyikan folder pendukung (jika ada)
+node_modules/
+
+# File runtime lokal harness (bukan source code)
+.harness/
