@@ -1485,6 +1485,13 @@ headers still fit and no column is cut off. Cell text wraps instead of being
 truncated, so no data is lost. On small screens (below 600px) the table keeps
 a minimum width and is scrolled horizontally.
 
+**Inventory detail panel.** The expanded device row (columns M–V) shows five
+vertical pairs (M/N, O/P, Q/R, S/T, U/V). The pair grid wraps: when the data
+is long, the last pair (`User Logged` / `Processors`) moves to the next line
+so the right border of the panel is never cut and the main table is not
+pushed sideways. Long values may also break across lines inside their own
+cell, so the panel can never overflow the card.
+
 **Loading state.** While the device list is loading, the table shows
 skeleton rows (the same grey shimmer blocks used by the CCTV table) instead
 of a plain text row.

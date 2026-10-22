@@ -1090,9 +1090,13 @@
    label otomatis mengikuti label terpanjang di pasangan itu (mis. "Merk"
    & "Model Komputer") dan TITIK DUA selalu segaris.
    Garis bawah satu per BARIS (td), jadi label & value punya garis yang
-   sama. */
+   sama.
+  PASANGAN TERAKHIR (User Logged / Processors) TURUN ke baris berikutnya
+   kalau datanya panjang, supaya tepi kanan kotak tidak terpotong dan
+   tabel utama tidak ikut tergeser. */
 .mpc-spec__grid {
   display: flex;
+  flex-wrap: wrap;
   gap: 0 28px;
   min-width: 0;
 }
@@ -1101,7 +1105,9 @@
   border-collapse: collapse;
   table-layout: auto;
   min-width: 0;
-  flex: 0 0 auto;
+  /* Boleh menyusut supaya tidak pernah meluber keluar kotak. */
+  flex: 0 1 auto;
+  max-width: 100%;
 }
 
 .mpc-spec__row > td {
@@ -1109,7 +1115,7 @@
   padding: 4px 0;
   border-bottom: 1px solid #dde2e8;
   vertical-align: baseline;
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .mpc-spec__row--bottom > td {
@@ -1136,7 +1142,9 @@
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.5;
-  white-space: nowrap;
+  /* Nilai panjang boleh membungkus baris, tidak boleh meluber keluar kotak. */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .mpc-table tbody tr.mpc-spec__row:hover {
