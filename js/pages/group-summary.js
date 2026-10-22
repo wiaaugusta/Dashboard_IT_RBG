@@ -96,6 +96,16 @@ const MANAGE_PC_SPEC_FIELDS = [
   { key: "userLogged", label: "User Logged" },         // U
   { key: "processors", label: "Processors" }           // V
 ];
+/* Panel detail inventaris disusun 5 kolom x 2 baris. */
+const MANAGE_PC_SPEC_COLUMNS = 5;
+/* Padding kanan sel panel detail (sekalian jadi jarak antar kolom). */
+const MANAGE_PC_SPEC_CELL_PADDING = 16;
+/* Urutan dasar item panel detail: baris 1 = M, O, Q, S, U; baris 2 = N, P,
+   R, T, V (sesuai kolom sheet M-V). */
+const MANAGE_PC_SPEC_LAYOUT = [
+  "macAddress", "merk", "totalRam", "kapasitasDriveC", "userLogged",
+  "serialNumber", "modelKomputer", "totalHardisk", "kapasitasDriveD", "processors"
+];
 
 // Keterangan "tidak ditemukan" di sheet -> tampil sebagai unknown.
 const MANAGE_PC_NOT_FOUND_RE = /^(?:NOT\s*FOUND|(?:TIDAK|TDK|BELUM)\s+(?:DI\s*)?TEMUKAN)$/i;
@@ -116,77 +126,184 @@ function formatInventoryValue(value) {
 }
 
 /**
- * Panel detail inventaris: kalau lima pasangan kolom tidak muat dalam satu
- * baris, pasangan terakhir dipisah - baris bawahnya (mis. "Processors")
- * dipindahkan ke tabel pasangan pertama, sehingga posisinya tepat di bawah
- * "Serial Number" dan titik dua-nya tetap segaris. Dengan begitu tepi kanan
- * kotak tidak terpotong dan tabel utama tidak ikut bergeser.
+ * Panel detail inventaris (5 kolom x 2 baris):
+ * - Item yang isinya terlalu panjang turun ke baris berikutnya, tersebar
+ *   dari kiri (tidak semua menumpuk di group 1).
+ * - Lebar label per kolom disamakan, jadi titik dua selalu segaris.
+ * - Baris yang kosong tetap diberi garis pemisah, jadi garisnya rata.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
-function fitManagePcSpecPanel(panel) {
+function layoutManagePcSpecPanel(panel) {
   const grid = panel.querySelector(".mpc-spec__grid");
   if (!grid) return;
-  const tables = Array.from(grid.querySelectorAll(".mpc-spec__table"));
-  if (tables.length < 2) return;
-
-  /* Lebar isi seluruh pasangan + jarak antar kolom. */
-  const gap = 28;
-  let contentWidth = 0;
-  tables.forEach((table) => {
-    contentWidth += Math.max(table.getBoundingClientRect().width, table.scrollWidth);
+  const byKey = new Map();
+  grid.querySelectorAll(".mpc-spec__item").forEach((item) => {
+    byKey.set(item.getAttribute("data-spec-key"), item);
   });
-  contentWidth += gap * (tables.length - 1);
-  if (contentWidth <= grid.clientWidth + 1) return;
+  /* Urutan item mengikuti urutan dasar (bukan urutan DOM), supaya hasil
+     susunan tidak berubah saat fungsi ini dijalankan ulang. */
+  const items = MANAGE_PC_SPEC_LAYOUT.map((key) => byKey.get(key)).filter(Boolean);
+  if (items.length < MANAGE_PC_SPEC_COLUMNS) return;
+  const available = grid.clientWidth;
+  if (!available) return;
 
-  const lastTable = tables[tables.length - 1];
-  const lastBody = lastTable.querySelector("tbody");
-  const lastRows = lastBody ? lastBody.querySelectorAll("tr") : [];
-  if (lastRows.length < 2) return;
-  const firstBody = tables[0].querySelector("tbody");
-  if (!firstBody) return;
+  /* Lebar label, nilai, dan titik dua tiap item. Nilai yang paling panjang
+     = yang paling mungkin terpotong, jadi itu yang turun lebih dulu. */
+  const labelWidth = new Map();
+  const valueWidth = new Map();
+  const sepWidth = new Map();
+  items.forEach((item) => {
+    const probe = item.cloneNode(true);
+    probe.style.position = "absolute";
+    probe.style.visibility = "hidden";
+    probe.style.width = "max-content";
+    grid.appendChild(probe);
+    const probeLabel = probe.querySelector(".mpc-spec__label");
+    const probeValue = probe.querySelector(".mpc-spec__value");
+    const probeSep = probe.querySelector(".mpc-spec__sep");
+    labelWidth.set(item, probeLabel ? probeLabel.getBoundingClientRect().width : 0);
+    valueWidth.set(item, probeValue ? probeValue.getBoundingClientRect().width : 0);
+    sepWidth.set(item, probeSep ? probeSep.getBoundingClientRect().width : 0);
+    probe.remove();
+  });
 
-  /* Baris bawah pasangan terakhir pindah ke pasangan pertama; gaya baris
-     ditukar supaya garis bawahnya tetap rapi. */
-  const moved = lastRows[1];
-  const staying = lastRows[0];
-  moved.classList.remove("mpc-spec__row--bottom");
-  moved.classList.add("mpc-spec__row--top");
-  staying.classList.remove("mpc-spec__row--top");
-  staying.classList.add("mpc-spec__row--bottom");
-  firstBody.appendChild(moved);
+  /* Baris dasar: 5 item atas (M, O, Q, S, U) lalu 5 item bawahnya
+     (N, P, R, T, V). */
+  const rows = [];
+  for (let i = 0; i < items.length; i += MANAGE_PC_SPEC_COLUMNS) {
+    rows.push(items.slice(i, i + MANAGE_PC_SPEC_COLUMNS));
+  }
+
+  /* Lebar label & nilai terbesar per kolom. Label disamakan per kolom
+     supaya titik dua selalu segaris. */
+  const columnLabelWidth = new Array(MANAGE_PC_SPEC_COLUMNS).fill(0);
+  const columnValueWidth = new Array(MANAGE_PC_SPEC_COLUMNS).fill(0);
+  const columnSepWidth = new Array(MANAGE_PC_SPEC_COLUMNS).fill(0);
+  rows.forEach((row) => row.forEach((item, col) => {
+    if (!item) return;
+    columnLabelWidth[col] = Math.max(columnLabelWidth[col], labelWidth.get(item) || 0);
+    columnValueWidth[col] = Math.max(columnValueWidth[col], valueWidth.get(item) || 0);
+    columnSepWidth[col] = Math.max(columnSepWidth[col], sepWidth.get(item) || 0);
+  }));
+
+  /* Lebar tiap kolom = label + titik dua + nilai (sesuai isi). */
+  const columnWidths = () => columnLabelWidth.map((label, col) =>
+    label + columnSepWidth[col] + columnValueWidth[col]);
+
+  /* Kalau total kolom melebihi card, item dengan nilai terpanjang turun ke
+     baris bawah sampai muat. Kolom asalnya jadi kosong (bukan digeser),
+     jadi kolom lain tetap sejajar. */
+  const totalWidth = () => columnWidths().reduce((sum, width) => sum + width, 0)
+    + (MANAGE_PC_SPEC_CELL_PADDING + 2) * MANAGE_PC_SPEC_COLUMNS;
+  const dropped = [];
+  while (totalWidth() > available) {
+    let target = null;
+    rows.forEach((row) => row.forEach((item) => {
+      if (!item) return;
+      if (!target || valueWidth.get(item) > valueWidth.get(target)) target = item;
+    }));
+    if (!target) break;
+    rows.forEach((row) => {
+      const index = row.indexOf(target);
+      if (index !== -1) row[index] = null;
+    });
+    dropped.push(target);
+    /* Lebar kolom ikut berubah karena item yang turun tidak lagi
+     ada di kolomnya. */
+    columnValueWidth.fill(0);
+    rows.forEach((row) => row.forEach((item, col) => {
+      if (item) columnValueWidth[col] = Math.max(columnValueWidth[col], valueWidth.get(item) || 0);
+    }));
+  }
+  if (dropped.length) {
+    const order = new Map(items.map((item, index) => [item, index]));
+    rows.push(dropped.sort((a, b) => order.get(a) - order.get(b)));
+    /* Item yang turun masuk ke kolom baris paling bawah: label & lebarnya
+       ikut dihitung ulang. */
+    columnLabelWidth.fill(0);
+    columnValueWidth.fill(0);
+    columnSepWidth.fill(0);
+    rows.forEach((row) => row.forEach((item, col) => {
+      if (!item) return;
+      columnLabelWidth[col] = Math.max(columnLabelWidth[col], labelWidth.get(item) || 0);
+      columnValueWidth[col] = Math.max(columnValueWidth[col], valueWidth.get(item) || 0);
+      columnSepWidth[col] = Math.max(columnSepWidth[col], sepWidth.get(item) || 0);
+    }));
+  }
+
+  /* Tulis ulang isi grid: posisi tiap item + sel kosong supaya garis
+     pemisah tetap nyambung di kolom yang tidak terisi. */
+  const fragment = document.createDocumentFragment();
+  rows.forEach((row, rowIndex) => {
+    for (let col = 0; col < MANAGE_PC_SPEC_COLUMNS; col++) {
+      const item = row[col];
+      const cell = item || document.createElement("div");
+      if (!item) cell.className = "mpc-spec__cell";
+      cell.style.gridColumn = String(col + 1);
+      cell.style.gridRow = String(rowIndex + 1);
+      cell.classList.toggle("is-last-row", rowIndex === rows.length - 1);
+      if (item) {
+        cell.style.setProperty("--label-w", `${Math.ceil(columnLabelWidth[col])}px`);
+      }
+      fragment.appendChild(cell);
+    }
+  });
+  grid.innerHTML = "";
+  grid.appendChild(fragment);
+
+  /* Lebar kolom sesuai isi (bukan sama rata), supaya nilai panjang tetap
+     satu baris dan tidak ada kolom yang meluber. */
+  const widths = columnWidths();
+  grid.style.gridTemplateColumns = widths
+    .map((width) => `minmax(0, ${Math.ceil(width + MANAGE_PC_SPEC_CELL_PADDING + 2)}px)`)
+    .join(" ");
+}
+
+/**
+ * Pantau perubahan lebar panel detail inventaris (mis. sidebar di-hover
+ * sehingga area konten menyempit) lalu susun ulang isinya: item yang tidak
+ * muat turun ke baris berikutnya, titik dua & garis pemisah tetap rapi.
+ * @param {HTMLElement} panel - elemen .mpc-spec
+ */
+function observeManagePcSpecPanel(panel) {
+  if (panel.dataset.specObserved) return;
+  panel.dataset.specObserved = "true";
+  const grid = panel.querySelector(".mpc-spec__grid");
+  if (!grid || typeof ResizeObserver === "undefined") return;
+  let lastWidth = 0;
+  const observer = new ResizeObserver((entries) => {
+    const width = Math.round(entries[0].contentRect.width);
+    if (width === lastWidth) return;
+    lastWidth = width;
+    layoutManagePcSpecPanel(panel);
+  });
+  observer.observe(grid);
 }
 
 function renderManagePcSpecPanel(item) {
   const deviceName = item.namaKomputer == null || String(item.namaKomputer).trim() === ""
     ? "—"
     : String(item.namaKomputer).trim();
-  const renderSpecItem = (field, position) => `
-    <tr class="mpc-spec__row mpc-spec__row--${position}">
-      <td class="mpc-spec__label">${escapeHtml(field.label)}</td>
-      <td class="mpc-spec__sep" aria-hidden="true">:</td>
-      <td class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</td>
-    </tr>
-  `;
-  /* Satu TABEL per pasangan vertikal (M/N, O/P, Q/R, S/T, U). Table
-     auto-layout membuat lebar kolom label otomatis mengikuti label
-     terpanjang di pasangan itu (mis. "Merk" & "Model Komputer"), sehingga
-     TITIK DUA selalu segaris. Garis bawah satu per baris (td), jadi
-     label & value punya garis yang sama. */
-  const cols = [];
-  for (let i = 0; i < MANAGE_PC_SPEC_FIELDS.length; i += 2) {
-    const pair = [MANAGE_PC_SPEC_FIELDS[i], MANAGE_PC_SPEC_FIELDS[i + 1]].filter(Boolean);
-    const rows = pair.map((field, j) => renderSpecItem(field, j === 0 ? "top" : "bottom")).join("");
-    cols.push(`
-      <table class="mpc-spec__table">
-        <tbody>${rows}</tbody>
-      </table>
-    `);
-  }
+  /* Layout 5 kolom x 2 baris. Isi kolom M-V (urutan sheet) disusun:
+     baris 1 = M, O, Q, S, U; baris 2 = N, P, R, T, V.
+     Item yang tidak muat turun ke baris berikutnya (lihat
+     layoutManagePcSpecPanel). */
+  const order = [0, 2, 4, 6, 8, 1, 3, 5, 7, 9];
+  const cells = order.map((index) => {
+    const field = MANAGE_PC_SPEC_FIELDS[index];
+    return `
+      <div class="mpc-spec__item" data-spec-key="${field.key}">
+        <span class="mpc-spec__label">${escapeHtml(field.label)}</span>
+        <span class="mpc-spec__sep" aria-hidden="true">:</span>
+        <span class="mpc-spec__value">${escapeHtml(formatInventoryValue(item[field.key]))}</span>
+      </div>
+    `;
+  }).join("");
 
   return `
     <div class="mpc-spec">
       <p class="mpc-spec__title">${icon("pc", { size: 15 })}<span>Inventory Device</span><span class="mpc-spec__device">[${escapeHtml(deviceName)}]</span></p>
-      <div class="mpc-spec__grid" role="presentation">${cols.join("")}</div>
+      <div class="mpc-spec__grid" role="presentation">${cells}</div>
     </div>
   `;
 }
@@ -817,7 +934,16 @@ function bindManagePcTable(container, session, activeView = "inventory") {
        kotak tidak terpotong dan tabel utama tidak ikut bergeser. */
     if (!isExpanded) {
       const panel = specRow.querySelector(".mpc-spec");
-      if (panel) fitManagePcSpecPanel(panel);
+      if (panel) {
+        layoutManagePcSpecPanel(panel);
+        observeManagePcSpecPanel(panel);
+        /* Susunan dihitung ulang setelah font selesai dimuat, supaya
+           lebar kolom & titik duanya tepat. */
+        if (document.fonts && document.fonts.ready && !panel.dataset.fontsReady) {
+          panel.dataset.fontsReady = "true";
+          document.fonts.ready.then(() => layoutManagePcSpecPanel(panel));
+        }
+      }
     }
   });
 
@@ -1014,3 +1140,4 @@ function escapeHtml(value) {
 function getScopeSuffix(showManageStats, activeScope) {
   return showManageStats ? `?scope=${activeScope}` : "";
 }
+

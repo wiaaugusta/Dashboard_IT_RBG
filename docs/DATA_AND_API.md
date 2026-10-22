@@ -1485,15 +1485,26 @@ headers still fit and no column is cut off. Cell text wraps instead of being
 truncated, so no data is lost. On small screens (below 600px) the table keeps
 a minimum width and is scrolled horizontally.
 
-**Inventory detail panel.** The expanded device row (columns M–V) shows five
-vertical pairs (M/N, O/P, Q/R, S/T, U/V). When the five pairs no longer fit
-on one line, the pair grid is re-arranged: the bottom row of the last pair
-(`Processors`) is moved into the first pair table, so it lands exactly under
-`Serial Number` with its colon still aligned to the `Serial Number` colon.
-Only the item that would be cut moves - `User Logged` keeps its place. The
-right border of the panel is never cut and the main table is not pushed
-sideways. Long values may also break across lines inside their own cell, so
-the panel can never overflow the card.
+**Inventory detail panel.** The expanded device row (columns M–V) is a grid of
+5 columns x 2 rows (row 1 = M, O, Q, S, U; row 2 = N, P, R, T, V).
+
+- **Adaptive layout** (`layoutManagePcSpecPanel`): column widths follow the
+  content, label widths are equalised per column so the colons always line
+  up, and every cell carries its own separator line so the horizontal rules
+  stay straight across the panel.
+- **Overflowing items move down**: when the columns no longer fit the card,
+  the item with the longest value moves to the next row (its original column
+  becomes empty, the other columns keep their position). Only the item that
+  would be cut moves - the rest of the group stays. If two items are too
+  long, they are spread over the next row (column 1 and column 2), not
+  stacked in the same column. The moved item lands under `Serial Number`
+  with its colon aligned to the `Serial Number` colon.
+- **Re-layout on resize**: a `ResizeObserver` re-runs the layout when the
+  panel width changes (for example when the sidebar is hovered and the
+  content area narrows), and once more after the web fonts are ready.
+
+The right border of the panel is never cut and the main table is not pushed
+sideways.
 
 **Loading state.** While the device list is loading, the table shows
 skeleton rows (the same grey shimmer blocks used by the CCTV table) instead

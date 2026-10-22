@@ -1085,64 +1085,57 @@
   overflow-wrap: anywhere;
 }
 
-/* Satu kotak siku, isi 5 kolom pasangan vertikal (kolom 1: M atas N
-   bawah, dst). Tiap pasangan = satu TABEL auto-layout, jadi lebar kolom
-   label otomatis mengikuti label terpanjang di pasangan itu (mis. "Merk"
-   & "Model Komputer") dan TITIK DUA selalu segaris.
-   Garis bawah satu per BARIS (td), jadi label & value punya garis yang
-   sama.
-  PASANGAN TERAKHIR (User Logged / Processors) TURUN ke baris berikutnya
-   kalau datanya panjang, supaya tepi kanan kotak tidak terpotong dan
-   tabel utama tidak ikut tergeser. */
+/* Panel detail inventaris: GRID 5 kolom x 2 baris (baris 1 = M, O, Q, S, U;
+   baris 2 = N, P, R, T, V). Lebar label per kolom disamakan dari JS
+   (--label-w) sehingga TITIK DUA selalu segaris, dan tiap sel diberi garis
+   bawah sendiri supaya garis pemisah tetap rata melintasi kolom. */
 .mpc-spec__grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.mpc-spec__item,
+.mpc-spec__cell {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0 28px;
+  align-items: baseline;
   min-width: 0;
-}
-
-.mpc-spec__table {
-  border-collapse: collapse;
-  table-layout: auto;
-  min-width: 0;
-  /* Boleh menyusut supaya tidak pernah meluber keluar kotak. */
-  flex: 0 1 auto;
-  max-width: 100%;
-}
-
-.mpc-spec__row > td {
-  height: auto;
-  padding: 4px 0;
+  padding: 4px 16px 4px 0;
   border-bottom: 1px solid #dde2e8;
-  vertical-align: baseline;
-  white-space: normal;
 }
-
-.mpc-spec__row--bottom > td {
+.mpc-spec__item.is-last-row,
+.mpc-spec__cell.is-last-row {
   border-bottom: 0;
 }
 
-.mpc-spec__row > .mpc-spec__label {
-  padding-right: 3px;
+.mpc-spec__label {
+  flex: 0 0 var(--label-w, auto);
+  max-width: var(--label-w, none);
   color: #8b96a5;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.5;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.mpc-spec__row > .mpc-spec__sep {
+.mpc-spec__sep {
+  flex: 0 0 auto;
   padding-right: 3px;
   color: #b3bcc7;
   line-height: 1.5;
 }
 
 .mpc-spec__value {
+  flex: 1 1 auto;
+  min-width: 0;
   color: #3c4a5d;
   font-size: 12.5px;
   font-weight: 600;
   line-height: 1.5;
-  /* Nilai panjang boleh membungkus baris, tidak boleh meluber keluar kotak. */
+  /* Nilai panjang tetap satu baris (lebar kolom menyesuaikan isi); kalau
+     kolomnya dipaksa sempit, teksnya membungkus - tidak pernah terpotong. */
   white-space: normal;
   overflow-wrap: break-word;
 }
@@ -1153,8 +1146,7 @@
 
 @media (max-width: 1100px) {
   .mpc-spec__grid {
-    flex-wrap: wrap;
-    gap: 0 28px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
 
