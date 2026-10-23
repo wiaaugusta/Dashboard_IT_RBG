@@ -106,13 +106,22 @@ const MANAGE_PC_SPEC_LAYOUT = [
   "macAddress", "merk", "totalRam", "kapasitasDriveC", "userLogged",
   "serialNumber", "modelKomputer", "totalHardisk", "kapasitasDriveD", "processors"
 ];
-/* Field panel detail tab "Inventory": kolom M-V yang ada (urutan sheet)
-   ditambah W-Y (Administrator, Group User, Last Inventory). */
-const MANAGE_PC_SPEC_FIELDS_INVENTORY = MANAGE_PC_SPEC_FIELDS.concat(
+/* Field panel detail tab "Inventory": kolom M-Y saja (M-V + W-Y). */
+const MANAGE_PC_SPEC_FIELDS_INVENTORY = [
+  { key: "macAddress", label: "MAC Address" },        // M
+  { key: "serialNumber", label: "Serial Number" },     // N
+  { key: "merk", label: "Merk" },                      // O
+  { key: "modelKomputer", label: "Model Komputer" },   // P
+  { key: "totalRam", label: "Total RAM" },             // Q
+  { key: "totalHardisk", label: "Total Hardisk" },     // R
+  { key: "kapasitasDriveC", label: "Kapasitas Drive C" }, // S
+  { key: "kapasitasDriveD", label: "Kapasitas Drive D" }, // T
+  { key: "userLogged", label: "User Logged" },         // U
+  { key: "processors", label: "Processors" },          // V
   { key: "administrator", label: "Administrator" },   // W
   { key: "groupUser", label: "Group User" },          // X
   { key: "lastInventory", label: "Last Inventory" }   // Y
-);
+];
 
 /* Kolom Z-AE (gsheet) untuk tab "Kaspersky" pada panel detail inventaris. */
 const MANAGE_PC_SPEC_FIELDS_KASPERSKY = [
@@ -123,10 +132,9 @@ const MANAGE_PC_SPEC_FIELDS_KASPERSKY = [
   { key: "reason", label: "Reason" },                   // AD
   { key: "updateStatus", label: "Update Status" }       // AE
 ];
-/* Urutan field panel detail per tab (inventory mempertahankan urutan M-V
-   yang ada lalu menambahkan W-Y di akhir). */
+/* Urutan field panel detail per tab. */
 const MANAGE_PC_SPEC_TAB_ORDER = {
-  inventory: MANAGE_PC_SPEC_LAYOUT.concat(["administrator", "groupUser", "lastInventory"]),
+  inventory: ["macAddress", "merk", "totalRam", "kapasitasDriveC", "userLogged", "serialNumber", "modelKomputer", "totalHardisk", "kapasitasDriveD", "processors", "administrator", "groupUser", "lastInventory"],
   kaspersky: ["agentVersion", "versionKes", "lastConnected", "databaseDate", "reason", "updateStatus"]
 };
 
