@@ -113,6 +113,7 @@ const MANAGE_PC_SPEC_FIELDS_INVENTORY = MANAGE_PC_SPEC_FIELDS.concat(
   { key: "groupUser", label: "Group User" },          // X
   { key: "lastInventory", label: "Last Inventory" }   // Y
 );
+
 /* Kolom Z-AE (gsheet) untuk tab "Kaspersky" pada panel detail inventaris. */
 const MANAGE_PC_SPEC_FIELDS_KASPERSKY = [
   { key: "agentVersion", label: "Agent Version" },      // Z
@@ -657,6 +658,9 @@ function managePcStatusColumnsFor(activeView, data) {
     const column = MANAGE_PC_STATUS_COLUMNS.find((item) => item.key === key);
     if (column) columns.push(column);
   });
+  if (activeView === "inventory") {
+    return columns.filter((col) => MANAGE_PC_INVENTORY_STATUS_KEYS.includes(col.key));
+  }
   return columns.length ? columns : managePcInitialStatusColumns(activeView);
 }
 
