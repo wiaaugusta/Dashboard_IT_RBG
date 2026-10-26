@@ -184,13 +184,12 @@ function formatInventoryValue(value) {
 
 /**
  * Panel detail inventaris:
- * - Susunan dasar = urutan baca diisi baris demi baris. Inventory memakai
- *   5 group (M-V), Kaspersky memakai 6 group (Z-AE) supaya semua field bisa
- *   tampil satu baris kalau memang muat.
- * - Item diisi baris demi baris dari kolom paling kiri. Kalau total lebar
- *   melebihi ruang, jumlah kolom per baris dikurangi; item berikutnya turun
- *   dan mulai lagi dari kolom pertama. Data yang turun tidak terikat group
- *   asalnya dan tidak mengisi lubang group lain.
+ * - Susunan default mengikuti sheet: baris 1 M/O/Q/S/U, baris 2 N/P/R/T/V,
+ *   lalu W/X/Y. Inventory memakai 5 group, Kaspersky 6 group.
+ * - Item default tidak digeser. Kalau total lebar melebihi ruang, item dari
+ *   group paling kanan dipindah ke slot kosong di bawahnya, dibaca dari
+ *   kolom paling kiri. Kalau tidak ada slot yang cukup, item masuk baris
+ *   baru di kolom pertama. Item yang turun tetap berurutan.
  * - Lebar label per kolom disamakan, jadi titik dua selalu segaris.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
@@ -236,6 +235,10 @@ function layoutManagePcSpecPanel(panel) {
   });
 
   const emptyRow = () => new Array(columns).fill(null);
+  const widthOf = (item) => {
+    const size = sizes.get(item);
+    return size.label + size.sep + size.value;
+  };
 
   /* Lebar tiap kolom = label terpanjang + titik dua + nilai terpanjang. */
   function measureRows(rows) {
@@ -250,7 +253,9 @@ function layoutManagePcSpecPanel(panel) {
       sep[column] = Math.max(sep[column], size.sep);
     }));
     const widths = label.map((labelWidth, column) => labelWidth + sep[column] + value[column]);
-    const trackWidths = widths.map((width) => Math.ceil(width + cellExtra));
+    /* Kolom yang tidak dipakai tidak menyisakan track kosong; ini membuat
+       ruang untuk mempertahankan item default lebih lama. */
+    const trackWidths = widths.map((width) => (width > 0 ? Math.ceil(width + cellExtra) : 0));
     const total = trackWidths.reduce((sum, width) => sum + width, 0);
     return { label, value, sep, widths, trackWidths, total };
   }
@@ -260,32 +265,124 @@ function layoutManagePcSpecPanel(panel) {
     return rows;
   }
 
-  /* Isi baris dari kiri ke kanan. Kalau item berikutnya tidak muat, ia
-     memulai baris baru di kolom pertama; tidak perlu kembali ke group asal
-     atau mengisi lubang di group lain. */
-  function flowRows(activeColumns) {
-    const rows = [];
-    items.forEach((item, index) => {
-      const rowIndex = Math.floor(index / activeColumns);
-      if (!rows[rowIndex]) rows[rowIndex] = emptyRow();
-      rows[rowIndex][index % activeColumns] = item;
+  /* Susunan default tetap seperti sheet: baris 1 M/O/Q/S/U, baris 2
+     N/P/R/T/V, lalu W/X/Y. Item yang tidak pindah tidak boleh bergeser. */
+  const baseRows = [];
+  items.forEach((item, index) => {
+    const rowIndex = Math.floor(index / columns);
+    if (!baseRows[rowIndex]) baseRows[rowIndex] = emptyRow();
+    baseRows[rowIndex][index % columns] = item;
+  });
+  const basePosition = new Map();
+  baseRows.forEach((row, rowIndex) => row.forEach((item, column) => {
+    if (item) basePosition.set(item, [rowIndex, column]);
+  }));
+  const maxTargetColumn = Math.max(0, columns - 2);
+
+  /* Pindahkan item yang tidak muat ke slot kosong di bawahnya. Slot dibaca
+     dari kiri; kalau tidak ada slot yang cukup, item masuk baris baru di
+     kolom 1. Item lain tetap di posisi default. */
+  function placeMovedItems(movedItems) {
+    const movedSet = new Set(movedItems);
+    const rows = baseRows.map((row) =>
+      row.map((item) => (item && movedSet.has(item) ? null : item)));
+    const ordered = movedItems.slice().sort((a, b) => {
+      const [rowA, columnA] = basePosition.get(a);
+      const [rowB, columnB] = basePosition.get(b);
+      return (rowA - rowB) || (columnA - columnB);
     });
-    return trimEmptyRows(rows);
+
+    let lastRow = -1;
+    let lastColumn = -1;
+
+    for (const item of ordered) {
+      const sourceRow = basePosition.get(item)[0];
+      let placed = false;
+      /* Item berikutnya tidak boleh mendarat di atas item yang sudah
+         dipindah sebelumnya, supaya urutan turun tetap berurutan. */
+      const startRow = Math.max(sourceRow + 1, lastRow);
+
+      for (let rowIndex = startRow; rowIndex < rows.length && !placed; rowIndex++) {
+        const row = rows[rowIndex];
+        const startColumn = rowIndex === lastRow ? lastColumn + 1 : 0;
+        let targetColumn = -1;
+        for (let column = startColumn; column <= maxTargetColumn; column++) {
+          if (!row[column]) {
+            targetColumn = column;
+            break;
+          }
+        }
+        if (targetColumn === -1) continue;
+
+        const totalBefore = measureRows(rows).total;
+        row[targetColumn] = item;
+        if (measureRows(rows).total <= totalBefore) {
+          placed = true;
+          lastRow = rowIndex;
+          lastColumn = targetColumn;
+          break;
+        }
+        row[targetColumn] = null;
+      }
+
+      if (!placed) {
+        const row = emptyRow();
+        row[0] = item;
+        rows.push(row);
+        lastRow = rows.length - 1;
+        lastColumn = 0;
+      }
+    }
+
+    const cleaned = trimEmptyRows(rows);
+    return { rows: cleaned, layout: measureRows(cleaned) };
   }
 
-  let rows = [];
-  let layout = null;
-  for (let activeColumns = columns; activeColumns >= 1; activeColumns--) {
-    rows = flowRows(activeColumns);
-    layout = measureRows(rows);
-    if (layout.total <= available) break;
+  /* Mulai dari group paling kanan; item terlebar di group itu dipindah
+     lebih dulu supaya data default di kiri tidak ikut bergeser. */
+  const moveCandidates = [];
+  for (let column = columns - 1; column >= 0; column--) {
+    baseRows
+      .map((row) => row[column])
+      .filter(Boolean)
+      .sort((a, b) => widthOf(b) - widthOf(a))
+      .forEach((item) => moveCandidates.push(item));
+  }
+
+  let rows = baseRows.map((row) => row.slice());
+  let layout = measureRows(rows);
+  if (layout.total > available) {
+    const moved = [];
+    let solution = null;
+    for (const item of moveCandidates) {
+      moved.push(item);
+      const candidate = placeMovedItems(moved);
+      if (candidate.layout.total <= available) {
+        solution = candidate;
+        break;
+      }
+    }
+    if (solution) {
+      rows = solution.rows;
+      layout = solution.layout;
+    } else {
+      /* Tidak ada susunan yang muat; semua item masuk kolom pertama. */
+      rows = items.map((item) => {
+        const row = emptyRow();
+        row[0] = item;
+        return row;
+      });
+      layout = measureRows(rows);
+    }
   }
 
   /* Tulis ulang isi grid: posisi tiap item + sel kosong supaya garis
      pemisah tetap nyambung di kolom yang tidak terisi. */
   const fragment = document.createDocumentFragment();
+  const outputColumns = Math.max(1, layout.trackWidths.reduce(
+    (last, width, column) => (width > 0 ? column + 1 : last), 0));
   rows.forEach((row, rowIndex) => {
-    for (let column = 0; column < columns; column++) {
+    for (let column = 0; column < outputColumns; column++) {
       const item = row[column];
       const cell = item || document.createElement("div");
       if (!item) cell.className = "mpc-spec__cell";
@@ -304,14 +401,15 @@ function layoutManagePcSpecPanel(panel) {
   /* Lebar kolom sesuai isi (bukan sama rata), supaya nilai panjang tetap
      satu baris dan tidak ada kolom yang meluber. */
   grid.style.gridTemplateColumns = layout.trackWidths
+    .slice(0, outputColumns)
     .map((width) => `minmax(0, ${width}px)`)
     .join(" ");
 }
 
 /**
  * Pantau perubahan lebar panel detail inventaris (mis. sidebar di-hover
- * sehingga area konten menyempit) lalu susun ulang isinya: item mengalir
- * dari kiri ke kanan dan turun ke kolom pertama kalau tidak muat.
+ * sehingga area konten menyempit) lalu susun ulang isinya dengan
+ * mempertahankan posisi default dan hanya menurunkan item yang tidak muat.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
 function observeManagePcSpecPanel(panel) {
