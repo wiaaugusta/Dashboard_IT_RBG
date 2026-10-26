@@ -187,14 +187,10 @@ function formatInventoryValue(value) {
  * - Susunan dasar = urutan baca diisi baris demi baris. Inventory memakai
  *   5 group (M-V), Kaspersky memakai 6 group (Z-AE) supaya semua field bisa
  *   tampil satu baris kalau memang muat.
- * - Kalau total lebar melebihi ruang, data paling kanan (group terakhir)
- *   dipindah ke bawah: cari slot kosong pertama setelah susunan dasar
- *   (mis. group 4), bukan menumpuk semuanya di group 1. Group yang sudah
- *   terisi dilewati; slot berikutnya dipakai kalau slot sebelumnya tidak muat.
- *   Item yang ternyata masih muat di slot aslinya dikembalikan ke atas.
- * - Setelah itu slot kosong diisi lebih dulu: item dinaikkan di group yang
- *   sama, lalu item dari baris bawah boleh pindah ke group lain yang kosong
- *   selama total lebar tidak bertambah.
+ * - Item diisi baris demi baris dari kolom paling kiri. Kalau total lebar
+ *   melebihi ruang, jumlah kolom per baris dikurangi; item berikutnya turun
+ *   dan mulai lagi dari kolom pertama. Data yang turun tidak terikat group
+ *   asalnya dan tidak mengisi lubang group lain.
  * - Lebar label per kolom disamakan, jadi titik dua selalu segaris.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
@@ -239,19 +235,7 @@ function layoutManagePcSpecPanel(panel) {
     probe.remove();
   });
 
-  const widthOf = (item) => {
-    const size = sizes.get(item);
-    return size.label + size.sep + size.value;
-  };
-
-  /* Susunan dasar: urutan baca diisi baris demi baris (5 kolom). */
   const emptyRow = () => new Array(columns).fill(null);
-  const baseRows = [];
-  items.forEach((item, index) => {
-    const rowIndex = Math.floor(index / columns);
-    if (!baseRows[rowIndex]) baseRows[rowIndex] = emptyRow();
-    baseRows[rowIndex][index % columns] = item;
-  });
 
   /* Lebar tiap kolom = label terpanjang + titik dua + nilai terpanjang. */
   function measureRows(rows) {
@@ -271,219 +255,31 @@ function layoutManagePcSpecPanel(panel) {
     return { label, value, sep, widths, trackWidths, total };
   }
 
-  /* Tempatkan item pindahan ke slot kosong pertama setelah susunan dasar.
-     Slot yang sudah terisi atau tidak muat dilewati; baris baru ditambah
-     hanya kalau slot yang ada sudah habis. */
-  function placeMovedItems(baseRows, movedItems, columns, available) {
-    const movedSet = new Set(movedItems);
-    const rows = baseRows.map((row) =>
-      row.map((item) => (item && movedSet.has(item) ? null : item)));
-    const tailRow = Math.floor(items.length / columns);
-    const tailCol = items.length % columns;
-    const limit = tailRow + items.length + 2;
-
-    for (const item of movedItems) {
-      let placed = false;
-      for (let rowIndex = tailRow; rowIndex <= limit && !placed; rowIndex++) {
-        if (rowIndex >= rows.length) rows.push(emptyRow());
-        const startCol = rowIndex === tailRow ? tailCol : 0;
-        for (let colIndex = startCol; colIndex < columns; colIndex++) {
-          if (rows[rowIndex][colIndex]) continue;
-          rows[rowIndex][colIndex] = item;
-          if (measureRows(rows).total <= available) {
-            placed = true;
-            break;
-          }
-          rows[rowIndex][colIndex] = null;
-        }
-      }
-      if (!placed) return null;
-    }
-
-    /* Kembalikan item yang ternyata masih muat di posisi aslinya. Item
-       pendek seperti "User Logged" tidak perlu ikut turun kalau kolomnya
-       tetap muat; ini mencegah data pindah ke baris tengah tanpa alasan. */
-    const originalPosition = new Map();
-    baseRows.forEach((row, rowIndex) => row.forEach((item, colIndex) => {
-      if (item) originalPosition.set(item, [rowIndex, colIndex]);
-    }));
-
-    for (const item of movedItems) {
-      const target = originalPosition.get(item);
-      if (!target) continue;
-      const [targetRow, targetCol] = target;
-      let currentRow = -1;
-      let currentCol = -1;
-      for (let rowIndex = 0; rowIndex < rows.length && currentRow === -1; rowIndex++) {
-        const colIndex = rows[rowIndex].indexOf(item);
-        if (colIndex !== -1) {
-          currentRow = rowIndex;
-          currentCol = colIndex;
-        }
-      }
-      if (currentRow === -1 || (currentRow === targetRow && currentCol === targetCol)) continue;
-      if (rows[targetRow][targetCol]) continue;
-      rows[currentRow][currentCol] = null;
-      rows[targetRow][targetCol] = item;
-      if (measureRows(rows).total <= available) continue;
-      rows[targetRow][targetCol] = null;
-      rows[currentRow][currentCol] = item;
-    }
-
-    const cleaned = trimEmptyRows(rows);
-    return { rows: cleaned, layout: measureRows(cleaned) };
-  }
-
   function trimEmptyRows(rows) {
     while (rows.length && !rows[rows.length - 1].some((item) => item)) rows.pop();
     return rows;
   }
 
-  /**
-   * Isi ruang kosong sebelum menambah baris baru. Vertikal: item tiap group
-   * dinaikkan sampai tidak ada lubang di atasnya. Horizontal: item dari
-   * baris bawah boleh mengisi lubang group lain selama total lebar tidak
-   * bertambah (jadi hasil sebelumnya yang sudah muat tetap muat). Item yang
-   * masih berada di group lain lalu dikembalikan ke group asalnya bila ada
-   * slot kosong di baris yang sama dan lebarnya tetap muat.
-   */
-  function compactRows(rows, columns, available, measureRows) {
-    const working = rows.map((row) => row.slice());
-    const originalColumn = new Map();
-    baseRows.forEach((row) => row.forEach((item, column) => {
-      if (item) originalColumn.set(item, column);
-    }));
-
-    function compactColumns(target) {
-      let changed = false;
-      for (let column = 0; column < columns; column++) {
-        const columnItems = [];
-        let seenEmpty = false;
-        for (let row = 0; row < target.length; row++) {
-          if (!target[row][column]) {
-            seenEmpty = true;
-            continue;
-          }
-          if (seenEmpty) changed = true;
-          columnItems.push(target[row][column]);
-          target[row][column] = null;
-        }
-        columnItems.forEach((item, row) => {
-          if (row >= target.length) target.push(emptyRow());
-          target[row][column] = item;
-        });
-      }
-      trimEmptyRows(target);
-      return changed;
-    }
-
-    let changed = true;
-    while (changed) {
-      changed = compactColumns(working);
-      const currentTotal = measureRows(working).total;
-      let moved = false;
-
-      /* Slot kosong dibaca baris demi baris. Kandidat diambil dari posisi
-         setelah slot itu, supaya item hanya bergerak naik/ke kiri. */
-      for (let row = 0; row < working.length && !moved; row++) {
-        for (let column = 0; column < columns && !moved; column++) {
-          if (working[row][column]) continue;
-          for (let candidateRow = row; candidateRow < working.length && !moved; candidateRow++) {
-            const startColumn = candidateRow === row ? column + 1 : 0;
-            for (let candidateColumn = startColumn; candidateColumn < columns; candidateColumn++) {
-              const item = working[candidateRow][candidateColumn];
-              if (!item) continue;
-              working[candidateRow][candidateColumn] = null;
-              working[row][column] = item;
-              const next = measureRows(working);
-              if (next.total <= available && next.total <= currentTotal) {
-                moved = true;
-                changed = true;
-                break;
-              }
-              working[row][column] = null;
-              working[candidateRow][candidateColumn] = item;
-            }
-          }
-        }
-      }
-    }
-
-    /* Kembalikan item ke group asal kalau slot sebaris kosong dan total
-       lebar tidak bertambah. Gerakan hanya ke kanan (makin dekat group
-       asal), jadi tidak bisa bolak-balik dengan pemadatan di atas. */
-    let restored = true;
-    while (restored) {
-      restored = false;
-      const currentTotal = measureRows(working).total;
-      const currentRows = working.length;
-      for (let row = 0; row < working.length && !restored; row++) {
-        for (let column = 0; column < columns && !restored; column++) {
-          const item = working[row][column];
-          if (!item) continue;
-          const targetColumn = originalColumn.get(item);
-          if (targetColumn == null || targetColumn <= column) continue;
-          for (let nextColumn = column + 1; nextColumn <= targetColumn && !restored; nextColumn++) {
-            if (working[row][nextColumn]) continue;
-            const candidate = working.map((candidateRow) => candidateRow.slice());
-            candidate[row][column] = null;
-            candidate[row][nextColumn] = item;
-            compactColumns(candidate);
-            const next = measureRows(candidate);
-            if (next.total > available || next.total > currentTotal) continue;
-            if (candidate.length > currentRows) continue;
-            working.splice(0, working.length, ...candidate);
-            restored = true;
-          }
-        }
-      }
-    }
-
-    compactColumns(working);
-    return trimEmptyRows(working);
+  /* Isi baris dari kiri ke kanan. Kalau item berikutnya tidak muat, ia
+     memulai baris baru di kolom pertama; tidak perlu kembali ke group asal
+     atau mengisi lubang di group lain. */
+  function flowRows(activeColumns) {
+    const rows = [];
+    items.forEach((item, index) => {
+      const rowIndex = Math.floor(index / activeColumns);
+      if (!rows[rowIndex]) rows[rowIndex] = emptyRow();
+      rows[rowIndex][index % activeColumns] = item;
+    });
+    return trimEmptyRows(rows);
   }
 
-  let rows = baseRows.map((row) => row.slice());
-  let layout = measureRows(rows);
-
-  if (layout.total > available) {
-    /* Urutan pindah: group paling kanan dulu (data terakhir), lalu item
-       terlebar di group itu. Setiap item pindahan menempati slot kosong
-       berikutnya, tidak ditumpuk di satu group. */
-    const moveOrder = [];
-    for (let column = columns - 1; column >= 0; column--) {
-      baseRows
-        .map((row) => row[column])
-        .filter(Boolean)
-        .sort((a, b) => widthOf(b) - widthOf(a))
-        .forEach((item) => moveOrder.push(item));
-    }
-
-    let solution = null;
-    const moved = [];
-    for (const item of moveOrder) {
-      moved.push(item);
-      solution = placeMovedItems(baseRows, moved, columns, available);
-      if (solution) break;
-    }
-
-    if (solution) {
-      rows = solution.rows;
-      layout = solution.layout;
-    } else {
-      /* Panel terlalu sempit: tumpuk semua item di satu group supaya lebar
-         total paling kecil (walaupun tampilannya memanjang ke bawah). */
-      rows = items.map((item) => {
-        const row = emptyRow();
-        row[0] = item;
-        return row;
-      });
-      layout = measureRows(rows);
-    }
+  let rows = [];
+  let layout = null;
+  for (let activeColumns = columns; activeColumns >= 1; activeColumns--) {
+    rows = flowRows(activeColumns);
+    layout = measureRows(rows);
+    if (layout.total <= available) break;
   }
-
-  rows = compactRows(rows, columns, available, measureRows);
-  layout = measureRows(rows);
 
   /* Tulis ulang isi grid: posisi tiap item + sel kosong supaya garis
      pemisah tetap nyambung di kolom yang tidak terisi. */
@@ -514,8 +310,8 @@ function layoutManagePcSpecPanel(panel) {
 
 /**
  * Pantau perubahan lebar panel detail inventaris (mis. sidebar di-hover
- * sehingga area konten menyempit) lalu susun ulang isinya: item yang tidak
- * muat pindah ke group kosong yang masih muat, titik dua & garis tetap rapi.
+ * sehingga area konten menyempit) lalu susun ulang isinya: item mengalir
+ * dari kiri ke kanan dan turun ke kolom pertama kalau tidak muat.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
 function observeManagePcSpecPanel(panel) {
