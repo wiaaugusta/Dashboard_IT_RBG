@@ -1095,6 +1095,14 @@
   min-width: 0;
 }
 
+/* Atribut `hidden` harus tetap menyembunyikan grid tab yang tidak aktif.
+   Tanpa aturan ini, `display: grid` di atas mengalahkan style bawaan
+   browser `[hidden] { display: none }`, sehingga grid tab Kaspersky (Z-AE)
+   ikut tampil di tab Inventory. */
+.mpc-spec__grid[hidden] {
+  display: none;
+}
+
 .mpc-spec__item,
 .mpc-spec__cell {
   display: flex;
