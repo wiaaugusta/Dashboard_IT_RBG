@@ -192,6 +192,9 @@ function formatInventoryValue(value) {
  *   (mis. group 4), bukan menumpuk semuanya di group 1. Group yang sudah
  *   terisi dilewati; slot berikutnya dipakai kalau slot sebelumnya tidak muat.
  *   Item yang ternyata masih muat di slot aslinya dikembalikan ke atas.
+ * - Setelah itu slot kosong diisi lebih dulu: item dinaikkan di group yang
+ *   sama, lalu item dari baris bawah boleh pindah ke group lain yang kosong
+ *   selama total lebar tidak bertambah.
  * - Lebar label per kolom disamakan, jadi titik dua selalu segaris.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
@@ -327,8 +330,117 @@ function layoutManagePcSpecPanel(panel) {
       rows[currentRow][currentCol] = item;
     }
 
-    const cleaned = rows.filter((row) => row.some((item) => item));
+    const cleaned = trimEmptyRows(rows);
     return { rows: cleaned, layout: measureRows(cleaned) };
+  }
+
+  function trimEmptyRows(rows) {
+    while (rows.length && !rows[rows.length - 1].some((item) => item)) rows.pop();
+    return rows;
+  }
+
+  /**
+   * Isi ruang kosong sebelum menambah baris baru. Vertikal: item tiap group
+   * dinaikkan sampai tidak ada lubang di atasnya. Horizontal: item dari
+   * baris bawah boleh mengisi lubang group lain selama total lebar tidak
+   * bertambah (jadi hasil sebelumnya yang sudah muat tetap muat). Item yang
+   * masih berada di group lain lalu dikembalikan ke group asalnya bila ada
+   * slot kosong di baris yang sama dan lebarnya tetap muat.
+   */
+  function compactRows(rows, columns, available, measureRows) {
+    const working = rows.map((row) => row.slice());
+    const originalColumn = new Map();
+    baseRows.forEach((row) => row.forEach((item, column) => {
+      if (item) originalColumn.set(item, column);
+    }));
+
+    function compactColumns(target) {
+      let changed = false;
+      for (let column = 0; column < columns; column++) {
+        const columnItems = [];
+        let seenEmpty = false;
+        for (let row = 0; row < target.length; row++) {
+          if (!target[row][column]) {
+            seenEmpty = true;
+            continue;
+          }
+          if (seenEmpty) changed = true;
+          columnItems.push(target[row][column]);
+          target[row][column] = null;
+        }
+        columnItems.forEach((item, row) => {
+          if (row >= target.length) target.push(emptyRow());
+          target[row][column] = item;
+        });
+      }
+      trimEmptyRows(target);
+      return changed;
+    }
+
+    let changed = true;
+    while (changed) {
+      changed = compactColumns(working);
+      const currentTotal = measureRows(working).total;
+      let moved = false;
+
+      /* Slot kosong dibaca baris demi baris. Kandidat diambil dari posisi
+         setelah slot itu, supaya item hanya bergerak naik/ke kiri. */
+      for (let row = 0; row < working.length && !moved; row++) {
+        for (let column = 0; column < columns && !moved; column++) {
+          if (working[row][column]) continue;
+          for (let candidateRow = row; candidateRow < working.length && !moved; candidateRow++) {
+            const startColumn = candidateRow === row ? column + 1 : 0;
+            for (let candidateColumn = startColumn; candidateColumn < columns; candidateColumn++) {
+              const item = working[candidateRow][candidateColumn];
+              if (!item) continue;
+              working[candidateRow][candidateColumn] = null;
+              working[row][column] = item;
+              const next = measureRows(working);
+              if (next.total <= available && next.total <= currentTotal) {
+                moved = true;
+                changed = true;
+                break;
+              }
+              working[row][column] = null;
+              working[candidateRow][candidateColumn] = item;
+            }
+          }
+        }
+      }
+    }
+
+    /* Kembalikan item ke group asal kalau slot sebaris kosong dan total
+       lebar tidak bertambah. Gerakan hanya ke kanan (makin dekat group
+       asal), jadi tidak bisa bolak-balik dengan pemadatan di atas. */
+    let restored = true;
+    while (restored) {
+      restored = false;
+      const currentTotal = measureRows(working).total;
+      const currentRows = working.length;
+      for (let row = 0; row < working.length && !restored; row++) {
+        for (let column = 0; column < columns && !restored; column++) {
+          const item = working[row][column];
+          if (!item) continue;
+          const targetColumn = originalColumn.get(item);
+          if (targetColumn == null || targetColumn <= column) continue;
+          for (let nextColumn = column + 1; nextColumn <= targetColumn && !restored; nextColumn++) {
+            if (working[row][nextColumn]) continue;
+            const candidate = working.map((candidateRow) => candidateRow.slice());
+            candidate[row][column] = null;
+            candidate[row][nextColumn] = item;
+            compactColumns(candidate);
+            const next = measureRows(candidate);
+            if (next.total > available || next.total > currentTotal) continue;
+            if (candidate.length > currentRows) continue;
+            working.splice(0, working.length, ...candidate);
+            restored = true;
+          }
+        }
+      }
+    }
+
+    compactColumns(working);
+    return trimEmptyRows(working);
   }
 
   let rows = baseRows.map((row) => row.slice());
@@ -369,6 +481,9 @@ function layoutManagePcSpecPanel(panel) {
       layout = measureRows(rows);
     }
   }
+
+  rows = compactRows(rows, columns, available, measureRows);
+  layout = measureRows(rows);
 
   /* Tulis ulang isi grid: posisi tiap item + sel kosong supaya garis
      pemisah tetap nyambung di kolom yang tidak terisi. */
