@@ -17,7 +17,7 @@
 
 // TODO (Phase Authentication/CCTV): ganti dengan URL deployment Apps Script.
 // JANGAN pernah menaruh credential/API key di sini - hanya URL endpoint publik.
-const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyld_jhumhTe3FY2Yta9csQDIsAYe5l_el0BO917FF7USX1Ssj_QQHFSG1gGejHuoRt/exec";
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzu6-4K_tjsPjRrK-dKAIbYd0I_OkmbHn0ZFUGB7NpIoJpPE5o1UPvSDletDm26jTR7aQ/exec";
 
 /**
  * Browser modern bisa decompress gzip natively (tanpa library/CDN).
