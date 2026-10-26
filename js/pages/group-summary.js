@@ -98,6 +98,12 @@ const MANAGE_PC_SPEC_FIELDS = [
 ];
 /* Panel detail inventaris disusun 5 kolom x 2 baris. */
 const MANAGE_PC_SPEC_COLUMNS = 5;
+/* Tab Kaspersky punya 6 field (Z-AE); kalau semuanya muat, tampil satu baris
+   (6 group) sebelum ada yang diturunkan ke baris berikutnya. */
+const MANAGE_PC_SPEC_TAB_COLUMNS = {
+  inventory: 5,
+  kaspersky: 6
+};
 /* Padding kanan sel panel detail (sekalian jadi jarak antar kolom). */
 const MANAGE_PC_SPEC_CELL_PADDING = 16;
 /* Urutan dasar item panel detail: baris 1 = M, O, Q, S, U; baris 2 = N, P,
@@ -157,12 +163,14 @@ function formatInventoryValue(value) {
 }
 
 /**
- * Panel detail inventaris (5 kolom):
- * - Susunan dasar = urutan baca diisi baris demi baris (group 1-5).
- * - Kalau total lebar melebihi ruang, item dari group terlebar dipindah ke
- *   group kosong PALING KANAN yang masih muat (mis. group 4), bukan selalu
- *   ke bawah group 1. Item yang pindah ditumpuk di group yang sama; baris
- *   baru hanya dipakai kalau group itu butuh baris tambahan.
+ * Panel detail inventaris:
+ * - Susunan dasar = urutan baca diisi baris demi baris. Inventory memakai
+ *   5 group (M-V), Kaspersky memakai 6 group (Z-AE) supaya semua field bisa
+ *   tampil satu baris kalau memang muat.
+ * - Kalau total lebar melebihi ruang, data paling kanan (group terakhir)
+ *   dipindah ke bawah: cari slot kosong pertama setelah susunan dasar
+ *   (mis. group 4), bukan menumpuk semuanya di group 1. Group yang sudah
+ *   terisi dilewati; slot berikutnya dipakai kalau slot sebelumnya tidak muat.
  * - Lebar label per kolom disamakan, jadi titik dua selalu segaris.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
@@ -178,7 +186,7 @@ function layoutManagePcSpecPanel(panel) {
      hasil susunan tidak berubah saat fungsi ini dijalankan ulang. */
   const order = MANAGE_PC_SPEC_TAB_ORDER[tabKey] || MANAGE_PC_SPEC_LAYOUT;
   const items = order.map((key) => byKey.get(key)).filter(Boolean);
-  const columns = MANAGE_PC_SPEC_COLUMNS;
+  const columns = MANAGE_PC_SPEC_TAB_COLUMNS[tabKey] || MANAGE_PC_SPEC_COLUMNS;
   if (items.length < columns) return;
   const available = grid.clientWidth;
   if (!available) return;
@@ -239,96 +247,73 @@ function layoutManagePcSpecPanel(panel) {
     return { label, value, sep, widths, trackWidths, total };
   }
 
+  /* Tempatkan item pindahan ke slot kosong pertama setelah susunan dasar.
+     Slot yang sudah terisi atau tidak muat dilewati; baris baru ditambah
+     hanya kalau slot yang ada sudah habis. */
+  function placeMovedItems(baseRows, movedItems, columns, available) {
+    const movedSet = new Set(movedItems);
+    const rows = baseRows.map((row) =>
+      row.map((item) => (item && movedSet.has(item) ? null : item)));
+    const tailRow = Math.floor(items.length / columns);
+    const tailCol = items.length % columns;
+    const limit = tailRow + items.length + 2;
+
+    for (const item of movedItems) {
+      let placed = false;
+      for (let rowIndex = tailRow; rowIndex <= limit && !placed; rowIndex++) {
+        if (rowIndex >= rows.length) rows.push(emptyRow());
+        const startCol = rowIndex === tailRow ? tailCol : 0;
+        for (let colIndex = startCol; colIndex < columns; colIndex++) {
+          if (rows[rowIndex][colIndex]) continue;
+          rows[rowIndex][colIndex] = item;
+          if (measureRows(rows).total <= available) {
+            placed = true;
+            break;
+          }
+          rows[rowIndex][colIndex] = null;
+        }
+      }
+      if (!placed) return null;
+    }
+
+    const cleaned = rows.filter((row) => row.some((item) => item));
+    return { rows: cleaned, layout: measureRows(cleaned) };
+  }
+
   let rows = baseRows.map((row) => row.slice());
   let layout = measureRows(rows);
 
   if (layout.total > available) {
-    /* Kumpulkan item yang harus pindah: ambil dari group terlebar, item
-       terlebar di group itu, lalu cek apakah item pindahan muat kalau
-       ditumpuk di salah satu group (dari kanan ke kiri). Kalau belum muat,
-       tambah item berikutnya. */
-    const moved = [];
-    const movedSet = new Set();
-    let solution = null;
-    let fallback = null;
-
-    for (let step = 0; step <= items.length && !solution; step++) {
-      const remainingRows = baseRows.map((row) =>
-        row.map((item) => (item && movedSet.has(item) ? null : item)));
-      const remaining = measureRows(remainingRows);
-
-      let bestForSet = null;
-      for (let target = columns - 1; target >= 0; target--) {
-        const label = remaining.label.slice();
-        const value = remaining.value.slice();
-        const sep = remaining.sep.slice();
-        moved.forEach((item) => {
-          const size = sizes.get(item);
-          label[target] = Math.max(label[target], size.label);
-          value[target] = Math.max(value[target], size.value);
-          sep[target] = Math.max(sep[target], size.sep);
-        });
-        const widths = label.map((labelWidth, column) => labelWidth + sep[column] + value[column]);
-        const trackWidths = widths.map((width) => Math.ceil(width + cellExtra));
-        const total = trackWidths.reduce((sum, width) => sum + width, 0);
-        const candidate = { target, rows: remainingRows, moved: moved.slice(), total };
-        if (!bestForSet || candidate.total < bestForSet.total) bestForSet = candidate;
-        if (total <= available) {
-          solution = candidate;
-          break;
-        }
-      }
-      if (solution) break;
-      fallback = bestForSet;
-
-      /* Group terlebar (tie -> paling kanan), lalu item terlebar di group
-         itu (tie -> paling bawah). */
-      let widestColumn = -1;
-      for (let column = 0; column < columns; column++) {
-        if (widestColumn === -1 || remaining.widths[column] > remaining.widths[widestColumn] ||
-            (remaining.widths[column] === remaining.widths[widestColumn] && column > widestColumn)) {
-          widestColumn = column;
-        }
-      }
-      let nextItem = null;
-      let nextWidth = -1;
-      remainingRows.forEach((row) => {
-        const item = row[widestColumn];
-        if (!item) return;
-        if (widthOf(item) >= nextWidth) {
-          nextItem = item;
-          nextWidth = widthOf(item);
-        }
-      });
-      if (!nextItem) break;
-      moved.push(nextItem);
-      movedSet.add(nextItem);
+    /* Urutan pindah: group paling kanan dulu (data terakhir), lalu item
+       terlebar di group itu. Setiap item pindahan menempati slot kosong
+       berikutnya, tidak ditumpuk di satu group. */
+    const moveOrder = [];
+    for (let column = columns - 1; column >= 0; column--) {
+      baseRows
+        .map((row) => row[column])
+        .filter(Boolean)
+        .sort((a, b) => widthOf(b) - widthOf(a))
+        .forEach((item) => moveOrder.push(item));
     }
 
-    if (!solution) solution = fallback;
+    let solution = null;
+    const moved = [];
+    for (const item of moveOrder) {
+      moved.push(item);
+      solution = placeMovedItems(baseRows, moved, columns, available);
+      if (solution) break;
+    }
 
     if (solution) {
-      rows = solution.rows
-        .filter((row) => row.some((item) => item))
-        .map((row) => row.slice());
-      /* Tumpuk item pindahan di group tujuan, urut seperti urutan asli. */
-      const movedInOrder = solution.moved
-        .slice()
-        .sort((a, b) => items.indexOf(a) - items.indexOf(b));
-      movedInOrder.forEach((item) => {
-        let placed = false;
-        for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
-          if (!rows[rowIndex][solution.target]) {
-            rows[rowIndex][solution.target] = item;
-            placed = true;
-            break;
-          }
-        }
-        if (!placed) {
-          const row = emptyRow();
-          row[solution.target] = item;
-          rows.push(row);
-        }
+      rows = solution.rows;
+      layout = solution.layout;
+    } else {
+      /* Panel terlalu sempit: tumpuk semua item di satu group supaya lebar
+         total paling kecil (walaupun tampilannya memanjang ke bawah). */
+      rows = items.map((item) => {
+        const row = emptyRow();
+        row[0] = item;
+        return row;
       });
       layout = measureRows(rows);
     }
