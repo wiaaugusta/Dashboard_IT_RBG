@@ -171,6 +171,7 @@ function formatInventoryValue(value) {
  *   dipindah ke bawah: cari slot kosong pertama setelah susunan dasar
  *   (mis. group 4), bukan menumpuk semuanya di group 1. Group yang sudah
  *   terisi dilewati; slot berikutnya dipakai kalau slot sebelumnya tidak muat.
+ *   Item yang ternyata masih muat di slot aslinya dikembalikan ke atas.
  * - Lebar label per kolom disamakan, jadi titik dua selalu segaris.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
@@ -274,6 +275,36 @@ function layoutManagePcSpecPanel(panel) {
         }
       }
       if (!placed) return null;
+    }
+
+    /* Kembalikan item yang ternyata masih muat di posisi aslinya. Item
+       pendek seperti "User Logged" tidak perlu ikut turun kalau kolomnya
+       tetap muat; ini mencegah data pindah ke baris tengah tanpa alasan. */
+    const originalPosition = new Map();
+    baseRows.forEach((row, rowIndex) => row.forEach((item, colIndex) => {
+      if (item) originalPosition.set(item, [rowIndex, colIndex]);
+    }));
+
+    for (const item of movedItems) {
+      const target = originalPosition.get(item);
+      if (!target) continue;
+      const [targetRow, targetCol] = target;
+      let currentRow = -1;
+      let currentCol = -1;
+      for (let rowIndex = 0; rowIndex < rows.length && currentRow === -1; rowIndex++) {
+        const colIndex = rows[rowIndex].indexOf(item);
+        if (colIndex !== -1) {
+          currentRow = rowIndex;
+          currentCol = colIndex;
+        }
+      }
+      if (currentRow === -1 || (currentRow === targetRow && currentCol === targetCol)) continue;
+      if (rows[targetRow][targetCol]) continue;
+      rows[currentRow][currentCol] = null;
+      rows[targetRow][targetCol] = item;
+      if (measureRows(rows).total <= available) continue;
+      rows[targetRow][targetCol] = null;
+      rows[currentRow][currentCol] = item;
     }
 
     const cleaned = rows.filter((row) => row.some((item) => item));
