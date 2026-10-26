@@ -79,7 +79,7 @@ const MANAGE_PC_INVENTORY_STATUS_KEYS = ["manageKav", "manageItam", "manageKace"
 /* Urutan pengecekan status untuk menentukan perangkat masuk tab Unmanaged
    (sama dengan backend: H-L, Privilege memakai nilai ternormalisasi). */
 const MANAGE_PC_UNMANAGED_STATUS_FIELDS = [
-  "manageKav", "versiKav", "manageItam", "privilegeItamNorm", "manageKace"
+  "manageKav", "versiKav", "manageItam", "privilegeItam", "manageKace"
 ];
 const MANAGE_PC_SEARCH_FIELDS = [
   "no", "namaKomputer", "divisi", "alamatIp", "workgroup", "model",
