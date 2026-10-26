@@ -21,7 +21,10 @@ import { renderShell } from "../shell.js";
 import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { icon } from "../icons.js";
-import { loadManagePcSummary } from "../api.js";
+import {
+  getManagePcSummaryCache,
+  loadManagePcSummaryCached
+} from "../manage-pc-cache.js";
 
 /**
  * Konfigurasi modul di bawah menu Manage PC.
@@ -408,10 +411,21 @@ export function renderManagePcPage(container, routeInfo) {
     ? requestedScope
     : accessibleScopes[0];
 
+  const cachedSummary = activeScope === "office"
+    ? getManagePcSummaryCache(activeScope, session)
+    : null;
+  const summaryHtml = activeScope === "store"
+    ? renderScopePending()
+    : renderSummary(
+        cachedSummary ? { success: true, data: cachedSummary } : null,
+        module.key,
+        !cachedSummary
+      );
+
   const contentHtml = `
     <div class="mpc-page">
       ${renderPageHeader(module, accessibleScopes, activeScope)}
-      ${activeScope === "store" ? renderScopePending() : renderSummary(null, module.key, true)}
+      ${summaryHtml}
       ${renderScopePanel(module, activeScope)}
     </div>
   `;
@@ -422,9 +436,9 @@ export function renderManagePcPage(container, routeInfo) {
     contentHtml
   });
 
-  if (activeScope !== "office") return;
+  if (activeScope !== "office" || cachedSummary) return;
 
-  loadManagePcSummary(activeScope, { sessionToken: session.sessionToken })
+  loadManagePcSummaryCached(activeScope, session)
     .then((result) => {
       const summaryElement = container.querySelector("[data-mpc-summary]");
       if (summaryElement) {

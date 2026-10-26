@@ -8,7 +8,7 @@
  * Cache hanya menjadi fallback jika network gagal.
  */
 
-const CACHE_NAME = "it-platform-shell-v23";
+const CACHE_NAME = "it-platform-shell-v24";
 
 const APP_SHELL_FILES = [
   "./index.html",
@@ -26,6 +26,7 @@ const APP_SHELL_FILES = [
   "./js/nav-config.js",
   "./js/icons.js",
   "./js/shell.js",
+  "./js/manage-pc-cache.js",
 
   "./js/pages/login.js",
   "./js/pages/dashboard.js",

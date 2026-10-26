@@ -26,7 +26,12 @@ import { getQueryParam } from "../router.js";
 import { NAV_ITEMS, isVisibleForRole } from "../nav-config.js";
 import { icon } from "../icons.js";
 import { initTooltips } from "../ui.js";
-import { loadManagePcList, loadManagePcSummary } from "../api.js";
+import {
+  ensureManagePcDataset,
+  getManagePcDataset,
+  getManagePcSummaryCache,
+  loadManagePcSummaryCached
+} from "../manage-pc-cache.js";
 
 const MANAGE_PC_PAGE_SIZE = 15;
 /* Tab tampilan tabel "IT Asset & Device Inventory Management".
@@ -54,8 +59,8 @@ const MANAGE_PC_BASE_COLUMNS = [
 ];
 /* Kolom status manajemen perangkat (sheet MASTER REPORT OFFICE kolom H-L):
  *   H = MANAGE KAV, I = VERSI KAV, J = MANAGE ITAM, K = PRIVILEGE ITAM, L = MANAGE KACE
- * Pada tab Unmanaged HANYA kolom yang punya nilai selain "OK" yang ditampilkan
- * - daftar kolom dikirim backend pada field "statusColumns".
+ * Pada tab Unmanaged HANYA kolom yang punya nilai selain "OK" yang ditampilkan;
+ * daftar kolom dihitung lokal dari dataset yang sudah di-cache.
  * Tab Inventory memakai kolom status tetap (KAV, ITAM, KACE).
  * Privilege ITAM memakai nilai mentah sel supaya "tidak ditemukan" tetap
  * tampil sebagai ikon "tidak ditemukan" (bukan NOK). */
@@ -71,6 +76,21 @@ const MANAGE_PC_STATUS_COLUMNS = [
 }));
 /* Kolom status tetap pada tab Inventory. */
 const MANAGE_PC_INVENTORY_STATUS_KEYS = ["manageKav", "manageItam", "manageKace"];
+/* Urutan pengecekan status untuk menentukan perangkat masuk tab Unmanaged
+   (sama dengan backend: H-L, Privilege memakai nilai ternormalisasi). */
+const MANAGE_PC_UNMANAGED_STATUS_FIELDS = [
+  "manageKav", "versiKav", "manageItam", "privilegeItamNorm", "manageKace"
+];
+const MANAGE_PC_SEARCH_FIELDS = [
+  "no", "namaKomputer", "divisi", "alamatIp", "workgroup", "model",
+  "sistemOperasi", "manageKav", "manageItam", "manageKace", "macAddress",
+  "serialNumber"
+];
+const MANAGE_PC_SORTABLE_FIELDS = new Set([
+  "no", "namaKomputer", "divisi", "alamatIp", "workgroup", "model",
+  "sistemOperasi", "manageKav", "versiKav", "manageItam", "privilegeItam",
+  "manageKace"
+]);
 /* Kolom yang boleh disembunyikan kalau tabel terlalu sempit (urutan prioritas:
    "Sistem Operasi" lebih dulu, lalu "Model" dan "Workgroup"), supaya judul
    kolom lain tetap muat dan tidak ada kolom yang terpotong. */
@@ -556,7 +576,17 @@ export function renderGroupSummaryPage(container, routeInfo) {
     ? (getQueryParam("scope") === "store" ? "store" : "office")
     : (session.role === "IT_STORE" ? "store" : "office");
   const activeView = getManagePcActiveView();
-  const cards = renderGroupCards(visibleChildren, meta, null, isManagePc, activeScope, isManagePc && activeScope === "office");
+  const cachedSummary = isManagePc && activeScope === "office"
+    ? getManagePcSummaryCache("office", session)
+    : null;
+  const cards = renderGroupCards(
+    visibleChildren,
+    meta,
+    cachedSummary,
+    isManagePc,
+    activeScope,
+    isManagePc && activeScope === "office" && !cachedSummary
+  );
 
   const contentHtml = `
     <div class="gsp-page">
@@ -591,7 +621,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
   initTooltips(document);
 
   if (isManagePc && activeScope === "office") {
-    loadManagePcSummary("office", { sessionToken: session.sessionToken })
+    loadManagePcSummaryCached("office", session)
       .then((result) => {
         const cardsElement = container.querySelector("[data-group-summary-cards]");
         const errorElement = container.querySelector("[data-manage-pc-summary-error]");
@@ -729,9 +759,9 @@ function managePcColumnLabel(column, activeView) {
 }
 
 /**
- * Daftar kolom status yang tampil sebelum data arrived.
+ * Daftar kolom status yang tampil sebelum dataset selesai dimuat.
  * Tab Inventory memakai kolom status tetap; tab Unmanaged menunggu
- * daftar kolom dari backend (hanya kolom H-L yang ada nilai != "OK").
+ * dataset (hanya kolom H-L yang ada nilai != "OK").
  * @param {string} activeView - tab aktif (inventory | unmanaged)
  */
 function managePcInitialStatusColumns(activeView) {
@@ -740,22 +770,81 @@ function managePcInitialStatusColumns(activeView) {
     MANAGE_PC_INVENTORY_STATUS_KEYS.indexOf(column.key) !== -1);
 }
 
+function managePcStatusValue(item, field) {
+  return field === "privilegeItam" ? item.privilegeItamNorm : item[field];
+}
+
+function managePcIsOkStatus(value) {
+  return String(value == null ? "" : value).trim().toUpperCase() === "OK";
+}
+
+function managePcIsUnmanaged(item) {
+  return MANAGE_PC_UNMANAGED_STATUS_FIELDS.some(
+    (field) => !managePcIsOkStatus(managePcStatusValue(item, field))
+  );
+}
+
+function managePcUnmanagedStatusColumns(items) {
+  return MANAGE_PC_UNMANAGED_STATUS_FIELDS.filter((field) =>
+    items.some((item) => !managePcIsOkStatus(managePcStatusValue(item, field)))
+  );
+}
+
 /**
- * Daftar kolom status dari response backend (field statusColumns).
+ * Daftar kolom status yang tampil, dihitung lokal dari dataset penuh.
  * @param {string} activeView - tab aktif (inventory | unmanaged)
- * @param {object} data - response getManagePcList
+ * @param {Array} items - seluruh item setelah filter view/search
  */
-function managePcStatusColumnsFor(activeView, data) {
-  const keys = data && Array.isArray(data.statusColumns) ? data.statusColumns : [];
-  const columns = [];
-  keys.forEach((key) => {
-    const column = MANAGE_PC_STATUS_COLUMNS.find((item) => item.key === key);
-    if (column) columns.push(column);
-  });
-  if (activeView === "inventory") {
-    return columns.filter((col) => MANAGE_PC_INVENTORY_STATUS_KEYS.includes(col.key));
+function managePcStatusColumnsFor(activeView, items) {
+  const keys = activeView === "inventory"
+    ? MANAGE_PC_INVENTORY_STATUS_KEYS
+    : managePcUnmanagedStatusColumns(items);
+  return keys
+    .map((key) => MANAGE_PC_STATUS_COLUMNS.find((column) => column.key === key))
+    .filter(Boolean);
+}
+
+function managePcMatchesSearch(item, search) {
+  if (!search) return true;
+  const text = MANAGE_PC_SEARCH_FIELDS
+    .map((field) => (item[field] == null ? "" : String(item[field])))
+    .join(" ")
+    .toUpperCase();
+  return text.indexOf(search) !== -1;
+}
+
+function compareManagePcItems(left, right, sortBy, sortDirection) {
+  let a = sortBy === "privilegeItam" ? left.privilegeItamNorm : left[sortBy];
+  let b = sortBy === "privilegeItam" ? right.privilegeItamNorm : right[sortBy];
+  let comparison;
+
+  if (sortBy === "no" && !isNaN(Number(a)) && !isNaN(Number(b))) {
+    comparison = Number(a) - Number(b);
+  } else {
+    a = a == null ? "" : String(a).toLowerCase();
+    b = b == null ? "" : String(b).toLowerCase();
+    comparison = a < b ? -1 : (a > b ? 1 : 0);
   }
-  return columns.length ? columns : managePcInitialStatusColumns(activeView);
+
+  return sortDirection === "desc" ? -comparison : comparison;
+}
+
+/**
+ * Filter (tab + pencarian) dan urutkan seluruh dataset di client, meniru
+ * logika backend getManagePcList. Hasilnya dipakai untuk pagination lokal.
+ */
+function managePcFilteredItems(items, activeView, search, sortBy, sortDirection) {
+  const filtered = items.filter((item) => {
+    if (activeView === "unmanaged" && !managePcIsUnmanaged(item)) return false;
+    return managePcMatchesSearch(item, search);
+  });
+
+  if (sortBy && MANAGE_PC_SORTABLE_FIELDS.has(sortBy)) {
+    filtered.sort((left, right) =>
+      compareManagePcItems(left, right, sortBy, sortDirection));
+  }
+
+  return filtered;
 }
 
 function renderManagePcHeaderCell(column, label) {
@@ -885,11 +974,11 @@ function bindManagePcTable(container, session, activeView = "inventory") {
   let search = "";
   let sortBy = "";
   let sortDirection = "asc";
-  let requestId = 0;
   let searchTimer = null;
   let totalPages = 1;
-  /* Kolom status yang tampil. Pada tab Unmanaged kolomnya ditentukan backend:
-     hanya kolom H-L yang punya nilai selain "OK". */
+  let dataset = getManagePcDataset("office", session);
+  /* Kolom status yang tampil. Pada tab Unmanaged kolomnya dihitung dari
+     dataset: hanya kolom H-L yang punya nilai selain "OK". */
   let statusColumns = managePcInitialStatusColumns(activeView);
   const hiddenColumns = new Set();
 
@@ -964,48 +1053,83 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     ` : "";
   }
 
-  async function loadPage() {
-    const thisRequest = ++requestId;
-    rowsElement.innerHTML = renderManagePcSkeletonRows(columnCount());
-    countElement.textContent = "";
-    paginationElement.innerHTML = "";
-    const result = await loadManagePcList("kaspersky", "office", {
-      page,
-      limit: MANAGE_PC_PAGE_SIZE,
-      search,
-      sortBy,
-      sortDirection,
-      view: activeView,
-      sessionToken: session.sessionToken
-    });
-    if (thisRequest !== requestId) return;
-    if (!result.success) {
-      rowsElement.innerHTML = `<tr><td colspan="${columnCount()}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(result.message || "Data perangkat gagal dimuat.")}</td></tr>`;
-      countElement.textContent = "";
+  function renderPage() {
+    if (!dataset) {
+      rowsElement.innerHTML = renderManagePcSkeletonRows(columnCount());
+      countElement.textContent = "Memuat data perangkat...";
+      paginationElement.innerHTML = "";
       return;
     }
 
-    const data = result.data || {};
-    const items = Array.isArray(data.items) ? data.items : [];
-    page = Number(data.page) || page;
-    /* Kolom status (dan header-nya) mengikuti data: pada tab Unmanaged
-       hanya kolom H-L dengan nilai selain "OK" yang ditampilkan. */
-    statusColumns = managePcStatusColumnsFor(activeView, data);
+    if (dataset.error && !dataset.items.length) {
+      rowsElement.innerHTML = `<tr><td colspan="${columnCount()}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(dataset.error)}</td></tr>`;
+      countElement.textContent = "";
+      paginationElement.innerHTML = "";
+      return;
+    }
+
+    const filtered = managePcFilteredItems(
+      dataset.items, activeView, search, sortBy, sortDirection
+    );
+    const total = filtered.length;
+    totalPages = Math.max(1, Math.ceil(total / MANAGE_PC_PAGE_SIZE));
+    page = Math.max(1, Math.min(totalPages, page));
+    const startIndex = (page - 1) * MANAGE_PC_PAGE_SIZE;
+
+    statusColumns = managePcStatusColumnsFor(activeView, filtered);
     if (headElement) {
       headElement.innerHTML = renderManagePcTableHead(activeView, statusColumns);
     }
-    rowsElement.innerHTML = renderManagePcRows(items, (page - 1) * MANAGE_PC_PAGE_SIZE, statusColumns, activeView);
+
+    /* Dataset masih di-hydrate dan halaman ini belum ter-load: tunggu,
+       onUpdate dari cache akan memanggil renderPage() lagi. */
+    if (!dataset.hydrated && startIndex >= dataset.items.length && !search) {
+      rowsElement.innerHTML = renderManagePcSkeletonRows(columnCount());
+      countElement.textContent = "Memuat data perangkat...";
+      paginationElement.innerHTML = "";
+      updateColumnFit();
+      updateSortHeaders();
+      return;
+    }
+
+    if (!dataset.hydrated && search && total === 0) {
+      rowsElement.innerHTML = renderManagePcSkeletonRows(columnCount());
+      countElement.textContent = "Mencari di data yang masih dimuat...";
+      paginationElement.innerHTML = "";
+      updateColumnFit();
+      updateSortHeaders();
+      return;
+    }
+
+    const pageItems = filtered.slice(startIndex, startIndex + MANAGE_PC_PAGE_SIZE);
+    rowsElement.innerHTML = renderManagePcRows(pageItems, startIndex, statusColumns, activeView);
     updateColumnFit();
-    updatePagination(data);
+    updatePagination({ total, totalPages });
     updateSortHeaders();
+  }
+
+  function ensureDataset() {
+    ensureManagePcDataset("office", session, {
+      onUpdate(next) {
+        dataset = next;
+        if (!table.isConnected) return;
+        renderPage();
+      }
+    }).catch((error) => {
+      if (!table.isConnected) return;
+      dataset = null;
+      rowsElement.innerHTML = `<tr><td colspan="${columnCount()}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(error.message || "Data perangkat gagal dimuat.")}</td></tr>`;
+      countElement.textContent = "";
+      paginationElement.innerHTML = "";
+    });
   }
 
   searchInput.addEventListener("input", () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
-      search = searchInput.value.trim();
+      search = searchInput.value.trim().toUpperCase();
       page = 1;
-      loadPage();
+      renderPage();
     }, 250);
   });
 
@@ -1027,7 +1151,7 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     }
     page = 1;
     updateSortHeaders();
-    loadPage();
+    renderPage();
   });
 
   paginationElement.addEventListener("click", (event) => {
@@ -1038,7 +1162,7 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     else if (pageValue === "next") page += 1;
     else page = Number(pageValue);
     page = Math.max(1, Math.min(totalPages, page));
-    loadPage();
+    renderPage();
   });
 
   /* Nama Komputer diklik -> buka/tutup baris inventaris (kolom M-V) tepat
@@ -1098,7 +1222,8 @@ function bindManagePcTable(container, session, activeView = "inventory") {
     observer.observe(tableWrapper);
   }
 
-  loadPage();
+  renderPage();
+  ensureDataset();
 }
 
 function renderManagePcPageNumbers(page, totalPages) {

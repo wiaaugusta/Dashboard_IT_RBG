@@ -1390,12 +1390,19 @@ include the sheet row number, `divisi`, and device inventory fields mapped from 
 `totalHardisk`, `kapasitasDriveC`, `kapasitasDriveD`, `userLogged`, and
 `processors`.
 `getManagePcList` accepts `sortBy` and `sortDirection` for sorting the
-complete filtered result before pagination. The frontend retrieves records
-through `loadManagePcList`. The Manage PC overview table displays columns
-A–G and H, J, L (tab Inventory), uses server-side search, and requests 15
-rows per page. The tab Unmanaged lists only the devices with a non-`OK`
-status and shows the status columns H–L (see the inventory tabs section
-below).
+complete filtered result before pagination. It also accepts `view`, `search`,
+and `status`, but the Manage PC overview UI no longer requests a new page for
+each interaction. The frontend fetches the complete dataset once per session
+through `loadManagePcList` in chunks of 50 (`MANAGE_PC_MAX_PAGE_SIZE`): the
+first chunk renders immediately and the remaining chunks hydrate in the
+background. Search, sorting, and 15-row pagination then run locally over the
+cached dataset, and returning to the menu reuses the cache instead of
+requesting again. `getManagePcSummary` uses the same cache-first approach, so
+the summary cards render without a skeleton on subsequent visits. The cache
+is keyed by `role|NIK`, so a different user starts with fresh data. The
+Manage PC overview table displays columns A–G and H, J, L (tab Inventory).
+The tab Unmanaged lists only the devices with a non-`OK` status and shows the
+status columns H–L (see the inventory tabs section below).
 
 **Sorting (sortable column headers).** Every column except `No` sorts when
 its header is clicked, following the CCTV table's three-state cycle:
@@ -1466,9 +1473,10 @@ tooltip.
 **Dynamic status headers.** On the `unmanaged` tab only the H–L columns that
 actually contain a non-`OK` value are shown. `getManagePcList` returns the
 column list in `statusColumns` (computed over the whole filtered result, not
-per page), so a column whose values are all `OK` has no header at all. The
-`inventory` tab always shows the fixed status columns (KAV, ITAM, KACE) beside
-the base device columns.
+per page), and the frontend also derives the same list locally from the cached
+dataset after applying the view/search filter, so a column whose values are
+all `OK` has no header at all. The `inventory` tab always shows the fixed
+status columns (KAV, ITAM, KACE) beside the base device columns.
 
 **Row numbering.** The Inventory tab shows the sheet row number in the `No`
 column. The Unmanaged tab shows a plain sequence number starting at 1,
