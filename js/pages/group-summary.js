@@ -157,11 +157,13 @@ function formatInventoryValue(value) {
 }
 
 /**
- * Panel detail inventaris (5 kolom x 2 baris):
- * - Item yang isinya terlalu panjang turun ke baris berikutnya, tersebar
- *   dari kiri (tidak semua menumpuk di group 1).
+ * Panel detail inventaris (5 kolom):
+ * - Susunan dasar = urutan baca diisi baris demi baris (group 1-5).
+ * - Kalau total lebar melebihi ruang, item dari group terlebar dipindah ke
+ *   group kosong PALING KANAN yang masih muat (mis. group 4), bukan selalu
+ *   ke bawah group 1. Item yang pindah ditumpuk di group yang sama; baris
+ *   baru hanya dipakai kalau group itu butuh baris tambahan.
  * - Lebar label per kolom disamakan, jadi titik dua selalu segaris.
- * - Baris yang kosong tetap diberi garis pemisah, jadi garisnya rata.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
 function layoutManagePcSpecPanel(panel) {
@@ -176,107 +178,175 @@ function layoutManagePcSpecPanel(panel) {
      hasil susunan tidak berubah saat fungsi ini dijalankan ulang. */
   const order = MANAGE_PC_SPEC_TAB_ORDER[tabKey] || MANAGE_PC_SPEC_LAYOUT;
   const items = order.map((key) => byKey.get(key)).filter(Boolean);
-  if (items.length < MANAGE_PC_SPEC_COLUMNS) return;
+  const columns = MANAGE_PC_SPEC_COLUMNS;
+  if (items.length < columns) return;
   const available = grid.clientWidth;
   if (!available) return;
+  const cellExtra = MANAGE_PC_SPEC_CELL_PADDING + 2;
 
-  /* Lebar label, nilai, dan titik dua tiap item. Nilai yang paling panjang
-     = yang paling mungkin terpotong, jadi itu yang turun lebih dulu. */
-  const labelWidth = new Map();
-  const valueWidth = new Map();
-  const sepWidth = new Map();
+  /* Lebar alami label, titik dua, dan nilai tiap item. Properti --label-w
+     hasil layout sebelumnya dilepas dulu supaya pengukuran tidak bias. */
+  const sizes = new Map();
   items.forEach((item) => {
     const probe = item.cloneNode(true);
     probe.style.position = "absolute";
     probe.style.visibility = "hidden";
     probe.style.width = "max-content";
+    probe.style.removeProperty("--label-w");
+    probe.style.removeProperty("grid-column");
+    probe.style.removeProperty("grid-row");
     grid.appendChild(probe);
     const probeLabel = probe.querySelector(".mpc-spec__label");
     const probeValue = probe.querySelector(".mpc-spec__value");
     const probeSep = probe.querySelector(".mpc-spec__sep");
-    labelWidth.set(item, probeLabel ? probeLabel.getBoundingClientRect().width : 0);
-    valueWidth.set(item, probeValue ? probeValue.getBoundingClientRect().width : 0);
-    sepWidth.set(item, probeSep ? probeSep.getBoundingClientRect().width : 0);
+    sizes.set(item, {
+      label: probeLabel ? probeLabel.getBoundingClientRect().width : 0,
+      value: probeValue ? probeValue.getBoundingClientRect().width : 0,
+      sep: probeSep ? probeSep.getBoundingClientRect().width : 0
+    });
     probe.remove();
   });
 
-  /* Baris dasar: 5 item atas (M, O, Q, S, U) lalu 5 item bawahnya
-     (N, P, R, T, V). */
-  const rows = [];
-  for (let i = 0; i < items.length; i += MANAGE_PC_SPEC_COLUMNS) {
-    rows.push(items.slice(i, i + MANAGE_PC_SPEC_COLUMNS));
+  const widthOf = (item) => {
+    const size = sizes.get(item);
+    return size.label + size.sep + size.value;
+  };
+
+  /* Susunan dasar: urutan baca diisi baris demi baris (5 kolom). */
+  const emptyRow = () => new Array(columns).fill(null);
+  const baseRows = [];
+  items.forEach((item, index) => {
+    const rowIndex = Math.floor(index / columns);
+    if (!baseRows[rowIndex]) baseRows[rowIndex] = emptyRow();
+    baseRows[rowIndex][index % columns] = item;
+  });
+
+  /* Lebar tiap kolom = label terpanjang + titik dua + nilai terpanjang. */
+  function measureRows(rows) {
+    const label = new Array(columns).fill(0);
+    const value = new Array(columns).fill(0);
+    const sep = new Array(columns).fill(0);
+    rows.forEach((row) => row.forEach((item, column) => {
+      if (!item) return;
+      const size = sizes.get(item);
+      label[column] = Math.max(label[column], size.label);
+      value[column] = Math.max(value[column], size.value);
+      sep[column] = Math.max(sep[column], size.sep);
+    }));
+    const widths = label.map((labelWidth, column) => labelWidth + sep[column] + value[column]);
+    const trackWidths = widths.map((width) => Math.ceil(width + cellExtra));
+    const total = trackWidths.reduce((sum, width) => sum + width, 0);
+    return { label, value, sep, widths, trackWidths, total };
   }
 
-  /* Lebar label & nilai terbesar per kolom. Label disamakan per kolom
-     supaya titik dua selalu segaris. */
-  const columnLabelWidth = new Array(MANAGE_PC_SPEC_COLUMNS).fill(0);
-  const columnValueWidth = new Array(MANAGE_PC_SPEC_COLUMNS).fill(0);
-  const columnSepWidth = new Array(MANAGE_PC_SPEC_COLUMNS).fill(0);
-  rows.forEach((row) => row.forEach((item, col) => {
-    if (!item) return;
-    columnLabelWidth[col] = Math.max(columnLabelWidth[col], labelWidth.get(item) || 0);
-    columnValueWidth[col] = Math.max(columnValueWidth[col], valueWidth.get(item) || 0);
-    columnSepWidth[col] = Math.max(columnSepWidth[col], sepWidth.get(item) || 0);
-  }));
+  let rows = baseRows.map((row) => row.slice());
+  let layout = measureRows(rows);
 
-  /* Lebar tiap kolom = label + titik dua + nilai (sesuai isi). */
-  const columnWidths = () => columnLabelWidth.map((label, col) =>
-    label + columnSepWidth[col] + columnValueWidth[col]);
+  if (layout.total > available) {
+    /* Kumpulkan item yang harus pindah: ambil dari group terlebar, item
+       terlebar di group itu, lalu cek apakah item pindahan muat kalau
+       ditumpuk di salah satu group (dari kanan ke kiri). Kalau belum muat,
+       tambah item berikutnya. */
+    const moved = [];
+    const movedSet = new Set();
+    let solution = null;
+    let fallback = null;
 
-  /* Kalau total kolom melebihi card, item dengan nilai terpanjang turun ke
-     baris bawah sampai muat. Kolom asalnya jadi kosong (bukan digeser),
-     jadi kolom lain tetap sejajar. */
-  const totalWidth = () => columnWidths().reduce((sum, width) => sum + width, 0)
-    + (MANAGE_PC_SPEC_CELL_PADDING + 2) * MANAGE_PC_SPEC_COLUMNS;
-  const dropped = [];
-  while (totalWidth() > available) {
-    let target = null;
-    rows.forEach((row) => row.forEach((item) => {
-      if (!item) return;
-      if (!target || valueWidth.get(item) > valueWidth.get(target)) target = item;
-    }));
-    if (!target) break;
-    rows.forEach((row) => {
-      const index = row.indexOf(target);
-      if (index !== -1) row[index] = null;
-    });
-    dropped.push(target);
-    /* Lebar kolom ikut berubah karena item yang turun tidak lagi
-     ada di kolomnya. */
-    columnValueWidth.fill(0);
-    rows.forEach((row) => row.forEach((item, col) => {
-      if (item) columnValueWidth[col] = Math.max(columnValueWidth[col], valueWidth.get(item) || 0);
-    }));
-  }
-  if (dropped.length) {
-    const order = new Map(items.map((item, index) => [item, index]));
-    rows.push(dropped.sort((a, b) => order.get(a) - order.get(b)));
-    /* Item yang turun masuk ke kolom baris paling bawah: label & lebarnya
-       ikut dihitung ulang. */
-    columnLabelWidth.fill(0);
-    columnValueWidth.fill(0);
-    columnSepWidth.fill(0);
-    rows.forEach((row) => row.forEach((item, col) => {
-      if (!item) return;
-      columnLabelWidth[col] = Math.max(columnLabelWidth[col], labelWidth.get(item) || 0);
-      columnValueWidth[col] = Math.max(columnValueWidth[col], valueWidth.get(item) || 0);
-      columnSepWidth[col] = Math.max(columnSepWidth[col], sepWidth.get(item) || 0);
-    }));
+    for (let step = 0; step <= items.length && !solution; step++) {
+      const remainingRows = baseRows.map((row) =>
+        row.map((item) => (item && movedSet.has(item) ? null : item)));
+      const remaining = measureRows(remainingRows);
+
+      let bestForSet = null;
+      for (let target = columns - 1; target >= 0; target--) {
+        const label = remaining.label.slice();
+        const value = remaining.value.slice();
+        const sep = remaining.sep.slice();
+        moved.forEach((item) => {
+          const size = sizes.get(item);
+          label[target] = Math.max(label[target], size.label);
+          value[target] = Math.max(value[target], size.value);
+          sep[target] = Math.max(sep[target], size.sep);
+        });
+        const widths = label.map((labelWidth, column) => labelWidth + sep[column] + value[column]);
+        const trackWidths = widths.map((width) => Math.ceil(width + cellExtra));
+        const total = trackWidths.reduce((sum, width) => sum + width, 0);
+        const candidate = { target, rows: remainingRows, moved: moved.slice(), total };
+        if (!bestForSet || candidate.total < bestForSet.total) bestForSet = candidate;
+        if (total <= available) {
+          solution = candidate;
+          break;
+        }
+      }
+      if (solution) break;
+      fallback = bestForSet;
+
+      /* Group terlebar (tie -> paling kanan), lalu item terlebar di group
+         itu (tie -> paling bawah). */
+      let widestColumn = -1;
+      for (let column = 0; column < columns; column++) {
+        if (widestColumn === -1 || remaining.widths[column] > remaining.widths[widestColumn] ||
+            (remaining.widths[column] === remaining.widths[widestColumn] && column > widestColumn)) {
+          widestColumn = column;
+        }
+      }
+      let nextItem = null;
+      let nextWidth = -1;
+      remainingRows.forEach((row) => {
+        const item = row[widestColumn];
+        if (!item) return;
+        if (widthOf(item) >= nextWidth) {
+          nextItem = item;
+          nextWidth = widthOf(item);
+        }
+      });
+      if (!nextItem) break;
+      moved.push(nextItem);
+      movedSet.add(nextItem);
+    }
+
+    if (!solution) solution = fallback;
+
+    if (solution) {
+      rows = solution.rows
+        .filter((row) => row.some((item) => item))
+        .map((row) => row.slice());
+      /* Tumpuk item pindahan di group tujuan, urut seperti urutan asli. */
+      const movedInOrder = solution.moved
+        .slice()
+        .sort((a, b) => items.indexOf(a) - items.indexOf(b));
+      movedInOrder.forEach((item) => {
+        let placed = false;
+        for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+          if (!rows[rowIndex][solution.target]) {
+            rows[rowIndex][solution.target] = item;
+            placed = true;
+            break;
+          }
+        }
+        if (!placed) {
+          const row = emptyRow();
+          row[solution.target] = item;
+          rows.push(row);
+        }
+      });
+      layout = measureRows(rows);
+    }
   }
 
   /* Tulis ulang isi grid: posisi tiap item + sel kosong supaya garis
      pemisah tetap nyambung di kolom yang tidak terisi. */
   const fragment = document.createDocumentFragment();
   rows.forEach((row, rowIndex) => {
-    for (let col = 0; col < MANAGE_PC_SPEC_COLUMNS; col++) {
-      const item = row[col];
+    for (let column = 0; column < columns; column++) {
+      const item = row[column];
       const cell = item || document.createElement("div");
       if (!item) cell.className = "mpc-spec__cell";
-      cell.style.gridColumn = String(col + 1);
+      cell.style.gridColumn = String(column + 1);
       cell.style.gridRow = String(rowIndex + 1);
       cell.classList.toggle("is-last-row", rowIndex === rows.length - 1);
       if (item) {
-        cell.style.setProperty("--label-w", `${Math.ceil(columnLabelWidth[col])}px`);
+        cell.style.setProperty("--label-w", `${Math.ceil(layout.label[column])}px`);
       }
       fragment.appendChild(cell);
     }
@@ -286,31 +356,31 @@ function layoutManagePcSpecPanel(panel) {
 
   /* Lebar kolom sesuai isi (bukan sama rata), supaya nilai panjang tetap
      satu baris dan tidak ada kolom yang meluber. */
-  const widths = columnWidths();
-  grid.style.gridTemplateColumns = widths
-    .map((width) => `minmax(0, ${Math.ceil(width + MANAGE_PC_SPEC_CELL_PADDING + 2)}px)`)
+  grid.style.gridTemplateColumns = layout.trackWidths
+    .map((width) => `minmax(0, ${width}px)`)
     .join(" ");
 }
 
 /**
  * Pantau perubahan lebar panel detail inventaris (mis. sidebar di-hover
  * sehingga area konten menyempit) lalu susun ulang isinya: item yang tidak
- * muat turun ke baris berikutnya, titik dua & garis pemisah tetap rapi.
+ * muat pindah ke group kosong yang masih muat, titik dua & garis tetap rapi.
  * @param {HTMLElement} panel - elemen .mpc-spec
  */
 function observeManagePcSpecPanel(panel) {
   if (panel.dataset.specObserved) return;
   panel.dataset.specObserved = "true";
-  const grid = panel.querySelector(".mpc-spec__grid");
-  if (!grid || typeof ResizeObserver === "undefined") return;
+  if (typeof ResizeObserver === "undefined") return;
   let lastWidth = 0;
+  /* Amati panel (bukan grid), supaya perubahan lebar tetap terdeteksi saat
+     tab Inventory sedang disembunyikan dan tab Kaspersky yang tampil. */
   const observer = new ResizeObserver((entries) => {
     const width = Math.round(entries[0].contentRect.width);
     if (width === lastWidth) return;
     lastWidth = width;
     layoutManagePcSpecPanel(panel);
   });
-  observer.observe(grid);
+  observer.observe(panel);
 }
 
 function renderSpecCells(item, fields) {
