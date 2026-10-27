@@ -261,8 +261,8 @@ function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent 
 function renderKasperskyInfo(info = {}, isLoading = false) {
   const rows = [
     { iconName: "kaspersky", label: "Versi Kaspersky", value: info.version },
-    { iconName: "pc", label: "Agent Kaspersky", value: info.agent },
-    { iconName: "nms", label: "Server Kaspersky", value: info.server || "kscoffice.sat.co.id" }
+    { iconName: "shield", label: "Agent Kaspersky", value: info.agent },
+    { iconName: "server", label: "Server Kaspersky", value: info.server || "kscoffice.sat.co.id" }
   ];
   return rows.map((row) => `
     <div class="gsp-card__info-row">
