@@ -3522,6 +3522,24 @@
   font-size: 15px;
 }
 
+/* Kartu dengan 4 kotak statistik (Total, Manage, Not Manage, Persen). */
+.gsp-cards--kaspersky .gsp-card__stats--4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.gsp-cards--kaspersky .gsp-card__stats--4 .gsp-card__stat {
+  padding: 6px 3px;
+}
+
+.gsp-cards--kaspersky .gsp-card__stats--4 .gsp-card__stat small {
+  font-size: 10px;
+}
+
+.gsp-cards--kaspersky .gsp-card__stats--4 .gsp-card__stat strong {
+  font-size: 14px;
+}
+
 .gsp-card {
   position: relative;
   display: flex;

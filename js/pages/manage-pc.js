@@ -225,6 +225,15 @@ function renderMetricValue(value, isLoading) {
 }
 
 function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent = "blue") {
+  /* Kartu tanpa tujuan klik tidak perlu footer (teks + panah). */
+  const footer = footerText
+    ? `
+      <div class="gsp-card__footer">
+        <span>${escapeHtml(footerText)}</span>
+        ${icon("arrow-right", { size: 16 })}
+      </div>`
+    : "";
+
   return `
     <article class="gsp-card gsp-card--${accent}">
       <div class="gsp-card__header">
@@ -234,12 +243,27 @@ function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent 
           <p>${escapeHtml(desc)}</p>
         </div>
       </div>
-      <div class="gsp-card__stats">${stats}</div>
-      <div class="gsp-card__footer">
-        <span>${escapeHtml(footerText)}</span>
-        ${icon("arrow-right", { size: 16 })}
-      </div>
+      <div class="gsp-card__stats${stats.hasPercent ? " gsp-card__stats--4" : ""}">${stats.html}</div>
+      ${footer}
     </article>
+  `;
+}
+
+/**
+ * Render satu kotak statistik persen.
+ * Nilai persen sudah dihitung backend dari gabungan KAV + Versi.
+ */
+function renderPercentStat(value, isLoading) {
+  const body = isLoading
+    ? '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>'
+    : value == null || !Number.isFinite(Number(value))
+      ? "&mdash;"
+      : `${Number(value).toLocaleString("id-ID")}%`;
+  return `
+    <div class="gsp-card__stat">
+      <small>Persen</small>
+      <strong>${body}</strong>
+    </div>
   `;
 }
 
@@ -248,12 +272,15 @@ function renderSummary(data, moduleKey, isLoading = false) {
   const d = data?.data || data || {};
   const totalPc = d.summary?.totalPc ?? d.totalUser ?? (isLoading ? null : 0);
 
-  const makeStats = (statList) => statList.map(([label, val]) => `
-    <div class="gsp-card__stat">
-      <small>${escapeHtml(label)}</small>
-      <strong>${renderMetricValue(val, isLoading)}</strong>
-    </div>
-  `).join("");
+  const makeStats = (statList, extraStat = "") => ({
+    html: statList.map(([label, val]) => `
+      <div class="gsp-card__stat">
+        <small>${escapeHtml(label)}</small>
+        <strong>${renderMetricValue(val, isLoading)}</strong>
+      </div>
+    `).join("") + extraStat,
+    hasPercent: Boolean(extraStat)
+  });
 
   // Submenu Kaspersky: 2 kotak (Kaspersky & Versi Kaspersky) persis menu utama
   if (moduleKey === "manage-pc-kaspersky") {
@@ -261,12 +288,14 @@ function renderSummary(data, moduleKey, isLoading = false) {
     const kavNok = d.kaspersky?.nok ?? (totalPc != null && kavOk != null ? totalPc - kavOk : (isLoading ? null : 0));
     const verOk = d.kaspersky?.versionOk ?? (isLoading ? null : 0);
     const verNok = d.kaspersky?.versionNok ?? (totalPc != null && verOk != null ? totalPc - verOk : (isLoading ? null : 0));
+    /* Persen gabungan: hanya device dengan KAV OK DAN Versi OK yang dihitung. */
+    const kavPercent = d.kaspersky?.percent ?? (isLoading ? null : 0);
 
     return `
       <section class="gsp-cards gsp-cards--kaspersky" data-mpc-summary aria-live="polite">
         ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("kaspersky", "Kaspersky", "Endpoint Security - proteksi, update database & compliance.", makeStats([["Total Device", totalPc], ["Manage", kavOk], ["Not Manage", kavNok]]), "Status Endpoint Security", "blue")}
-        ${renderSummaryCardItem("kaspersky", "Versi Kaspersky", "Status OK dan NOK versi Kaspersky pada seluruh device.", makeStats([["Total Device", totalPc], ["Version OK", verOk], ["Version NOK", verNok]]), "Status Versi Antivirus", "blue")}
+        ${renderSummaryCardItem("kaspersky", "Kaspersky", "Endpoint Security - proteksi, update database & compliance.", makeStats([["Total Device", totalPc], ["Manage", kavOk], ["Not Manage", kavNok]], renderPercentStat(kavPercent, isLoading)), null, "blue")}
+        ${renderSummaryCardItem("kaspersky", "Versi Kaspersky", "Status OK dan NOK versi Kaspersky pada seluruh device.", makeStats([["Total Device", totalPc], ["Version OK", verOk], ["Version NOK", verNok]], renderPercentStat(kavPercent, isLoading)), null, "blue")}
       </section>
     `;
   }
