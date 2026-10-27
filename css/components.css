@@ -3655,6 +3655,50 @@
   white-space: nowrap;
 }
 
+/* Blok info Versi/Agent/Server di bawah statistik kartu Kaspersky. */
+.gsp-card__info {
+  padding: 4px 10px;
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-primary-soft);
+}
+
+.gsp-card__info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 0;
+  font-size: var(--font-size-caption);
+}
+
+.gsp-card__info-row + .gsp-card__info-row {
+  border-top: 1px solid var(--color-border);
+}
+
+.gsp-card__info-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.gsp-card__info-label svg {
+  flex: none;
+}
+
+.gsp-card__info-value {
+  min-width: 0;
+  font-weight: 600;
+  color: var(--color-text);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
 .gsp-card__footer {
   display: flex;
   align-items: center;

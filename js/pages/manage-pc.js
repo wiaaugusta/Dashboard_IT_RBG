@@ -224,7 +224,7 @@ function renderMetricValue(value, isLoading) {
   return value == null ? "&mdash;" : Number(value).toLocaleString();
 }
 
-function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent = "blue") {
+function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent = "blue", infoHtml = "") {
   /* Kartu tanpa tujuan klik tidak perlu footer (teks + panah). */
   const footer = footerText
     ? `
@@ -232,6 +232,10 @@ function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent 
         <span>${escapeHtml(footerText)}</span>
         ${icon("arrow-right", { size: 16 })}
       </div>`
+    : "";
+
+  const info = infoHtml
+    ? `<div class="gsp-card__info">${infoHtml}</div>`
     : "";
 
   return `
@@ -244,9 +248,30 @@ function renderSummaryCardItem(iconName, title, desc, stats, footerText, accent 
         </div>
       </div>
       <div class="gsp-card__stats${stats.hasPercent ? " gsp-card__stats--4" : ""}">${stats.html}</div>
+      ${info}
       ${footer}
     </article>
   `;
+}
+
+/**
+ * Blok informasi Kaspersky (Versi / Agent / Server) di bawah statistik kartu.
+ * Nilainya dari backend: SOURCE kolom S (versi) dan R (agent); server tetap.
+ */
+function renderKasperskyInfo(info = {}, isLoading = false) {
+  const rows = [
+    { iconName: "kaspersky", label: "Versi Kaspersky", value: info.version },
+    { iconName: "pc", label: "Agent Kaspersky", value: info.agent },
+    { iconName: "nms", label: "Server Kaspersky", value: info.server || "kscoffice.sat.co.id" }
+  ];
+  return rows.map((row) => `
+    <div class="gsp-card__info-row">
+      <span class="gsp-card__info-label">${icon(row.iconName, { size: 14 })}<span>${escapeHtml(row.label)}</span></span>
+      <span class="gsp-card__info-value">${isLoading
+        ? '<span class="skeleton" style="width:72px;height:12px;display:inline-block" aria-label="Memuat nilai"></span>'
+        : escapeHtml(row.value || "—")}</span>
+    </div>
+  `).join("");
 }
 
 /**
@@ -290,12 +315,14 @@ function renderSummary(data, moduleKey, isLoading = false) {
     const verNok = d.kaspersky?.versionNok ?? (totalPc != null && verOk != null ? totalPc - verOk : (isLoading ? null : 0));
     /* Persen gabungan: hanya device dengan KAV OK DAN Versi OK yang dihitung. */
     const kavPercent = d.kaspersky?.percent ?? (isLoading ? null : 0);
+    const kavInfo = d.kaspersky?.info || {};
+    const kavInfoHtml = renderKasperskyInfo(kavInfo, isLoading);
 
     return `
       <section class="gsp-cards gsp-cards--kaspersky" data-mpc-summary aria-live="polite">
         ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("kaspersky", "Kaspersky", "Endpoint Security - proteksi, update database & compliance.", makeStats([["Total Device", totalPc], ["Manage", kavOk], ["Not Manage", kavNok]], renderPercentStat(kavPercent, isLoading)), null, "blue")}
-        ${renderSummaryCardItem("kaspersky", "Versi Kaspersky", "Status OK dan NOK versi Kaspersky pada seluruh device.", makeStats([["Total Device", totalPc], ["Version OK", verOk], ["Version NOK", verNok]], renderPercentStat(kavPercent, isLoading)), null, "blue")}
+        ${renderSummaryCardItem("kaspersky", "Kaspersky", "Endpoint Security - proteksi, update database & compliance.", makeStats([["Total Device", totalPc], ["Manage", kavOk], ["Not Manage", kavNok]], renderPercentStat(kavPercent, isLoading)), null, "blue", kavInfoHtml)}
+        ${renderSummaryCardItem("kaspersky", "Versi Kaspersky", "Memastikan Versi Kaspersky selalu up to date.", makeStats([["Total Device", totalPc], ["Version OK", verOk], ["Version NOK", verNok]], renderPercentStat(kavPercent, isLoading)), null, "blue", kavInfoHtml)}
       </section>
     `;
   }
