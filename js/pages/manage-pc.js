@@ -18,12 +18,13 @@
  */
 
 import { renderShell } from "../shell.js";
-import { loadManagePcKasperskyTable } from "../api.js";
 import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { icon } from "../icons.js";
 import {
+  getManagePcKasperskyCache,
   getManagePcSummaryCache,
+  loadManagePcKasperskyCached,
   loadManagePcSummaryCached
 } from "../manage-pc-cache.js";
 
@@ -157,6 +158,7 @@ const SCOPE_META = {
    dan hanya diwarnai di frontend. */
 const KASPERSKY_TABLE_PAGE_SIZE = 15;
 const KASPERSKY_TABLE_COLUMNS = [
+  { key: "no", label: "No", sortable: false },
   { key: "namaKomputer", label: "Nama Komputer" },
   { key: "alamatIp", label: "Alamat IP" },
   { key: "workgroup", label: "Workgroup" },
@@ -426,8 +428,18 @@ function renderKasperskyStatus(value) {
 }
 
 function renderKasperskyHeaderCell(column) {
+  if (column.sortable === false) {
+    const className = column.key === "no" ? ' class="mpc-table__number"' : "";
+    return `
+      <th scope="col" data-kav-col="${column.key}"${className}>
+        <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
+      </th>
+    `;
+  }
+
+  const className = column.key === "status" ? ' class="mpc-kav-th--center"' : "";
   return `
-    <th scope="col" data-kav-col="${column.key}" aria-sort="none" data-kav-sort-header="${column.key}">
+    <th scope="col" data-kav-col="${column.key}"${className} aria-sort="none" data-kav-sort-header="${column.key}">
       <button type="button" class="mpc-table__th-sort" data-kav-sort-key="${column.key}"
         aria-label="Urutkan berdasarkan ${escapeHtml(column.label)}">
         <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
@@ -456,13 +468,14 @@ function renderKasperskySkeletonRows() {
   return rows.join("");
 }
 
-function renderKasperskyRows(items) {
+function renderKasperskyRows(items, startIndex = 0) {
   if (items.length === 0) {
     return `<tr><td colspan="${KASPERSKY_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
   }
 
-  return items.map((item) => `
+  return items.map((item, index) => `
     <tr class="mpc-table__row">
+      <td class="mpc-table__number" data-kav-col="no">${startIndex + index + 1}</td>
       <td data-kav-col="namaKomputer" class="mpc-table__device">${escapeHtml(item.namaKomputer || "—")}</td>
       <td data-kav-col="alamatIp">${escapeHtml(item.alamatIp || "—")}</td>
       <td data-kav-col="workgroup">${escapeHtml(item.workgroup || "—")}</td>
@@ -641,7 +654,7 @@ function bindKasperskyTable(container, session) {
     const startIndex = (page - 1) * KASPERSKY_TABLE_PAGE_SIZE;
 
     rowsElement.innerHTML = renderKasperskyRows(
-      filtered.slice(startIndex, startIndex + KASPERSKY_TABLE_PAGE_SIZE));
+      filtered.slice(startIndex, startIndex + KASPERSKY_TABLE_PAGE_SIZE), startIndex);
     if (headElement) headElement.innerHTML = renderKasperskyTableHead();
     updatePagination(total);
     updateSortHeaders();
@@ -685,9 +698,16 @@ function bindKasperskyTable(container, session) {
     renderPage();
   });
 
+  /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
+  const cached = getManagePcKasperskyCache(session);
+  if (cached) {
+    items = Array.isArray(cached.items) ? cached.items : [];
+    loaded = true;
+  }
+
   renderPage();
 
-  loadManagePcKasperskyTable("office", { sessionToken: session.sessionToken })
+  loadManagePcKasperskyCached(session)
     .then((result) => {
       if (!card.isConnected) return;
       if (!result.success) throw new Error(result.message || "Data Kaspersky gagal dimuat.");

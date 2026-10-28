@@ -7,7 +7,11 @@
  * di background. Cache dibuang otomatis saat user (role|NIK) berganti.
  */
 
-import { loadManagePcList, loadManagePcSummary } from "./api.js";
+import {
+  loadManagePcKasperskyTable,
+  loadManagePcList,
+  loadManagePcSummary
+} from "./api.js";
 import { getSession } from "./auth.js";
 
 /* Backend membatasi limit list maksimal 50 (MANAGE_PC_MAX_PAGE_SIZE). */
@@ -16,9 +20,19 @@ const MANAGE_PC_FETCH_LIMIT = 50;
 const SUMMARY_CACHE = new Map();
 const SUMMARY_REQUESTS = new Map();
 const DATASET_CACHE = new Map();
+/* Tabel endpoint Kaspersky (blok B203:K400). Cache DISAMAKAN dengan tabel
+   Manage PC/CCTV: satu kali load per sesi, dipakai ulang selama user
+   (role|NIK) belum berganti. Tidak ada TTL terpisah - batasnya adalah
+   sesi client itu sendiri (logout / idle 5,5 jam / ganti user). */
+const KAV_TABLE_CACHE = new Map();
+const KAV_TABLE_REQUESTS = new Map();
 
 function ownerKey(session) {
   return `${session?.role || ""}|${session?.nik || ""}`;
+}
+
+function kavTableKey(session) {
+  return `${ownerKey(session)}|kavtable|office`;
 }
 
 function summaryKey(scope, session) {
@@ -216,4 +230,44 @@ async function hydrateRemaining(scope, session, dataset) {
     if (dataset.total == null) dataset.hydrated = true;
     notify(dataset);
   }
+}
+
+/** Data tabel Kaspersky yang sudah di-cache (sinkron), atau null. */
+export function getManagePcKasperskyCache(session) {
+  return KAV_TABLE_CACHE.get(kavTableKey(session)) || null;
+}
+
+/**
+ * Ambil tabel Kaspersky dengan cache-first. Dataset hanya di-request SEKALI
+ * per sesi (owner role|NIK) lalu dipakai ulang saat pindah menu/kembali;
+ * request yang sedang berjalan dideduplikasi.
+ */
+export async function loadManagePcKasperskyCached(session, options = {}) {
+  const key = kavTableKey(session);
+
+  if (!options.forceRefresh && KAV_TABLE_CACHE.has(key)) {
+    return { success: true, data: KAV_TABLE_CACHE.get(key) };
+  }
+
+  if (!options.forceRefresh && KAV_TABLE_REQUESTS.has(key)) {
+    return KAV_TABLE_REQUESTS.get(key);
+  }
+
+  const request = loadManagePcKasperskyTable("office", {
+    sessionToken: session.sessionToken
+  })
+    .then((result) => {
+      KAV_TABLE_REQUESTS.delete(key);
+      if (result && result.success && result.data) {
+        KAV_TABLE_CACHE.set(key, result.data);
+      }
+      return result;
+    })
+    .catch((error) => {
+      KAV_TABLE_REQUESTS.delete(key);
+      throw error;
+    });
+
+  KAV_TABLE_REQUESTS.set(key, request);
+  return request;
 }
