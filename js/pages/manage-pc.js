@@ -171,6 +171,22 @@ const KASPERSKY_TABLE_COLUMNS = [
   { key: "status", label: "STATUS" }
 ].map((column) => ({ ...column, sortable: column.sortable !== false }));
 
+/* Detail pendukung Kaspersky (MASTER REPORT OFFICE blok B403:L415).
+   Kolom B..L, termasuk Source di kolom L. */
+const KASPERSKY_DETAIL_COLUMNS = [
+  { key: "namaKomputer", label: "Nama Komputer" },
+  { key: "alamatIp", label: "Alamat IP" },
+  { key: "workgroup", label: "Workgroup" },
+  { key: "versionKes", label: "Version KES" },
+  { key: "agentVersion", label: "Agent version" },
+  { key: "model", label: "Model" },
+  { key: "sistemOperasi", label: "Sistem Operasi" },
+  { key: "lastConnected", label: "Last connected" },
+  { key: "dnsName", label: "DNS name" },
+  { key: "status", label: "STATUS" },
+  { key: "source", label: "Source" }
+];
+
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -437,6 +453,55 @@ function renderKasperskyLastConnected(value) {
   return escapeHtml(text);
 }
 
+/** Source (kolom L): Kaspersky merah, KACE oranye, ITAM hitam. */
+function kasperskySourceTone(value) {
+  const text = String(value == null ? "" : value).trim().toUpperCase();
+  if (text.indexOf("KASPERSKY") !== -1) return "kaspersky";
+  if (text.indexOf("KACE") !== -1) return "kace";
+  if (text.indexOf("ITAM") !== -1) return "itam";
+  return "other";
+}
+
+function renderKasperskySource(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!text) return "—";
+  return `<span class="mpc-kav-source mpc-kav-source--${kasperskySourceTone(text)}">${escapeHtml(text)}</span>`;
+}
+
+function isKasperskyDetailHeader(row) {
+  const first = String(row && row[0] != null ? row[0] : "").trim().toUpperCase();
+  return first === "NAMA KOMPUTER" || first === "COMPUTER NAME";
+}
+
+function renderKasperskyDetailCell(column, value) {
+  const text = String(value == null ? "" : value).trim();
+  if (column.key === "status") {
+    return `<td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(text)}</td>`;
+  }
+  if (column.key === "source") {
+    return `<td data-kav-col="source">${renderKasperskySource(text)}</td>`;
+  }
+  if (column.key === "model" || column.key === "sistemOperasi" || column.key === "lastConnected") {
+    const content = column.key === "lastConnected"
+      ? renderKasperskyLastConnected(text)
+      : escapeHtml(text || "—");
+    return `<td data-kav-col="${column.key}"><span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${content}</span></span></td>`;
+  }
+  const className = column.key === "namaKomputer" ? ' class="mpc-table__device"' : "";
+  return `<td data-kav-col="${column.key}"${className}>${escapeHtml(text || "—")}</td>`;
+}
+
+function renderKasperskyDetailRows(rows) {
+  const list = (Array.isArray(rows) ? rows : [])
+    .filter((row) => Array.isArray(row) && row.some((cell) => String(cell == null ? "" : cell).trim()));
+  if (list.length && isKasperskyDetailHeader(list[0])) list.shift();
+  return list.map((row) => `
+    <tr class="mpc-table__row">
+      ${KASPERSKY_DETAIL_COLUMNS.map((column, index) => renderKasperskyDetailCell(column, row[index])).join("")}
+    </tr>
+  `).join("");
+}
+
 function renderKasperskyHeaderCell(column) {
   if (column.sortable === false) {
     const className = column.key === "no" ? ' class="mpc-table__number"' : "";
@@ -491,7 +556,9 @@ function renderKasperskyRows(items, startIndex = 0) {
       <td data-kav-col="workgroup">${escapeHtml(item.workgroup || "—")}</td>
       <td data-kav-col="versionKes">${escapeHtml(item.versionKes || "—")}</td>
       <td data-kav-col="agentVersion">${escapeHtml(item.agentVersion || "—")}</td>
-      <td data-kav-col="model">${escapeHtml(item.model || "—")}</td>
+      <td data-kav-col="model">
+        <span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${escapeHtml(item.model || "—")}</span></span>
+      </td>
       <td data-kav-col="sistemOperasi">
         <span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${escapeHtml(item.sistemOperasi || "—")}</span></span>
       </td>
@@ -505,14 +572,14 @@ function renderKasperskyRows(items, startIndex = 0) {
 }
 
 /**
- * Kolom Sistem Operasi & Last connected dipotong satu baris. Saat hover,
- * teks bergeser SATU KALI ke kiri (tanpa bolak-balik) bila melebihi lebar
- * kolom. Kecepatan ~100px/detik dan durasi menyesuaikan panjang teks.
+ * Kolom Model, Sistem Operasi & Last connected dipotong satu baris. Saat
+ * hover, teks bergeser SATU KALI ke kiri (tanpa bolak-balik) bila melebihi
+ * lebar kolom. Kecepatan ~100px/detik dan durasi menyesuaikan panjang teks.
  */
-function bindKasperskyMarquee(rowsElement) {
-  const MARQUEE_CELL = '[data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]';
+function bindKasperskyMarquee(containerElement) {
+  const MARQUEE_CELL = '[data-kav-col="model"], [data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]';
 
-  rowsElement.addEventListener("mouseover", (event) => {
+  containerElement.addEventListener("mouseover", (event) => {
     const cell = event.target.closest(MARQUEE_CELL);
     if (!cell || cell.contains(event.relatedTarget)) return;
     const clip = cell.querySelector(".mpc-kav-marquee");
@@ -527,7 +594,7 @@ function bindKasperskyMarquee(rowsElement) {
     text.classList.add("is-scrolling");
   });
 
-  rowsElement.addEventListener("mouseout", (event) => {
+  containerElement.addEventListener("mouseout", (event) => {
     const cell = event.target.closest(MARQUEE_CELL);
     if (!cell || cell.contains(event.relatedTarget)) return;
     const text = cell.querySelector(".mpc-kav-marquee__text");
@@ -578,6 +645,21 @@ function renderKasperskyTableSection() {
           </label>
         </div>
       </header>
+      <div class="mpc-kav-detail" data-kav-detail hidden>
+        <div class="mpc-kav-detail__head">
+          <span class="mpc-kav-detail__title">Detail Source</span>
+        </div>
+        <div class="mpc-table-wrapper">
+          <table class="mpc-table mpc-kav-table mpc-kav-detail-table" aria-label="Detail Source">
+            <thead>
+              <tr>
+                ${KASPERSKY_DETAIL_COLUMNS.map((column) => `<th scope="col"><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+              </tr>
+            </thead>
+            <tbody data-kav-detail-rows></tbody>
+          </table>
+        </div>
+      </div>
       <div class="mpc-table-wrapper">
         <table class="mpc-table mpc-kav-table">
           <thead data-kav-head>${renderKasperskyTableHead()}</thead>
@@ -601,8 +683,11 @@ function bindKasperskyTable(container, session) {
   const searchInput = card.querySelector("[data-kav-search]");
   const countElement = card.querySelector("[data-kav-count]");
   const paginationElement = card.querySelector("[data-kav-pagination]");
+  const detailElement = card.querySelector("[data-kav-detail]");
+  const detailRowsElement = card.querySelector("[data-kav-detail-rows]");
 
   let items = [];
+  let detailRows = [];
   let loadError = "";
   let loaded = false;
   let page = 1;
@@ -611,6 +696,12 @@ function bindKasperskyTable(container, session) {
   let sortDirection = "asc";
   let totalPages = 1;
   let searchTimer = null;
+
+  function renderDetail() {
+    const html = renderKasperskyDetailRows(detailRows);
+    if (detailRowsElement) detailRowsElement.innerHTML = html;
+    if (detailElement) detailElement.hidden = !html;
+  }
 
   function updateSortHeaders() {
     card.querySelectorAll("[data-kav-sort-key]").forEach((button) => {
@@ -745,13 +836,15 @@ function bindKasperskyTable(container, session) {
     renderPage();
   });
 
-  bindKasperskyMarquee(rowsElement);
+  bindKasperskyMarquee(card);
 
   /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
   const cached = getManagePcKasperskyCache(session);
   if (cached) {
     items = Array.isArray(cached.items) ? cached.items : [];
+    detailRows = Array.isArray(cached.detail?.rows) ? cached.detail.rows : [];
     loaded = true;
+    renderDetail();
   }
 
   renderPage();
@@ -762,14 +855,18 @@ function bindKasperskyTable(container, session) {
       if (!result.success) throw new Error(result.message || "Data Kaspersky gagal dimuat.");
       const data = result.data || {};
       items = Array.isArray(data.items) ? data.items : [];
+      detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
       loaded = true;
       loadError = "";
+      renderDetail();
       renderPage();
     })
     .catch((error) => {
       if (!card.isConnected) return;
       loaded = true;
       loadError = error.message || "Data Kaspersky gagal dimuat.";
+      detailRows = [];
+      renderDetail();
       renderPage();
     });
 }

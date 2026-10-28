@@ -996,6 +996,73 @@
   font-weight: 650;
 }
 
+/* Detail Source B403:L415 di atas tabel utama. */
+.mpc-kav-detail {
+  border-bottom: 1px solid #e6edf5;
+  background: #fbfcfe;
+}
+
+.mpc-kav-detail[hidden] {
+  display: none;
+}
+
+.mpc-kav-detail .mpc-table-wrapper {
+  border-top: 0;
+  border-bottom: 0;
+}
+
+.mpc-kav-detail:not([hidden]) + .mpc-table-wrapper {
+  border-top: 0;
+}
+
+.mpc-kav-detail__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 16px;
+  border-bottom: 1px solid #e6edf5;
+}
+
+.mpc-kav-detail__title {
+  color: #172b4d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Source (kolom L): Kaspersky merah, KACE oranye, ITAM hitam. */
+.mpc-kav-source {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #fff;
+}
+
+.mpc-kav-source--kaspersky {
+  background: #dc2626;
+}
+
+.mpc-kav-source--kace {
+  background: #ea580c;
+}
+
+.mpc-kav-source--itam {
+  background: #111827;
+  color: #fff;
+}
+
+.mpc-kav-source--other {
+  background: #e2e8f0;
+  color: #526277;
+}
+
 .mpc-kav-status {
   display: inline-flex;
   align-items: center;
