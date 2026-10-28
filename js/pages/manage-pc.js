@@ -18,6 +18,7 @@
  */
 
 import { renderShell } from "../shell.js";
+import { loadManagePcKasperskyTable } from "../api.js";
 import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { icon } from "../icons.js";
@@ -150,6 +151,23 @@ const SCOPE_META = {
   office: { key: "office", label: "Office", icon: "office" },
   store: { key: "store", label: "Store", icon: "store" }
 };
+
+/* Tabel endpoint Kaspersky (MASTER REPORT OFFICE blok B203:K400).
+   Urutan kolom mengikuti sheet; STATUS sudah berisi keterangan dari kolom K
+   dan hanya diwarnai di frontend. */
+const KASPERSKY_TABLE_PAGE_SIZE = 15;
+const KASPERSKY_TABLE_COLUMNS = [
+  { key: "namaKomputer", label: "Nama Komputer" },
+  { key: "alamatIp", label: "Alamat IP" },
+  { key: "workgroup", label: "Workgroup" },
+  { key: "versionKes", label: "Version KES" },
+  { key: "agentVersion", label: "Agent version" },
+  { key: "model", label: "Model" },
+  { key: "sistemOperasi", label: "Sistem Operasi" },
+  { key: "lastConnected", label: "Last connected" },
+  { key: "dnsName", label: "DNS name" },
+  { key: "status", label: "STATUS" }
+].map((column) => ({ ...column, sortable: true }));
 
 function escapeHtml(value) {
   return String(value)
@@ -383,9 +401,319 @@ function renderSummary(data, moduleKey, isLoading = false) {
 }
 
 
+/* ==============================================================
+   TABEL ENDPOINT KASPERSKY
+   ============================================================== */
+
+/**
+ * Warna status berdasarkan keterangan di kolom K:
+ *   normal = hijau, NIK dobel = kuning,
+ *   user dobel / belum update = merah, tidak ditemukan = abu.
+ */
+function kasperskyStatusTone(value) {
+  const text = String(value == null ? "" : value).trim().toUpperCase();
+  if (!text || /TIDAK\s*(DI\s*)?TEMUKAN/.test(text) || /NOT\s*FOUND/.test(text)) return "empty";
+  if (/NIK/.test(text) && /(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(text)) return "warn";
+  if (/(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE|BELUM\s*UPDATE)/.test(text) && /USER/.test(text)) return "danger";
+  if (/NORMAL|AMAN|VALID|^OK$/.test(text)) return "ok";
+  return "other";
+}
+
+function renderKasperskyStatus(value) {
+  const text = String(value == null ? "" : value).trim();
+  const label = text || "Tidak ditemukan";
+  return `<span class="mpc-kav-status mpc-kav-status--${kasperskyStatusTone(value)}">${escapeHtml(label)}</span>`;
+}
+
+function renderKasperskyHeaderCell(column) {
+  return `
+    <th scope="col" data-kav-col="${column.key}" aria-sort="none" data-kav-sort-header="${column.key}">
+      <button type="button" class="mpc-table__th-sort" data-kav-sort-key="${column.key}"
+        aria-label="Urutkan berdasarkan ${escapeHtml(column.label)}">
+        <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
+        <span class="mpc-table__sort-arrows" aria-hidden="true">
+          <span class="mpc-table__sort-arrow" data-kav-sort-direction="asc">${icon("arrow-up", { size: 10 })}</span>
+          <span class="mpc-table__sort-arrow" data-kav-sort-direction="desc">${icon("arrow-down", { size: 10 })}</span>
+        </span>
+      </button>
+    </th>
+  `;
+}
+
+function renderKasperskyTableHead() {
+  return `<tr>${KASPERSKY_TABLE_COLUMNS.map(renderKasperskyHeaderCell).join("")}</tr>`;
+}
+
+function renderKasperskySkeletonRows() {
+  const rows = [];
+  for (let row = 0; row < 6; row++) {
+    const cells = KASPERSKY_TABLE_COLUMNS.map((_, col) => {
+      const width = col === 0 ? 85 : 62 + ((row + col) % 3) * 12;
+      return `<td><span class="skeleton mpc-table__skeleton-bar" style="width:${width}%"></span></td>`;
+    });
+    rows.push(`<tr class="mpc-table__skeleton-row">${cells.join("")}</tr>`);
+  }
+  return rows.join("");
+}
+
+function renderKasperskyRows(items) {
+  if (items.length === 0) {
+    return `<tr><td colspan="${KASPERSKY_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
+  }
+
+  return items.map((item) => `
+    <tr class="mpc-table__row">
+      <td data-kav-col="namaKomputer" class="mpc-table__device">${escapeHtml(item.namaKomputer || "—")}</td>
+      <td data-kav-col="alamatIp">${escapeHtml(item.alamatIp || "—")}</td>
+      <td data-kav-col="workgroup">${escapeHtml(item.workgroup || "—")}</td>
+      <td data-kav-col="versionKes">${escapeHtml(item.versionKes || "—")}</td>
+      <td data-kav-col="agentVersion">${escapeHtml(item.agentVersion || "—")}</td>
+      <td data-kav-col="model">${escapeHtml(item.model || "—")}</td>
+      <td data-kav-col="sistemOperasi">${escapeHtml(item.sistemOperasi || "—")}</td>
+      <td data-kav-col="lastConnected">${escapeHtml(item.lastConnected || "—")}</td>
+      <td data-kav-col="dnsName">${escapeHtml(item.dnsName || "—")}</td>
+      <td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(item.status)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderKasperskyPageNumbers(page, totalPages) {
+  const pages = totalPages <= 7
+    ? Array.from({ length: totalPages }, (_, index) => index + 1)
+    : Array.from(new Set([1, totalPages, page - 1, page, page + 1]))
+      .filter((number) => number >= 1 && number <= totalPages)
+      .sort((a, b) => a - b);
+  const entries = [];
+  let previousPage = 0;
+
+  pages.forEach((pageNumber) => {
+    if (pageNumber - previousPage > 1) entries.push("ellipsis");
+    entries.push(pageNumber);
+    previousPage = pageNumber;
+  });
+
+  return entries.map((entry) => entry === "ellipsis"
+    ? '<span class="mpc-table__page-ellipsis" aria-hidden="true">&hellip;</span>'
+    : `<button type="button" class="mpc-table__page-button${entry === page ? " is-active" : ""}"
+        data-kav-page="${entry}" aria-label="Halaman ${entry}"${entry === page ? ' aria-current="page"' : ""}>${entry}</button>`
+  ).join("");
+}
+
+function renderKasperskyTableSection() {
+  return `
+    <section class="mpc-table-card mpc-kav-card" aria-labelledby="mpcKavTitle">
+      <header class="mpc-table-card__header">
+        <div class="mpc-table-card__title-group">
+          <span class="mpc-table-card__title-icon" aria-hidden="true">${icon("kaspersky", { size: 18 })}</span>
+          <div>
+            <h2 id="mpcKavTitle">Kaspersky · Office</h2>
+            <p>Status endpoint Kaspersky dari MASTER REPORT OFFICE.</p>
+          </div>
+        </div>
+        <div class="mpc-table-card__controls">
+          <label class="mpc-table-search">
+            ${icon("search", { size: 17 })}
+            <span class="visually-hidden">Cari perangkat</span>
+            <input type="search" data-kav-search placeholder="Cari perangkat..." autocomplete="off">
+          </label>
+        </div>
+      </header>
+      <div class="mpc-table-wrapper">
+        <table class="mpc-table mpc-kav-table">
+          <thead data-kav-head>${renderKasperskyTableHead()}</thead>
+          <tbody data-kav-rows>${renderKasperskySkeletonRows()}</tbody>
+        </table>
+      </div>
+      <footer class="mpc-table__footer">
+        <div class="mpc-table__count" data-kav-count aria-live="polite">Memuat data Kaspersky...</div>
+        <div class="mpc-table__footer-right" data-kav-pagination></div>
+      </footer>
+    </section>
+  `;
+}
+
+function bindKasperskyTable(container, session) {
+  const card = container.querySelector(".mpc-kav-card");
+  if (!card) return;
+
+  const headElement = card.querySelector("[data-kav-head]");
+  const rowsElement = card.querySelector("[data-kav-rows]");
+  const searchInput = card.querySelector("[data-kav-search]");
+  const countElement = card.querySelector("[data-kav-count]");
+  const paginationElement = card.querySelector("[data-kav-pagination]");
+
+  let items = [];
+  let loadError = "";
+  let loaded = false;
+  let page = 1;
+  let search = "";
+  let sortBy = "";
+  let sortDirection = "asc";
+  let totalPages = 1;
+  let searchTimer = null;
+
+  function updateSortHeaders() {
+    card.querySelectorAll("[data-kav-sort-key]").forEach((button) => {
+      const key = button.getAttribute("data-kav-sort-key");
+      const header = button.closest("[data-kav-sort-header]");
+      const isSorted = key === sortBy;
+      const activeDirection = isSorted ? sortDirection : "";
+      const label = button.querySelector(".mpc-table__th-label").textContent;
+      header.setAttribute(
+        "aria-sort",
+        activeDirection === "asc" ? "ascending" : activeDirection === "desc" ? "descending" : "none"
+      );
+      header.classList.toggle("is-active", isSorted);
+      button.setAttribute(
+        "aria-label",
+        isSorted
+          ? `Urutkan berdasarkan ${label}, saat ini ${activeDirection === "asc" ? "naik" : "turun"}`
+          : `Urutkan berdasarkan ${label}`
+      );
+      button.querySelectorAll("[data-kav-sort-direction]").forEach((arrow) => {
+        arrow.classList.toggle("is-active", arrow.getAttribute("data-kav-sort-direction") === activeDirection);
+      });
+    });
+  }
+
+  function compareItems(left, right) {
+    if (sortBy === "lastConnected") {
+      const aTime = Date.parse(left[sortBy]);
+      const bTime = Date.parse(right[sortBy]);
+      if (!Number.isNaN(aTime) && !Number.isNaN(bTime)) return aTime - bTime;
+    }
+    const a = String(left[sortBy] == null ? "" : left[sortBy]).toLowerCase();
+    const b = String(right[sortBy] == null ? "" : right[sortBy]).toLowerCase();
+    return a < b ? -1 : a > b ? 1 : 0;
+  }
+
+  function filteredItems() {
+    const query = search.trim().toUpperCase();
+    let result = items.slice();
+    if (query) {
+      result = result.filter((item) =>
+        KASPERSKY_TABLE_COLUMNS.some((column) =>
+          String(item[column.key] == null ? "" : item[column.key]).toUpperCase().indexOf(query) !== -1));
+    }
+    if (sortBy) {
+      result.sort((left, right) =>
+        sortDirection === "desc" ? -compareItems(left, right) : compareItems(left, right));
+    }
+    return result;
+  }
+
+  function updatePagination(total) {
+    totalPages = Math.max(1, Math.ceil(total / KASPERSKY_TABLE_PAGE_SIZE));
+    page = Math.max(1, Math.min(totalPages, page));
+    const first = total ? ((page - 1) * KASPERSKY_TABLE_PAGE_SIZE) + 1 : 0;
+    const last = Math.min(page * KASPERSKY_TABLE_PAGE_SIZE, total);
+    countElement.textContent = `Menampilkan ${first}–${last} dari ${total} perangkat`;
+    paginationElement.innerHTML = totalPages > 1 ? `
+      <div class="mpc-table__page-actions" role="navigation" aria-label="Navigasi halaman Kaspersky">
+        <button type="button" class="mpc-table__page-button" data-kav-page="prev"
+          aria-label="Halaman sebelumnya" ${page <= 1 ? "disabled" : ""}>&lsaquo;</button>
+        ${renderKasperskyPageNumbers(page, totalPages)}
+        <button type="button" class="mpc-table__page-button" data-kav-page="next"
+          aria-label="Halaman berikutnya" ${page >= totalPages ? "disabled" : ""}>&rsaquo;</button>
+      </div>
+    ` : "";
+  }
+
+  function renderPage() {
+    if (!loaded) {
+      rowsElement.innerHTML = renderKasperskySkeletonRows();
+      countElement.textContent = "Memuat data Kaspersky...";
+      paginationElement.innerHTML = "";
+      return;
+    }
+
+    if (loadError) {
+      rowsElement.innerHTML = `<tr><td colspan="${KASPERSKY_TABLE_COLUMNS.length}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(loadError)}</td></tr>`;
+      countElement.textContent = "";
+      paginationElement.innerHTML = "";
+      return;
+    }
+
+    const filtered = filteredItems();
+    const total = filtered.length;
+    totalPages = Math.max(1, Math.ceil(total / KASPERSKY_TABLE_PAGE_SIZE));
+    page = Math.max(1, Math.min(totalPages, page));
+    const startIndex = (page - 1) * KASPERSKY_TABLE_PAGE_SIZE;
+
+    rowsElement.innerHTML = renderKasperskyRows(
+      filtered.slice(startIndex, startIndex + KASPERSKY_TABLE_PAGE_SIZE));
+    if (headElement) headElement.innerHTML = renderKasperskyTableHead();
+    updatePagination(total);
+    updateSortHeaders();
+  }
+
+  searchInput.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+      search = searchInput.value.trim();
+      page = 1;
+      renderPage();
+    }, 250);
+  });
+
+  headElement.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-kav-sort-key]");
+    if (!button) return;
+    const key = button.getAttribute("data-kav-sort-key");
+    if (sortBy !== key) {
+      sortBy = key;
+      sortDirection = "asc";
+    } else if (sortDirection === "asc") {
+      sortDirection = "desc";
+    } else if (sortDirection === "desc") {
+      sortBy = "";
+      sortDirection = "asc";
+    } else {
+      sortDirection = "asc";
+    }
+    page = 1;
+    renderPage();
+  });
+
+  paginationElement.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-kav-page]");
+    if (!button || button.disabled) return;
+    const pageValue = button.getAttribute("data-kav-page");
+    if (pageValue === "prev") page -= 1;
+    else if (pageValue === "next") page += 1;
+    else page = Number(pageValue);
+    renderPage();
+  });
+
+  renderPage();
+
+  loadManagePcKasperskyTable("office", { sessionToken: session.sessionToken })
+    .then((result) => {
+      if (!card.isConnected) return;
+      if (!result.success) throw new Error(result.message || "Data Kaspersky gagal dimuat.");
+      const data = result.data || {};
+      items = Array.isArray(data.items) ? data.items : [];
+      loaded = true;
+      loadError = "";
+      renderPage();
+    })
+    .catch((error) => {
+      if (!card.isConnected) return;
+      loaded = true;
+      loadError = error.message || "Data Kaspersky gagal dimuat.";
+      renderPage();
+    });
+}
+
 /* Panel konten utama per (modul + scope). Saat backend modul siap,
    bagian inilah yang diganti dengan tabel/detail yang sesungguhnya. */
 function renderScopePanel(module, activeScope) {
+  /* Submenu Kaspersky Office: tabel endpoint menggantikan panel
+     "Dalam Pengembangan" (data blok B203:K400 sheet MASTER REPORT OFFICE). */
+  if (module.key === "manage-pc-kaspersky" && activeScope === "office") {
+    return renderKasperskyTableSection();
+  }
+
   const scopeMeta = SCOPE_META[activeScope];
   const scopeDescription = module.scopes[activeScope] || "";
 
@@ -491,6 +819,10 @@ export function renderManagePcPage(container, routeInfo) {
     pageTitle: "Manage PC",
     contentHtml
   });
+
+  if (module.key === "manage-pc-kaspersky" && activeScope === "office") {
+    bindKasperskyTable(container, session);
+  }
 
   if (activeScope !== "office" || cachedSummary) return;
 

@@ -257,3 +257,14 @@ export async function loadManagePcList(module, scope = "office", options = {}) {
     view: options.view ?? "inventory"
   }, options);
 }
+
+/**
+ * Tabel endpoint Kaspersky dari blok B203:K400 sheet MASTER REPORT OFFICE.
+ * Backend juga mengirim blok detail B403:L415 (dipakai menyusul di frontend).
+ */
+export async function loadManagePcKasperskyTable(scope = "office", options = {}) {
+  return apiRequest("getManagePcKasperskyTable", {
+    scope,
+    refresh: options.refresh ? true : undefined
+  }, options);
+}
