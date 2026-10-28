@@ -999,6 +999,32 @@
   padding-right: 5px;
 }
 
+/* Kartu "Data Kaspersky Bermasalah" punya ruang lebih: STATUS tetap
+   satu baris dan Sistem Operasi tidak dipotong. */
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="model"],
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="sistemOperasi"],
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="lastConnected"],
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="status"] {
+  width: 1%;
+}
+
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
+  width: auto;
+  max-width: none;
+}
+
+.mpc-kav-table.mpc-kav-problem-table .mpc-table__status {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  overflow: visible;
+}
+
+.mpc-kav-table.mpc-kav-problem-table .mpc-kav-status {
+  max-width: none;
+  white-space: nowrap;
+}
+
 /* Header STATUS dibuat rata tengah, panah sort tetap di tepi kanan
    supaya label tidak bergeser. */
 .mpc-kav-table th.mpc-kav-th--center .mpc-table__th-sort {

@@ -187,11 +187,14 @@ const KASPERSKY_DETAIL_COLUMNS = [
   { key: "source", label: "Source" }
 ].map((column, index) => ({ ...column, sourceIndex: index }));
 
-/* Tampilan kartu "Data Kaspersky Bermasalah": Version KES & Agent version
-   tidak ditampilkan supaya tabel tidak perlu scrollbar horizontal. */
-const KASPERSKY_PROBLEM_COLUMNS = KASPERSKY_DETAIL_COLUMNS.filter(
-  (column) => column.key !== "versionKes" && column.key !== "agentVersion"
-);
+/* Tampilan kartu "Data Kaspersky Bermasalah": No urut + kolom B..L tanpa
+   Version KES & Agent version supaya tabel tidak perlu scrollbar horizontal. */
+const KASPERSKY_PROBLEM_COLUMNS = [
+  { key: "no", label: "No" },
+  ...KASPERSKY_DETAIL_COLUMNS.filter(
+    (column) => column.key !== "versionKes" && column.key !== "agentVersion"
+  )
+];
 
 function escapeHtml(value) {
   return String(value)
@@ -501,9 +504,14 @@ function renderKasperskyDetailRows(rows) {
   const list = (Array.isArray(rows) ? rows : [])
     .filter((row) => Array.isArray(row) && row.some((cell) => String(cell == null ? "" : cell).trim()));
   if (list.length && isKasperskyDetailHeader(list[0])) list.shift();
-  return list.map((row) => `
+  return list.map((row, rowIndex) => `
     <tr class="mpc-table__row">
-      ${KASPERSKY_PROBLEM_COLUMNS.map((column) => renderKasperskyDetailCell(column, row[column.sourceIndex])).join("")}
+      ${KASPERSKY_PROBLEM_COLUMNS.map((column) => {
+        if (column.key === "no") {
+          return `<td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>`;
+        }
+        return renderKasperskyDetailCell(column, row[column.sourceIndex]);
+      }).join("")}
     </tr>
   `).join("");
 }
@@ -648,7 +656,7 @@ function renderKasperskyProblemSection() {
         <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
           <thead>
             <tr>
-              ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+              ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
             </tr>
           </thead>
           <tbody data-kav-problem-rows></tbody>
