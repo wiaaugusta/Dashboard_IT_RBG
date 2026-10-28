@@ -187,13 +187,12 @@ const KASPERSKY_DETAIL_COLUMNS = [
   { key: "source", label: "Source" }
 ].map((column, index) => ({ ...column, sourceIndex: index }));
 
-/* Tampilan kartu "Data Kaspersky Bermasalah": No urut + kolom B..L tanpa
-   Version KES & Agent version supaya tabel tidak perlu scrollbar horizontal. */
+/* Tampilan kartu "Data Kaspersky Bermasalah": No urut + seluruh kolom
+   B..L. Bila ruang kurang, Sistem Operasi lebih dulu dipotong, lalu
+   Last connected (lihat fitKasperskyProblemTable). */
 const KASPERSKY_PROBLEM_COLUMNS = [
   { key: "no", label: "No" },
-  ...KASPERSKY_DETAIL_COLUMNS.filter(
-    (column) => column.key !== "versionKes" && column.key !== "agentVersion"
-  )
+  ...KASPERSKY_DETAIL_COLUMNS
 ];
 
 function escapeHtml(value) {
@@ -699,6 +698,43 @@ function renderKasperskyTableSection() {
   `;
 }
 
+/* Utamakan lebar alami. Hanya bila tabel meluber: potong Sistem Operasi
+   lebih dulu, lalu Last connected. Dengan begitu tidak ada data yang
+   membungkus ke baris baru. */
+function fitKasperskyProblemTable(problemCard) {
+  if (!problemCard || problemCard.hidden) return;
+  const wrapper = problemCard.querySelector(".mpc-table-wrapper");
+  const table = problemCard.querySelector(".mpc-kav-problem-table");
+  if (!wrapper || !table) return;
+
+  table.classList.remove("is-clip-os", "is-clip-last");
+  table.style.removeProperty("--kav-problem-os-max");
+  table.style.removeProperty("--kav-problem-last-max");
+
+  const overflow = () => wrapper.scrollWidth - wrapper.clientWidth;
+  const widestText = (columnKey) => {
+    const texts = table.querySelectorAll(`td[data-kav-col="${columnKey}"] .mpc-kav-marquee__text`);
+    return Math.max(0, ...Array.from(texts, (text) => text.getBoundingClientRect().width));
+  };
+
+  if (overflow() <= 1) return;
+
+  const osWidth = widestText("sistemOperasi");
+  if (osWidth) {
+    const targetWidth = Math.max(80, Math.ceil(osWidth - overflow()) - 1);
+    table.style.setProperty("--kav-problem-os-max", `${targetWidth}px`);
+    table.classList.add("is-clip-os");
+  }
+  if (overflow() <= 1) return;
+
+  const lastWidth = widestText("lastConnected");
+  if (lastWidth) {
+    const targetWidth = Math.max(80, Math.ceil(lastWidth - overflow()) - 1);
+    table.style.setProperty("--kav-problem-last-max", `${targetWidth}px`);
+    table.classList.add("is-clip-last");
+  }
+}
+
 function bindKasperskyTable(container, session) {
   const card = container.querySelector(".mpc-kav-card");
   if (!card) return;
@@ -726,6 +762,7 @@ function bindKasperskyTable(container, session) {
     const html = renderKasperskyDetailRows(detailRows);
     if (problemRowsElement) problemRowsElement.innerHTML = html;
     if (problemCard) problemCard.hidden = !html;
+    fitKasperskyProblemTable(problemCard);
   }
 
   function updateSortHeaders() {
@@ -863,6 +900,18 @@ function bindKasperskyTable(container, session) {
 
   bindKasperskyMarquee(card);
   if (problemCard) bindKasperskyMarquee(problemCard);
+
+  /* Lebar kartu berubah (mis. sidebar di-hover) -> hitung ulang potongan. */
+  if (problemCard && typeof ResizeObserver !== "undefined") {
+    let lastWidth = 0;
+    const observer = new ResizeObserver((entries) => {
+      const width = Math.round(entries[0].contentRect.width);
+      if (width === lastWidth) return;
+      lastWidth = width;
+      fitKasperskyProblemTable(problemCard);
+    });
+    observer.observe(problemCard.querySelector(".mpc-table-wrapper") || problemCard);
+  }
 
   /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
   const cached = getManagePcKasperskyCache(session);

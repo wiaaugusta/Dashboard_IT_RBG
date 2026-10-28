@@ -999,18 +999,30 @@
   padding-right: 5px;
 }
 
-/* Kartu "Data Kaspersky Bermasalah" punya ruang lebih: STATUS tetap
-   satu baris dan Sistem Operasi tidak dipotong. */
-.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="model"],
-.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="sistemOperasi"],
-.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="lastConnected"],
-.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="status"] {
-  width: 1%;
+/* Kartu "Data Kaspersky Bermasalah": pakai lebar alami dulu, semua data
+   satu baris. Bila meluber, JS menambahkan is-clip-os lalu is-clip-last. */
+.mpc-kav-table.mpc-kav-problem-table {
+  table-layout: auto;
 }
 
-.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
+.mpc-kav-table.mpc-kav-problem-table th,
+.mpc-kav-table.mpc-kav-problem-table th .mpc-table__th-label,
+.mpc-kav-table.mpc-kav-problem-table td {
+  white-space: nowrap;
+}
+
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee,
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="lastConnected"] .mpc-kav-marquee {
   width: auto;
   max-width: none;
+}
+
+.mpc-kav-table.mpc-kav-problem-table.is-clip-os td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-os-max, 96px);
+}
+
+.mpc-kav-table.mpc-kav-problem-table.is-clip-last td[data-kav-col="lastConnected"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-last-max, 96px);
 }
 
 .mpc-kav-table.mpc-kav-problem-table .mpc-table__status {
