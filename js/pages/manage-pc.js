@@ -641,25 +641,24 @@ function renderKasperskyPageNumbers(page, totalPages) {
 
 function renderKasperskyProblemSection() {
   return `
-    <section class="mpc-table-card mpc-kav-problem-card" data-kav-problem-card aria-labelledby="mpcKavProblemTitle" hidden>
-      <header class="mpc-table-card__header">
-        <div class="mpc-table-card__title-group">
-          <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
-          <div>
-            <h2 id="mpcKavProblemTitle">DATA KASPERSKY BERMASALAH</h2>
-            <p>Detail source data Kaspersky yang bermasalah.</p>
-          </div>
+    <section class="mpc-kav-problem-card" data-kav-problem-card>
+      <button type="button" class="mpc-kav-problem-toggle" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent">
+        <span class="mpc-kav-problem-toggle__icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
+        <span class="mpc-kav-problem-toggle__title" id="mpcKavProblemTitle">DATA KASPERSKY BERMASALAH</span>
+        <span class="mpc-kav-problem-toggle__count" data-kav-problem-count></span>
+        <span class="mpc-kav-problem-toggle__chevron" aria-hidden="true">${icon("chevron-down", { size: 16 })}</span>
+      </button>
+      <div id="kavProblemContent" class="mpc-kav-problem-content" hidden>
+        <div class="mpc-table-wrapper">
+          <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
+            <thead>
+              <tr>
+                ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+              </tr>
+            </thead>
+            <tbody data-kav-problem-rows></tbody>
+          </table>
         </div>
-      </header>
-      <div class="mpc-table-wrapper">
-        <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
-          <thead>
-            <tr>
-              ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
-            </tr>
-          </thead>
-          <tbody data-kav-problem-rows></tbody>
-        </table>
       </div>
     </section>
   `;
