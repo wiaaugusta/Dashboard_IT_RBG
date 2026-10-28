@@ -626,6 +626,32 @@ function renderKasperskyPageNumbers(page, totalPages) {
   ).join("");
 }
 
+function renderKasperskyProblemSection() {
+  return `
+    <section class="mpc-table-card mpc-kav-problem-card" data-kav-problem-card aria-labelledby="mpcKavProblemTitle" hidden>
+      <header class="mpc-table-card__header">
+        <div class="mpc-table-card__title-group">
+          <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
+          <div>
+            <h2 id="mpcKavProblemTitle">DATA KASPERSKY BERMASALAH</h2>
+            <p>Detail source data Kaspersky yang bermasalah.</p>
+          </div>
+        </div>
+      </header>
+      <div class="mpc-table-wrapper">
+        <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
+          <thead>
+            <tr>
+              ${KASPERSKY_DETAIL_COLUMNS.map((column) => `<th scope="col"><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+            </tr>
+          </thead>
+          <tbody data-kav-problem-rows></tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
 function renderKasperskyTableSection() {
   return `
     <section class="mpc-table-card mpc-kav-card" aria-labelledby="mpcKavTitle">
@@ -645,21 +671,6 @@ function renderKasperskyTableSection() {
           </label>
         </div>
       </header>
-      <div class="mpc-kav-detail" data-kav-detail hidden>
-        <div class="mpc-kav-detail__head">
-          <span class="mpc-kav-detail__title">Detail Source</span>
-        </div>
-        <div class="mpc-table-wrapper">
-          <table class="mpc-table mpc-kav-table mpc-kav-detail-table" aria-label="Detail Source">
-            <thead>
-              <tr>
-                ${KASPERSKY_DETAIL_COLUMNS.map((column) => `<th scope="col"><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
-              </tr>
-            </thead>
-            <tbody data-kav-detail-rows></tbody>
-          </table>
-        </div>
-      </div>
       <div class="mpc-table-wrapper">
         <table class="mpc-table mpc-kav-table">
           <thead data-kav-head>${renderKasperskyTableHead()}</thead>
@@ -683,8 +694,8 @@ function bindKasperskyTable(container, session) {
   const searchInput = card.querySelector("[data-kav-search]");
   const countElement = card.querySelector("[data-kav-count]");
   const paginationElement = card.querySelector("[data-kav-pagination]");
-  const detailElement = card.querySelector("[data-kav-detail]");
-  const detailRowsElement = card.querySelector("[data-kav-detail-rows]");
+  const problemCard = container.querySelector("[data-kav-problem-card]");
+  const problemRowsElement = container.querySelector("[data-kav-problem-rows]");
 
   let items = [];
   let detailRows = [];
@@ -697,10 +708,10 @@ function bindKasperskyTable(container, session) {
   let totalPages = 1;
   let searchTimer = null;
 
-  function renderDetail() {
+  function renderProblem() {
     const html = renderKasperskyDetailRows(detailRows);
-    if (detailRowsElement) detailRowsElement.innerHTML = html;
-    if (detailElement) detailElement.hidden = !html;
+    if (problemRowsElement) problemRowsElement.innerHTML = html;
+    if (problemCard) problemCard.hidden = !html;
   }
 
   function updateSortHeaders() {
@@ -837,6 +848,7 @@ function bindKasperskyTable(container, session) {
   });
 
   bindKasperskyMarquee(card);
+  if (problemCard) bindKasperskyMarquee(problemCard);
 
   /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
   const cached = getManagePcKasperskyCache(session);
@@ -844,7 +856,7 @@ function bindKasperskyTable(container, session) {
     items = Array.isArray(cached.items) ? cached.items : [];
     detailRows = Array.isArray(cached.detail?.rows) ? cached.detail.rows : [];
     loaded = true;
-    renderDetail();
+    renderProblem();
   }
 
   renderPage();
@@ -858,7 +870,7 @@ function bindKasperskyTable(container, session) {
       detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
       loaded = true;
       loadError = "";
-      renderDetail();
+      renderProblem();
       renderPage();
     })
     .catch((error) => {
@@ -866,7 +878,7 @@ function bindKasperskyTable(container, session) {
       loaded = true;
       loadError = error.message || "Data Kaspersky gagal dimuat.";
       detailRows = [];
-      renderDetail();
+      renderProblem();
       renderPage();
     });
 }
@@ -877,7 +889,7 @@ function renderScopePanel(module, activeScope) {
   /* Submenu Kaspersky Office: tabel endpoint menggantikan panel
      "Dalam Pengembangan" (data blok B203:K400 sheet MASTER REPORT OFFICE). */
   if (module.key === "manage-pc-kaspersky" && activeScope === "office") {
-    return renderKasperskyTableSection();
+    return `${renderKasperskyProblemSection()}${renderKasperskyTableSection()}`;
   }
 
   const scopeMeta = SCOPE_META[activeScope];

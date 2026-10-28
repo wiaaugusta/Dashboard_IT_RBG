@@ -670,6 +670,12 @@
   color: var(--color-surface);
 }
 
+/* Ikon peringatan untuk kartu data bermasalah. */
+.mpc-table-card__title-icon--danger {
+  background: linear-gradient(135deg, #dc2626, #991b1b);
+  color: var(--color-surface);
+}
+
 .mpc-table-card__controls {
   display: flex;
   align-items: center;
@@ -996,38 +1002,9 @@
   font-weight: 650;
 }
 
-/* Detail Source B403:L415 di atas tabel utama. */
-.mpc-kav-detail {
-  border-bottom: 1px solid #e6edf5;
-  background: #fbfcfe;
-}
-
-.mpc-kav-detail[hidden] {
+/* Kartu terpisah untuk data Kaspersky bermasalah (B403:L415). */
+.mpc-kav-problem-card[hidden] {
   display: none;
-}
-
-.mpc-kav-detail .mpc-table-wrapper {
-  border-top: 0;
-  border-bottom: 0;
-}
-
-.mpc-kav-detail:not([hidden]) + .mpc-table-wrapper {
-  border-top: 0;
-}
-
-.mpc-kav-detail__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 11px 16px;
-  border-bottom: 1px solid #e6edf5;
-}
-
-.mpc-kav-detail__title {
-  color: #172b4d;
-  font-size: 12px;
-  font-weight: 700;
 }
 
 /* Source (kolom L): Kaspersky merah, KACE oranye, ITAM hitam. */
