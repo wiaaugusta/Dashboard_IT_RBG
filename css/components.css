@@ -1221,6 +1221,44 @@
   padding-top: 8px;
 }
 
+.mpc-kav-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.mpc-kav-status--ok {
+  background: #eaf7ef;
+  color: #18804a;
+}
+
+.mpc-kav-status--warn {
+  background: #fff6e0;
+  color: #b7791f;
+}
+
+.mpc-kav-status--danger {
+  background: #fff0ef;
+  color: #c63f38;
+}
+
+.mpc-kav-status--empty {
+  background: #f1f4f7;
+  color: #8a97a8;
+}
+
+.mpc-kav-status--other {
+  background: #f1f5f9;
+  color: #526277;
+}
+
 .mpc-table__state {
   height: 100px !important;
   color: #758398;

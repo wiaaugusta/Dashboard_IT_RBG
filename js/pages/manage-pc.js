@@ -641,9 +641,9 @@ function renderKasperskyPageNumbers(page, totalPages) {
 
 function renderKasperskyProblemSection() {
   return `
-    <section class="mpc-kav-problem-card" data-kav-problem-card>
+    <section class="mpc-table-card mpc-kav-problem-card" data-kav-problem-card aria-labelledby="mpcKavProblemTitle" hidden>
       <button type="button" class="mpc-kav-problem-toggle" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent">
-        <span class="mpc-kav-problem-toggle__icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
+        <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
         <span class="mpc-kav-problem-toggle__title" id="mpcKavProblemTitle">DATA KASPERSKY BERMASALAH</span>
         <span class="mpc-kav-problem-toggle__count" data-kav-problem-count></span>
         <span class="mpc-kav-problem-toggle__chevron" aria-hidden="true">${icon("chevron-down", { size: 16 })}</span>
