@@ -91,6 +91,8 @@ const PATHS = {
 
   /* ---------- Status ---------- */
   alert: '<path d="M12 3.5 2.8 19.5h18.4L12 3.5z"/><line x1="12" y1="9.5" x2="12" y2="14"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+  "chevron-down": '<polyline points="6 9 12 15 18 9"/>',
+  "chevron-up": '<polyline points="18 15 12 9 6 15"/>',
   info: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12.01" y2="7.5"/>',
   check: '<polyline points="5 13 10 18 19 7"/>',
   "check-circle": '<circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/>',

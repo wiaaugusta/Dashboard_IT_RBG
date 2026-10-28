@@ -707,9 +707,10 @@ function fitKasperskyProblemTable(problemCard) {
   const table = problemCard.querySelector(".mpc-kav-problem-table");
   if (!wrapper || !table) return;
 
-  table.classList.remove("is-clip-os", "is-clip-last");
+  table.classList.remove("is-clip-os", "is-clip-last", "is-clip-model");
   table.style.removeProperty("--kav-problem-os-max");
   table.style.removeProperty("--kav-problem-last-max");
+  table.style.removeProperty("--kav-problem-model-max");
 
   const overflow = () => wrapper.scrollWidth - wrapper.clientWidth;
   const widestText = (columnKey) => {
@@ -732,6 +733,14 @@ function fitKasperskyProblemTable(problemCard) {
     const targetWidth = Math.max(80, Math.ceil(lastWidth - overflow()) - 1);
     table.style.setProperty("--kav-problem-last-max", `${targetWidth}px`);
     table.classList.add("is-clip-last");
+  }
+  if (overflow() <= 1) return;
+
+  const modelWidth = widestText("model");
+  if (modelWidth) {
+    const targetWidth = Math.max(60, Math.ceil(modelWidth - overflow()) - 1);
+    table.style.setProperty("--kav-problem-model-max", `${targetWidth}px`);
+    table.classList.add("is-clip-model");
   }
 }
 
@@ -761,7 +770,11 @@ function bindKasperskyTable(container, session) {
   function renderProblem() {
     const html = renderKasperskyDetailRows(detailRows);
     if (problemRowsElement) problemRowsElement.innerHTML = html;
-    if (problemCard) problemCard.hidden = !html;
+    if (problemCard) {
+      problemCard.hidden = !html;
+      const countEl = problemCard.querySelector("[data-kav-problem-count]");
+      if (countEl) countEl.textContent = detailRows.length ? `(${detailRows.length})` : "";
+    }
     fitKasperskyProblemTable(problemCard);
   }
 
@@ -901,7 +914,19 @@ function bindKasperskyTable(container, session) {
   bindKasperskyMarquee(card);
   if (problemCard) bindKasperskyMarquee(problemCard);
 
-  /* Lebar kartu berubah (mis. sidebar di-hover) -> hitung ulang potongan. */
+  const toggle = problemCard?.querySelector("[data-kav-problem-toggle]");
+  const content = problemCard?.querySelector("[id='kavProblemContent']");
+  if (toggle && content) {
+    toggle.addEventListener("click", () => {
+      const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", !isExpanded);
+      content.hidden = isExpanded;
+      toggle.querySelector("[aria-hidden=true]").innerHTML = icon(isExpanded ? "chevron-down" : "chevron-up", { size: 16 });
+      if (!isExpanded) fitKasperskyProblemTable(problemCard);
+    });
+  }
+
+  /* Lebar kartu berubah -> hitung ulang potongan. */
   if (problemCard && typeof ResizeObserver !== "undefined") {
     let lastWidth = 0;
     const observer = new ResizeObserver((entries) => {

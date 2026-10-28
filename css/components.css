@@ -1103,53 +1103,77 @@
   font-weight: 650;
 }
 
-/* Kartu terpisah untuk data Kaspersky bermasalah (B403:L415). */
-.mpc-kav-problem-card[hidden] {
-  display: none;
+/* Sumber kolom: lebar tetap agar tidak overflow dan konsistensi */
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="source"],
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="source"] {
+  min-width: 84px;
+  width: 84px;
 }
 
-/* Kedua tabel Kaspersky tidak menampilkan scrollbar horizontal. */
-.mpc-kav-card .mpc-table-wrapper,
-.mpc-kav-problem-card .mpc-table-wrapper {
-  overflow-x: auto;
-  scrollbar-width: none;
+/* Model header bisa mengecil bila ruang terbatas saja */
+.mpc-kav-table.mpc-kav-problem-table.is-clip-model th[data-kav-col="model"] {
+  width: var(--kav-problem-model-max, 60px);
+  min-width: var(--kav-problem-model-max, 60px);
 }
 
-.mpc-kav-card .mpc-table-wrapper::-webkit-scrollbar,
-.mpc-kav-problem-card .mpc-table-wrapper::-webkit-scrollbar {
-  display: none;
+.mpc-kav-table.mpc-kav-problem-table.is-clip-model td[data-kav-col="model"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-model-max, 60px);
 }
 
-/* Source (kolom L): Kaspersky merah, KACE oranye, ITAM hitam. */
-.mpc-kav-source {
-  display: inline-flex;
+/* Toggle collapse untuk kartu Data Kaspersky Bermasalah */
+.mpc-kav-problem-toggle {
+  all: unset;
+  display: flex;
   align-items: center;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .02em;
-  line-height: 1.2;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: #fff;
+  gap: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 6px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
 }
 
-.mpc-kav-source--kaspersky {
-  background: #dc2626;
+.mpc-kav-problem-toggle__icon {
+  margin-right: 4px;
 }
 
-.mpc-kav-source--kace {
-  background: #ea580c;
+.mpc-kav-problem-toggle__title {
+  font-weight: 600;
+  font-size: 15px;
 }
 
-.mpc-kav-source--itam {
-  background: #111827;
-  color: #fff;
+.mpc-kav-problem-toggle__count {
+  margin-left: auto;
+  font-weight: 600;
+  opacity: .7;
 }
 
-.mpc-kav-source--other {
-  background: #e2e8f0;
+.mpc-kav-problem-toggle__chevron {
+  transition: transform .2s;
+}
+
+.mpc-kav-problem-toggle[aria-expanded="true"] .mpc-kav-problem-toggle__chevron {
+  transform: rotate(180deg);
+}
+
+.mpc-kav-problem-toggle[aria-expanded="false"] .mpc-kav-problem-toggle__chevron {
+  transform: rotate(0);
+}
+
+.mpc-kav-problem-content {
+  margin-top: 8px;
+}
+
+/* Mengecilkan padding header kartu */
+.mpc-table-card.mpc-kav-problem-card .mpc-table-card__header {
+  padding: 8px;
+}
+
+.mpc-table-card.mpc-kav-problem-card .mpc-table-card__title-group {
+  gap: 8px;
+}
   color: #526277;
 }
 
