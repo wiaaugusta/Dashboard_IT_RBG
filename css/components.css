@@ -930,16 +930,73 @@
 
 /* ---- Tabel endpoint Kaspersky (status dari kolom K) ----
    normal = hijau, NIK dobel = kuning, user dobel/belum update = merah,
-   tidak ditemukan = abu. Teks status bisa panjang -> pill boleh selebar
-   isinya dan tidak terpotong. */
+   tidak ditemukan = abu. Lebar kolom STATUS dibuat tetap supaya tabel
+   tidak melebar/bergeser saat baris di-hover. */
 .mpc-kav-table .mpc-table__status {
-  width: auto;
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
   white-space: nowrap;
 }
 
-/* Data status rata kiri; header tetap rata tengah. */
+/* Data status rata kiri; header tetap rata tengah. Label status yang
+   panjang dibungkus di dalam lebar kolom tetap, bukan memotong tabel. */
 .mpc-kav-table td.mpc-table__status {
+  padding-left: 8px;
+  padding-right: 8px;
   text-align: left;
+  overflow: hidden;
+}
+
+.mpc-kav-table .mpc-kav-status {
+  max-width: 100%;
+  white-space: normal;
+}
+
+/* Padding horizontal lebih rapat supaya kedua tabel muat tanpa scrollbar. */
+.mpc-kav-table th .mpc-table__th-label,
+.mpc-kav-table th .mpc-table__th-sort {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.mpc-kav-table td {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Kolom No dipersempit. */
+.mpc-kav-table th.mpc-table__number {
+  width: 34px;
+}
+
+.mpc-kav-table .mpc-table__number {
+  width: 34px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.mpc-kav-table th.mpc-table__number .mpc-table__th-label {
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+/* Model & Sistem Operasi dirapatkan. */
+.mpc-kav-table th[data-kav-col="model"] .mpc-table__th-label,
+.mpc-kav-table th[data-kav-col="model"] .mpc-table__th-sort,
+.mpc-kav-table th[data-kav-col="sistemOperasi"] .mpc-table__th-label,
+.mpc-kav-table th[data-kav-col="sistemOperasi"] .mpc-table__th-sort,
+.mpc-kav-table th[data-kav-col="lastConnected"] .mpc-table__th-label,
+.mpc-kav-table th[data-kav-col="lastConnected"] .mpc-table__th-sort {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.mpc-kav-table td[data-kav-col="model"],
+.mpc-kav-table td[data-kav-col="sistemOperasi"],
+.mpc-kav-table td[data-kav-col="lastConnected"] {
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 /* Header STATUS dibuat rata tengah, panah sort tetap di tepi kanan
@@ -970,9 +1027,15 @@
 
 .mpc-kav-marquee {
   display: block;
-  width: 130px;
-  max-width: 130px;
+  width: fit-content;
+  max-width: 115px;
   overflow: hidden;
+}
+
+/* Model & Sistem Operasi dibuat lebih rapat. */
+.mpc-kav-table td[data-kav-col="model"] .mpc-kav-marquee,
+.mpc-kav-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
+  max-width: 100px;
 }
 
 .mpc-kav-marquee__text {
@@ -1004,6 +1067,18 @@
 
 /* Kartu terpisah untuk data Kaspersky bermasalah (B403:L415). */
 .mpc-kav-problem-card[hidden] {
+  display: none;
+}
+
+/* Kedua tabel Kaspersky tidak menampilkan scrollbar horizontal. */
+.mpc-kav-card .mpc-table-wrapper,
+.mpc-kav-problem-card .mpc-table-wrapper {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mpc-kav-card .mpc-table-wrapper::-webkit-scrollbar,
+.mpc-kav-problem-card .mpc-table-wrapper::-webkit-scrollbar {
   display: none;
 }
 

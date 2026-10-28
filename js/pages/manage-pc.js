@@ -185,7 +185,13 @@ const KASPERSKY_DETAIL_COLUMNS = [
   { key: "dnsName", label: "DNS name" },
   { key: "status", label: "STATUS" },
   { key: "source", label: "Source" }
-];
+].map((column, index) => ({ ...column, sourceIndex: index }));
+
+/* Tampilan kartu "Data Kaspersky Bermasalah": Version KES & Agent version
+   tidak ditampilkan supaya tabel tidak perlu scrollbar horizontal. */
+const KASPERSKY_PROBLEM_COLUMNS = KASPERSKY_DETAIL_COLUMNS.filter(
+  (column) => column.key !== "versionKes" && column.key !== "agentVersion"
+);
 
 function escapeHtml(value) {
   return String(value)
@@ -497,7 +503,7 @@ function renderKasperskyDetailRows(rows) {
   if (list.length && isKasperskyDetailHeader(list[0])) list.shift();
   return list.map((row) => `
     <tr class="mpc-table__row">
-      ${KASPERSKY_DETAIL_COLUMNS.map((column, index) => renderKasperskyDetailCell(column, row[index])).join("")}
+      ${KASPERSKY_PROBLEM_COLUMNS.map((column) => renderKasperskyDetailCell(column, row[column.sourceIndex])).join("")}
     </tr>
   `).join("");
 }
@@ -642,7 +648,7 @@ function renderKasperskyProblemSection() {
         <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
           <thead>
             <tr>
-              ${KASPERSKY_DETAIL_COLUMNS.map((column) => `<th scope="col"><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+              ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
             </tr>
           </thead>
           <tbody data-kav-problem-rows></tbody>
