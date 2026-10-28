@@ -943,6 +943,45 @@
   right: 8px;
 }
 
+/* Kolom Sistem Operasi: satu baris & dipotong supaya baris tidak menebal.
+   Saat hover, teks bergeser (marquee) hanya bila melebihi lebar kolom. */
+.mpc-kav-table td[data-kav-col="sistemOperasi"] {
+  white-space: nowrap;
+}
+
+.mpc-kav-os {
+  display: block;
+  width: 130px;
+  max-width: 130px;
+  overflow: hidden;
+}
+
+.mpc-kav-os__text {
+  display: inline-block;
+  white-space: nowrap;
+  transform: translateX(0);
+  will-change: transform;
+}
+
+.mpc-kav-os__text.is-scrolling {
+  animation-name: mpc-kav-os-marquee;
+  animation-duration: 4s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+@keyframes mpc-kav-os-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(var(--kav-os-shift, 0)); }
+}
+
+/* Last connected dengan keterangan (x day) -> merah. */
+.mpc-kav-last-late {
+  color: #c63f38;
+  font-weight: 650;
+}
+
 .mpc-kav-status {
   display: inline-flex;
   align-items: center;

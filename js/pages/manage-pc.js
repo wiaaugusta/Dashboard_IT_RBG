@@ -169,7 +169,7 @@ const KASPERSKY_TABLE_COLUMNS = [
   { key: "lastConnected", label: "Last connected" },
   { key: "dnsName", label: "DNS name" },
   { key: "status", label: "STATUS" }
-].map((column) => ({ ...column, sortable: true }));
+].map((column) => ({ ...column, sortable: column.sortable !== false }));
 
 function escapeHtml(value) {
   return String(value)
@@ -427,6 +427,16 @@ function renderKasperskyStatus(value) {
   return `<span class="mpc-kav-status mpc-kav-status--${kasperskyStatusTone(value)}">${escapeHtml(label)}</span>`;
 }
 
+/** Last connected: keterangan "(x day)" / "x day" ditampilkan merah. */
+function renderKasperskyLastConnected(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!text) return "—";
+  if (/\(\s*\d+\s*days?\s*\)|\b\d+\s*days?\b/i.test(text)) {
+    return `<span class="mpc-kav-last-late">${escapeHtml(text)}</span>`;
+  }
+  return escapeHtml(text);
+}
+
 function renderKasperskyHeaderCell(column) {
   if (column.sortable === false) {
     const className = column.key === "no" ? ' class="mpc-table__number"' : "";
@@ -482,12 +492,45 @@ function renderKasperskyRows(items, startIndex = 0) {
       <td data-kav-col="versionKes">${escapeHtml(item.versionKes || "—")}</td>
       <td data-kav-col="agentVersion">${escapeHtml(item.agentVersion || "—")}</td>
       <td data-kav-col="model">${escapeHtml(item.model || "—")}</td>
-      <td data-kav-col="sistemOperasi">${escapeHtml(item.sistemOperasi || "—")}</td>
-      <td data-kav-col="lastConnected">${escapeHtml(item.lastConnected || "—")}</td>
+      <td data-kav-col="sistemOperasi">
+        <span class="mpc-kav-os"><span class="mpc-kav-os__text">${escapeHtml(item.sistemOperasi || "—")}</span></span>
+      </td>
+      <td data-kav-col="lastConnected">${renderKasperskyLastConnected(item.lastConnected)}</td>
       <td data-kav-col="dnsName">${escapeHtml(item.dnsName || "—")}</td>
       <td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(item.status)}</td>
     </tr>
   `).join("");
+}
+
+/**
+ * Kolom Sistem Operasi dipotong satu baris. Saat hover, teks bergeser
+ * (marquee) hanya jika melebihi lebar kolom. Kecepatan ~100px/detik
+ * (sedikit lebih cepat) dan durasi menyesuaikan panjang teks.
+ */
+function bindKasperskyOsMarquee(rowsElement) {
+  const OS_CELL = '[data-kav-col="sistemOperasi"]';
+
+  rowsElement.addEventListener("mouseover", (event) => {
+    const cell = event.target.closest(OS_CELL);
+    if (!cell || cell.contains(event.relatedTarget)) return;
+    const clip = cell.querySelector(".mpc-kav-os");
+    const text = clip && clip.querySelector(".mpc-kav-os__text");
+    if (!clip || !text) return;
+    const overflow = text.scrollWidth - clip.clientWidth;
+    if (overflow <= 1) return;
+    text.style.setProperty("--kav-os-shift", `-${overflow}px`);
+    text.style.animationDuration = `${Math.max(1, overflow / 100)}s`;
+    text.classList.add("is-scrolling");
+  });
+
+  rowsElement.addEventListener("mouseout", (event) => {
+    const cell = event.target.closest(OS_CELL);
+    if (!cell || cell.contains(event.relatedTarget)) return;
+    const text = cell.querySelector(".mpc-kav-os__text");
+    if (!text) return;
+    text.classList.remove("is-scrolling");
+    text.style.animationDuration = "";
+  });
 }
 
 function renderKasperskyPageNumbers(page, totalPages) {
@@ -697,6 +740,8 @@ function bindKasperskyTable(container, session) {
     else page = Number(pageValue);
     renderPage();
   });
+
+  bindKasperskyOsMarquee(rowsElement);
 
   /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
   const cached = getManagePcKasperskyCache(session);
