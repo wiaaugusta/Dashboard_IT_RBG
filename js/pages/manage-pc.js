@@ -493,9 +493,11 @@ function renderKasperskyRows(items, startIndex = 0) {
       <td data-kav-col="agentVersion">${escapeHtml(item.agentVersion || "—")}</td>
       <td data-kav-col="model">${escapeHtml(item.model || "—")}</td>
       <td data-kav-col="sistemOperasi">
-        <span class="mpc-kav-os"><span class="mpc-kav-os__text">${escapeHtml(item.sistemOperasi || "—")}</span></span>
+        <span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${escapeHtml(item.sistemOperasi || "—")}</span></span>
       </td>
-      <td data-kav-col="lastConnected">${renderKasperskyLastConnected(item.lastConnected)}</td>
+      <td data-kav-col="lastConnected">
+        <span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${renderKasperskyLastConnected(item.lastConnected)}</span></span>
+      </td>
       <td data-kav-col="dnsName">${escapeHtml(item.dnsName || "—")}</td>
       <td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(item.status)}</td>
     </tr>
@@ -503,30 +505,32 @@ function renderKasperskyRows(items, startIndex = 0) {
 }
 
 /**
- * Kolom Sistem Operasi dipotong satu baris. Saat hover, teks bergeser
- * (marquee) hanya jika melebihi lebar kolom. Kecepatan ~100px/detik
- * (sedikit lebih cepat) dan durasi menyesuaikan panjang teks.
+ * Kolom Sistem Operasi & Last connected dipotong satu baris. Saat hover,
+ * teks bergeser SATU KALI ke kiri (tanpa bolak-balik) bila melebihi lebar
+ * kolom. Kecepatan ~100px/detik dan durasi menyesuaikan panjang teks.
  */
-function bindKasperskyOsMarquee(rowsElement) {
-  const OS_CELL = '[data-kav-col="sistemOperasi"]';
+function bindKasperskyMarquee(rowsElement) {
+  const MARQUEE_CELL = '[data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]';
 
   rowsElement.addEventListener("mouseover", (event) => {
-    const cell = event.target.closest(OS_CELL);
+    const cell = event.target.closest(MARQUEE_CELL);
     if (!cell || cell.contains(event.relatedTarget)) return;
-    const clip = cell.querySelector(".mpc-kav-os");
-    const text = clip && clip.querySelector(".mpc-kav-os__text");
+    const clip = cell.querySelector(".mpc-kav-marquee");
+    const text = clip && clip.querySelector(".mpc-kav-marquee__text");
     if (!clip || !text) return;
     const overflow = text.scrollWidth - clip.clientWidth;
     if (overflow <= 1) return;
-    text.style.setProperty("--kav-os-shift", `-${overflow}px`);
+    text.style.setProperty("--kav-shift", `-${overflow}px`);
     text.style.animationDuration = `${Math.max(1, overflow / 100)}s`;
+    text.classList.remove("is-scrolling");
+    void text.offsetWidth;
     text.classList.add("is-scrolling");
   });
 
   rowsElement.addEventListener("mouseout", (event) => {
-    const cell = event.target.closest(OS_CELL);
+    const cell = event.target.closest(MARQUEE_CELL);
     if (!cell || cell.contains(event.relatedTarget)) return;
-    const text = cell.querySelector(".mpc-kav-os__text");
+    const text = cell.querySelector(".mpc-kav-marquee__text");
     if (!text) return;
     text.classList.remove("is-scrolling");
     text.style.animationDuration = "";
@@ -560,10 +564,10 @@ function renderKasperskyTableSection() {
     <section class="mpc-table-card mpc-kav-card" aria-labelledby="mpcKavTitle">
       <header class="mpc-table-card__header">
         <div class="mpc-table-card__title-group">
-          <span class="mpc-table-card__title-icon" aria-hidden="true">${icon("kaspersky", { size: 18 })}</span>
+          <span class="mpc-table-card__title-icon mpc-table-card__title-icon--blue" aria-hidden="true">${icon("kaspersky", { size: 18 })}</span>
           <div>
-            <h2 id="mpcKavTitle">Kaspersky · Office</h2>
-            <p>Status endpoint Kaspersky dari MASTER REPORT OFFICE.</p>
+            <h2 id="mpcKavTitle">DATA KASPERSKY OFFICE</h2>
+            <p>Status data dashboard kaspersky</p>
           </div>
         </div>
         <div class="mpc-table-card__controls">
@@ -741,7 +745,7 @@ function bindKasperskyTable(container, session) {
     renderPage();
   });
 
-  bindKasperskyOsMarquee(rowsElement);
+  bindKasperskyMarquee(rowsElement);
 
   /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
   const cached = getManagePcKasperskyCache(session);

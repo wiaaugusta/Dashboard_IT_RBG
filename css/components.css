@@ -664,6 +664,12 @@
   color: #1d4ed8;
 }
 
+/* Ikon biru seperti chip panel Kaspersky sebelumnya. */
+.mpc-table-card__title-icon--blue {
+  background: linear-gradient(135deg, #2563eb, #1e3a8a);
+  color: var(--color-surface);
+}
+
 .mpc-table-card__controls {
   display: flex;
   align-items: center;
@@ -925,8 +931,13 @@
   white-space: nowrap;
 }
 
-/* Header STATUS dibuat rata tengah mengikuti posisi pill status di sel,
-   panah sort tetap di tepi kanan supaya label tidak bergeser. */
+/* Data status rata kiri; header tetap rata tengah. */
+.mpc-kav-table td.mpc-table__status {
+  text-align: left;
+}
+
+/* Header STATUS dibuat rata tengah, panah sort tetap di tepi kanan
+   supaya label tidak bergeser. */
 .mpc-kav-table th.mpc-kav-th--center .mpc-table__th-sort {
   position: relative;
   justify-content: center;
@@ -943,37 +954,40 @@
   right: 8px;
 }
 
-/* Kolom Sistem Operasi: satu baris & dipotong supaya baris tidak menebal.
-   Saat hover, teks bergeser (marquee) hanya bila melebihi lebar kolom. */
-.mpc-kav-table td[data-kav-col="sistemOperasi"] {
+/* Kolom Sistem Operasi & Last connected: satu baris & dipotong supaya
+   baris tidak menebal. Saat hover, teks bergeser SATU KALI ke kiri
+   (tanpa bolak-balik) bila melebihi lebar kolom. */
+.mpc-kav-table td[data-kav-col="sistemOperasi"],
+.mpc-kav-table td[data-kav-col="lastConnected"] {
   white-space: nowrap;
 }
 
-.mpc-kav-os {
+.mpc-kav-marquee {
   display: block;
   width: 130px;
   max-width: 130px;
   overflow: hidden;
 }
 
-.mpc-kav-os__text {
+.mpc-kav-marquee__text {
   display: inline-block;
   white-space: nowrap;
   transform: translateX(0);
   will-change: transform;
 }
 
-.mpc-kav-os__text.is-scrolling {
-  animation-name: mpc-kav-os-marquee;
+.mpc-kav-marquee__text.is-scrolling {
+  animation-name: mpc-kav-marquee;
   animation-duration: 4s;
   animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  animation-direction: alternate;
+  animation-iteration-count: 1;
+  animation-direction: normal;
+  animation-fill-mode: forwards;
 }
 
-@keyframes mpc-kav-os-marquee {
+@keyframes mpc-kav-marquee {
   from { transform: translateX(0); }
-  to { transform: translateX(var(--kav-os-shift, 0)); }
+  to { transform: translateX(var(--kav-shift, 0)); }
 }
 
 /* Last connected dengan keterangan (x day) -> merah. */
