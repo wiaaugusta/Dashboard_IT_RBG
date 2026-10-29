@@ -393,12 +393,16 @@ function renderKasperskyStatusSummary(items = null) {
         <strong data-kav-summary-value="total">${value("total")}</strong>
       </div>
       <div class="gsp-card__summary-list">
-        ${row("normal", "Device Normal", "ok")}
-        ${row("nik", "Device NIK Dobel", "warn")}
-        ${row("userDobel", "Device User Dobel", "danger")}
-        ${row("userUpdate", "Device Beda User", "info")}
-        ${row("notfound", "Device tidak ditemukan", "empty")}
-        ${row("inactive", "Inactive Connection", "late")}
+        <div class="gsp-card__summary-col">
+          ${row("normal", "Device Normal", "ok")}
+          ${row("nik", "Device NIK Dobel", "warn")}
+          ${row("userDobel", "Device User Dobel", "danger")}
+        </div>
+        <div class="gsp-card__summary-col">
+          ${row("userUpdate", "Device Beda User", "info")}
+          ${row("notfound", "Device tidak ditemukan", "empty")}
+          ${row("inactive", "Inactive Connection", "late")}
+        </div>
       </div>
     </article>
   `;

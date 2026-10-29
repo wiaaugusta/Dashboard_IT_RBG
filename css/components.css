@@ -4032,24 +4032,18 @@
 .gsp-card__summary-list {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0 8px;
+  gap: 0 12px;
   margin-top: auto;
 }
 
-.gsp-card__summary-row {
+.gsp-card__summary-list > * {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 26px;
-  font-size: 11px;
+  flex-direction: column;
+  gap: 0;
 }
 
-.gsp-card__summary-row + .gsp-card__summary-row {
-  border-top: 1px solid #edf1f6;
-}
-
-.gsp-card__summary-row:nth-child(n+2):nth-child(-n+3) {
-  border-top: none;
+.gsp-card__summary-list > *:first-child {
+  border-right: 1px solid #edf1f6;
 }
 
 .gsp-card__summary-dot {
