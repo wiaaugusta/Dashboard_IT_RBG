@@ -378,7 +378,6 @@ function renderKasperskyStatusSummary(items = null) {
       <div class="gsp-card__summary-total">
         <div class="gsp-card__summary-total-copy">
           <span class="gsp-card__summary-total-label">Total Device</span>
-          <span class="gsp-card__summary-total-note">tanpa status tidak ditemukan</span>
         </div>
         <strong data-kav-summary-value="total">${value("total")}</strong>
       </div>
