@@ -942,11 +942,11 @@
 /* Data status rata kiri; header tetap rata tengah. Label status yang
    panjang dibungkus di dalam lebar kolom tetap, bukan memotong tabel. */
 .mpc-kav-table td.mpc-table__status {
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align: left;
-  overflow: hidden;
-}
+    padding-left: 3px;
+    padding-right: 8px;
+    text-align: left;
+    overflow: hidden;
+  }
 
 .mpc-kav-table .mpc-kav-status {
     max-width: 100%;
@@ -3993,7 +3993,7 @@
 
 .gsp-card__summary-total {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 6px;
   padding: 6px 8px;
@@ -4022,8 +4022,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 22px;
-  font-size: 20px;
+  min-height: 28px;
+  font-size: 26px;
   line-height: 1;
   color: #0f172a;
   font-variant-numeric: tabular-nums;
@@ -4060,6 +4060,7 @@
 .gsp-card__summary-dot--danger { background: #ef4444; }
 .gsp-card__summary-dot--info { background: #3b82f6; }
 .gsp-card__summary-dot--late { background: #dc2626; }
+.gsp-card__summary-dot--empty { background: #94a3b8; }
 
 .gsp-card__summary-label {
   min-width: 0;
