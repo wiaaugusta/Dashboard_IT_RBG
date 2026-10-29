@@ -942,8 +942,8 @@
 /* Data status rata kiri; header tetap rata tengah. Label status yang
    panjang dibungkus di dalam lebar kolom tetap, bukan memotong tabel. */
 .mpc-kav-table td.mpc-table__status {
-    padding-left: 3px;
-    padding-right: 8px;
+    padding-left: 1px;
+    padding-right: 2px;
     text-align: left;
     overflow: hidden;
   }
@@ -4022,8 +4022,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 28px;
-  font-size: 26px;
+  min-height: 34px;
+  font-size: 34px;
   line-height: 1;
   color: #0f172a;
   font-variant-numeric: tabular-nums;

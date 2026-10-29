@@ -340,22 +340,28 @@ function kasperskyStatusCounts(items) {
   const counts = { total: 0, normal: 0, nik: 0, userDobel: 0, userUpdate: 0, notfound: 0, inactive: 0, other: 0 };
   (Array.isArray(items) ? items : []).forEach((item) => {
     const tone = kasperskyStatusTone(item && item.status);
+    const lastConnected = String(item?.lastConnected || "").trim().toUpperCase();
+    const isInactive = /\(\s*\d+\s*DAYS?\s*\)|\b\d+\s*DAYS?\b/i.test(lastConnected);
+    
     if (tone === "empty") {
       counts.notfound += 1;
-      return;
-    }
-    const lastConnected = String(item?.lastConnected || "").trim().toUpperCase();
-    if (/\(\s*\d+\s*days?\s*\)|\b\d+\s*days?\b/i.test(lastConnected)) {
+    } else if (isInactive) {
       counts.inactive += 1;
-      return;
+    } else if (tone === "ok") {
+      counts.normal += 1;
+    } else if (tone === "warn") {
+      counts.nik += 1;
+    } else if (tone === "danger") {
+      counts.userDobel += 1;
+    } else if (tone === "info") {
+      counts.userUpdate += 1;
+    } else {
+      counts.other += 1;
     }
-    counts.total += 1;
-    if (tone === "ok") counts.normal += 1;
-    else if (tone === "warn") counts.nik += 1;
-    else if (tone === "danger") counts.userDobel += 1;
-    else if (tone === "info") counts.userUpdate += 1;
-    else counts.other += 1;
   });
+  
+  // Total Device = normal + nik + userDobel + userUpdate + inactive
+  counts.total = counts.normal + counts.nik + counts.userDobel + counts.userUpdate + counts.inactive;
   return counts;
 }
 
