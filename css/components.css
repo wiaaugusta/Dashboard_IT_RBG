@@ -4022,28 +4022,31 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 34px;
-  font-size: 34px;
+  min-height: 28px;
+  font-size: 24px;
   line-height: 1;
   color: #0f172a;
   font-variant-numeric: tabular-nums;
 }
 
 .gsp-card__summary-list {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 12px;
-  margin-top: auto;
-}
-
-.gsp-card__summary-list > * {
   display: flex;
   flex-direction: column;
   gap: 0;
+  margin-top: auto;
 }
 
-.gsp-card__summary-list > *:first-child {
-  border-right: 1px solid #edf1f6;
+.gsp-card__summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 28px;
+  font-size: 12px;
+  border-top: 1px solid #edf1f6;
+}
+
+.gsp-card__summary-row:first-child {
+  border-top: none;
 }
 
 .gsp-card__summary-dot {
