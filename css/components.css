@@ -949,9 +949,11 @@
 }
 
 .mpc-kav-table .mpc-kav-status {
-  max-width: 100%;
-  white-space: normal;
-}
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
 /* Padding horizontal lebih rapat supaya kedua tabel muat tanpa scrollbar. */
 .mpc-kav-table th .mpc-table__th-label,
@@ -1039,27 +1041,29 @@
 
 /* Header STATUS dibuat rata tengah, panah sort tetap di tepi kanan
    supaya label tidak bergeser. */
-.mpc-kav-table th.mpc-kav-th--center .mpc-table__th-sort {
-  position: relative;
-  justify-content: center;
-  padding: 0 24px;
-  text-align: center;
-}
+.mpc-kav-table th.mpc-kav-th--left .mpc-table__th-sort {
+    position: relative;
+    justify-content: flex-start;
+    padding: 0 24px 0 0;
+    text-align: left;
+  }
 
-.mpc-kav-table th.mpc-kav-th--center .mpc-table__th-label {
-  text-align: center;
-}
+.mpc-kav-table th.mpc-kav-th--left .mpc-table__th-label {
+    text-align: left;
+  }
 
-.mpc-kav-table th.mpc-kav-th--center .mpc-table__sort-arrows {
-  position: absolute;
-  right: 8px;
-}
+.mpc-kav-table th.mpc-kav-th--left .mpc-table__sort-arrows {
+    position: absolute;
+    right: 8px;
+  }
 
-/* Kolom Sistem Operasi & Last connected: satu baris & dipotong supaya
+/* Kolom Sistem Operasi, Last connected, Model, DNS Name: satu baris & dipotong supaya
    baris tidak menebal. Saat hover, teks bergeser SATU KALI ke kiri
    (tanpa bolak-balik) bila melebihi lebar kolom. */
 .mpc-kav-table td[data-kav-col="sistemOperasi"],
-.mpc-kav-table td[data-kav-col="lastConnected"] {
+.mpc-kav-table td[data-kav-col="lastConnected"],
+.mpc-kav-table td[data-kav-col="model"],
+.mpc-kav-table td[data-kav-col="dnsName"] {
   white-space: nowrap;
 }
 
@@ -1074,6 +1078,11 @@
 .mpc-kav-table td[data-kav-col="model"] .mpc-kav-marquee,
 .mpc-kav-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
   max-width: 100px;
+}
+
+/* DNS Name juga dipotong bila perlu. */
+.mpc-kav-table td[data-kav-col="dnsName"] .mpc-kav-marquee {
+  max-width: 120px;
 }
 
 .mpc-kav-marquee__text {
@@ -1298,11 +1307,16 @@
 }
 
 .mpc-kav-status--danger {
-  background: #fff0ef;
-  color: #c63f38;
-}
-
-.mpc-kav-status--empty {
+    background: #fff0ef;
+    color: #c63f38;
+  }
+  
+  .mpc-kav-status--info {
+    background: #e8f1fe;
+    color: #1d4ed8;
+  }
+  
+  .mpc-kav-status--empty {
   background: #f1f4f7;
   color: #8a97a8;
 }
@@ -3981,34 +3995,35 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 6px 8px;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #eef2f7;
 }
 
 .gsp-card__summary-total > div {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0px;
   min-width: 0;
 }
 
 .gsp-card__summary-total-label {
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 700;
-  letter-spacing: .05em;
+  letter-spacing: .04em;
   text-transform: uppercase;
   color: #64748b;
+  line-height: 1;
 }
 
 .gsp-card__summary-total strong {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  min-height: 24px;
-  font-size: 24px;
+  min-height: 22px;
+  font-size: 20px;
   line-height: 1;
   color: #0f172a;
   font-variant-numeric: tabular-nums;
@@ -4044,7 +4059,7 @@
 .gsp-card__summary-dot--warn { background: #f59e0b; }
 .gsp-card__summary-dot--danger { background: #ef4444; }
 .gsp-card__summary-dot--info { background: #3b82f6; }
-.gsp-card__summary-dot--empty { background: #94a3b8; }
+.gsp-card__summary-dot--late { background: #dc2626; }
 
 .gsp-card__summary-label {
   min-width: 0;

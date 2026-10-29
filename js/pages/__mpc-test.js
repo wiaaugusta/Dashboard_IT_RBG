@@ -337,11 +337,16 @@ function renderPercentStat(value, isLoading) {
 }
 
 function kasperskyStatusCounts(items) {
-  const counts = { total: 0, normal: 0, nik: 0, userDobel: 0, userUpdate: 0, notfound: 0, other: 0 };
+  const counts = { total: 0, normal: 0, nik: 0, userDobel: 0, userUpdate: 0, notfound: 0, inactive: 0, other: 0 };
   (Array.isArray(items) ? items : []).forEach((item) => {
     const tone = kasperskyStatusTone(item && item.status);
     if (tone === "empty") {
       counts.notfound += 1;
+      return;
+    }
+    const lastConnected = String(item?.lastConnected || "").trim().toUpperCase();
+    if (/\(\s*\d+\s*days?\s*\)|\b\d+\s*days?\b/i.test(lastConnected)) {
+      counts.inactive += 1;
       return;
     }
     counts.total += 1;
@@ -387,6 +392,7 @@ function renderKasperskyStatusSummary(items = null) {
         ${row("userDobel", "Device User Dobel", "danger")}
         ${row("userUpdate", "Device Beda User", "info")}
         ${row("notfound", "Device tidak ditemukan", "empty")}
+        ${row("inactive", "Inactive Connection", "late")}
       </div>
     </article>
   `;
@@ -609,7 +615,7 @@ function renderKasperskyHeaderCell(column) {
     `;
   }
 
-  const className = column.key === "status" ? ' class="mpc-kav-th--center"' : "";
+  const className = column.key === "status" ? ' class="mpc-kav-th--left"' : "";
   return `
     <th scope="col" data-kav-col="${column.key}"${className} aria-sort="none" data-kav-sort-header="${column.key}">
       <button type="button" class="mpc-table__th-sort" data-kav-sort-key="${column.key}"
@@ -757,7 +763,7 @@ function renderKasperskyTableSection() {
         <div class="mpc-table-card__title-group">
           <span class="mpc-table-card__title-icon mpc-table-card__title-icon--blue" aria-hidden="true">${icon("kaspersky", { size: 18 })}</span>
           <div>
-            <h2 id="mpcKavTitle">DATA KASPERSKY OFFICE</h2>
+            <h2 id="mpcKavTitle">Data Kaspersky Office</h2>
             <p>Status data dashboard kaspersky</p>
           </div>
         </div>
