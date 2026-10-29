@@ -4085,6 +4085,10 @@
   align-items: start;
 }
 
+.gsp-cards--kaspersky-3 .gsp-card {
+  min-height: 240px;
+}
+
 .gsp-card__header {
   display: flex;
   align-items: center;
