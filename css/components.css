@@ -942,7 +942,7 @@
 /* Data status rata kiri; header tetap rata tengah. Label status yang
    panjang dibungkus di dalam lebar kolom tetap, bukan memotong tabel. */
 .mpc-kav-table td.mpc-table__status {
-    padding-left: 1px;
+    padding-left: 0;
     padding-right: 2px;
     text-align: left;
     overflow: hidden;
@@ -4077,6 +4077,7 @@
 /* Grid 3 kolom untuk kartu Kaspersky (termasuk summary). */
 .gsp-cards--kaspersky-3 {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: start;
 }
 
 .gsp-card__header {
