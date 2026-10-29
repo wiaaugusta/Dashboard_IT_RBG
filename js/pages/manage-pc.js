@@ -499,11 +499,15 @@ function renderKasperskyDetailCell(column, value) {
   return `<td data-kav-col="${column.key}"${className}>${escapeHtml(text || "—")}</td>`;
 }
 
-function renderKasperskyDetailRows(rows) {
+function kasperskyDetailDataRows(rows) {
   const list = (Array.isArray(rows) ? rows : [])
     .filter((row) => Array.isArray(row) && row.some((cell) => String(cell == null ? "" : cell).trim()));
   if (list.length && isKasperskyDetailHeader(list[0])) list.shift();
-  return list.map((row, rowIndex) => `
+  return list;
+}
+
+function renderKasperskyDetailRows(rows) {
+  return kasperskyDetailDataRows(rows).map((row, rowIndex) => `
     <tr class="mpc-table__row">
       ${KASPERSKY_PROBLEM_COLUMNS.map((column) => {
         if (column.key === "no") {
@@ -642,12 +646,12 @@ function renderKasperskyPageNumbers(page, totalPages) {
 function renderKasperskyProblemSection() {
   return `
     <section class="mpc-table-card mpc-kav-problem-card" data-kav-problem-card aria-labelledby="mpcKavProblemTitle" hidden>
-      <button type="button" class="mpc-kav-problem-toggle" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent">
+      <div class="mpc-kav-problem-header">
         <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
-        <span class="mpc-kav-problem-toggle__title" id="mpcKavProblemTitle">DATA KASPERSKY BERMASALAH</span>
-        <span class="mpc-kav-problem-toggle__count" data-kav-problem-count></span>
-        <span class="mpc-kav-problem-toggle__chevron" aria-hidden="true">${icon("chevron-down", { size: 16 })}</span>
-      </button>
+        <span class="mpc-kav-problem-title" id="mpcKavProblemTitle">data kaspersky bermasalah</span>
+        <span class="mpc-kav-problem-count mpc-table-tab__count" data-kav-problem-count></span>
+        <button type="button" class="mpc-kav-problem-chevron" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent" aria-label="Buka detail Data Kaspersky Bermasalah">${icon("chevron-down", { size: 16 })}</button>
+      </div>
       <div id="kavProblemContent" class="mpc-kav-problem-content" hidden>
         <div class="mpc-table-wrapper">
           <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
@@ -767,12 +771,13 @@ function bindKasperskyTable(container, session) {
   let searchTimer = null;
 
   function renderProblem() {
-    const html = renderKasperskyDetailRows(detailRows);
+    const dataRows = kasperskyDetailDataRows(detailRows);
+    const html = renderKasperskyDetailRows(dataRows);
     if (problemRowsElement) problemRowsElement.innerHTML = html;
     if (problemCard) {
       problemCard.hidden = !html;
       const countEl = problemCard.querySelector("[data-kav-problem-count]");
-      if (countEl) countEl.textContent = detailRows.length ? `(${detailRows.length})` : "";
+      if (countEl) countEl.textContent = dataRows.length ? String(dataRows.length) : "";
     }
     fitKasperskyProblemTable(problemCard);
   }
@@ -918,9 +923,9 @@ function bindKasperskyTable(container, session) {
   if (toggle && content) {
     toggle.addEventListener("click", () => {
       const isExpanded = toggle.getAttribute("aria-expanded") === "true";
-      toggle.setAttribute("aria-expanded", !isExpanded);
+      toggle.setAttribute("aria-expanded", String(!isExpanded));
+      toggle.setAttribute("aria-label", isExpanded ? "Buka detail Data Kaspersky Bermasalah" : "Tutup detail Data Kaspersky Bermasalah");
       content.hidden = isExpanded;
-      toggle.querySelector("[aria-hidden=true]").innerHTML = icon(isExpanded ? "chevron-down" : "chevron-up", { size: 16 });
       if (!isExpanded) fitKasperskyProblemTable(problemCard);
     });
   }

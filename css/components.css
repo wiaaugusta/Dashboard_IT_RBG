@@ -1170,50 +1170,47 @@
   max-width: var(--kav-problem-model-max, 60px);
 }
 
-/* Toggle collapse untuk kartu Data Kaspersky Bermasalah */
-.mpc-kav-problem-toggle {
-  all: unset;
+/* Header kartu Data Kaspersky Bermasalah: ikon + judul + count, chevron kanan */
+.mpc-kav-problem-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  padding: 12px 16px;
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  box-sizing: border-box;
+  padding: 8px 12px;
 }
 
-.mpc-kav-problem-toggle:hover {
-  background: #f8fafd;
-}
-
-.mpc-kav-problem-toggle__icon {
-  flex-shrink: 0;
-}
-
-.mpc-kav-problem-toggle__title {
+.mpc-kav-problem-title {
   font-weight: 600;
   font-size: 15px;
   color: #1e3a5f;
 }
 
-.mpc-kav-problem-toggle__count {
+.mpc-kav-problem-count {
+  margin-left: 2px;
+}
+
+.mpc-kav-problem-chevron {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   margin-left: auto;
-  font-weight: 600;
-  opacity: .7;
+  border-radius: 6px;
   color: #8492a6;
-}
-
-.mpc-kav-problem-toggle__chevron {
+  cursor: pointer;
   flex-shrink: 0;
-  transition: transform .2s;
-  color: #8492a6;
 }
 
-.mpc-kav-problem-toggle[aria-expanded="true"] .mpc-kav-problem-toggle__chevron {
+.mpc-kav-problem-chevron:hover {
+  background: #f1f5f9;
+}
+
+.mpc-kav-problem-chevron svg {
+  transition: transform .2s;
+}
+
+.mpc-kav-problem-chevron[aria-expanded="true"] svg {
   transform: rotate(180deg);
 }
 
