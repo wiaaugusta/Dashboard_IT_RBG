@@ -250,6 +250,48 @@ export function getManagePcKasperskyCache(session) {
  * per sesi (owner role|NIK) lalu dipakai ulang saat pindah menu/kembali;
  * request yang sedang berjalan dideduplikasi.
  */
+export async function loadManagePcKasperskyCached(session, options = {}) {
+  const key = kavTableKey(session);
+
+  if (!options.forceRefresh && KAV_TABLE_CACHE.has(key)) {
+    return { success: true, data: KAV_TABLE_CACHE.get(key) };
+  }
+
+  if (!options.forceRefresh && KAV_TABLE_REQUESTS.has(key)) {
+    return KAV_TABLE_REQUESTS.get(key);
+  }
+
+  const request = loadManagePcKasperskyTable("office", {
+    sessionToken: session.sessionToken
+  })
+    .then((result) => {
+      KAV_TABLE_REQUESTS.delete(key);
+      if (result && result.success && result.data) {
+        KAV_TABLE_CACHE.set(key, result.data);
+      }
+      return result;
+    })
+    .catch((error) => {
+      KAV_TABLE_REQUESTS.delete(key);
+      throw error;
+    });
+
+  KAV_TABLE_REQUESTS.set(key, request);
+  return request;
+}
+
+/**
+ * Data tabel ITAM yang sudah di-cache (sinkron), atau null.
+ */
+export function getManagePcItamCache(session) {
+  return ITAM_TABLE_CACHE.get(itamTableKey(session)) || null;
+}
+
+/**
+ * Ambil tabel ITAM dengan cache-first. Dataset hanya di-request SEKALI
+ * per sesi (owner role|NIK) lalu dipakai ulang saat pindah menu/kembali;
+ * request yang sedang berjalan dideduplikasi.
+ */
 export async function loadManagePcItamCached(session, options = {}) {
   const key = itamTableKey(session);
 
