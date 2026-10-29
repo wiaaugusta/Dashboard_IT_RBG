@@ -4049,6 +4049,7 @@
 .gsp-card__summary-dot--ok { background: #22c55e; }
 .gsp-card__summary-dot--warn { background: #f59e0b; }
 .gsp-card__summary-dot--danger { background: #ef4444; }
+.gsp-card__summary-dot--info { background: #3b82f6; }
 .gsp-card__summary-dot--empty { background: #94a3b8; }
 
 .gsp-card__summary-label {

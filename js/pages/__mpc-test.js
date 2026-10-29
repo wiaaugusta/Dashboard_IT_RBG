@@ -337,7 +337,7 @@ function renderPercentStat(value, isLoading) {
 }
 
 function kasperskyStatusCounts(items) {
-  const counts = { total: 0, normal: 0, nik: 0, user: 0, notfound: 0, other: 0 };
+  const counts = { total: 0, normal: 0, nik: 0, userDobel: 0, userUpdate: 0, notfound: 0, other: 0 };
   (Array.isArray(items) ? items : []).forEach((item) => {
     const tone = kasperskyStatusTone(item && item.status);
     if (tone === "empty") {
@@ -347,7 +347,8 @@ function kasperskyStatusCounts(items) {
     counts.total += 1;
     if (tone === "ok") counts.normal += 1;
     else if (tone === "warn") counts.nik += 1;
-    else if (tone === "danger") counts.user += 1;
+    else if (tone === "danger") counts.userDobel += 1;
+    else if (tone === "info") counts.userUpdate += 1;
     else counts.other += 1;
   });
   return counts;
@@ -384,7 +385,8 @@ function renderKasperskyStatusSummary(items = null) {
       <div class="gsp-card__summary-list">
         ${row("normal", "Device Normal", "ok")}
         ${row("nik", "Device NIK Dobel", "warn")}
-        ${row("user", "Device User Dobel", "danger")}
+        ${row("userDobel", "Device User Dobel", "danger")}
+        ${row("userUpdate", "Device Beda User", "info")}
         ${row("notfound", "Device tidak ditemukan", "empty")}
       </div>
     </article>
@@ -518,7 +520,8 @@ function kasperskyStatusTone(value) {
   const text = String(value == null ? "" : value).trim().toUpperCase();
   if (!text || /TIDAK\s*(DI\s*)?TEMUKAN/.test(text) || /NOT\s*FOUND/.test(text)) return "empty";
   if (/NIK/.test(text) && /(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(text)) return "warn";
-  if (/(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE|BELUM\s*UPDATE)/.test(text) && /USER/.test(text)) return "danger";
+  if (/USER/.test(text) && /(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(text)) return "danger";
+  if (/USER/.test(text) && /BELUM\s*UPDATE/.test(text)) return "info";
   if (/NORMAL|AMAN|VALID|^OK$/.test(text)) return "ok";
   return "other";
 }
