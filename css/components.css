@@ -3915,6 +3915,10 @@
   align-items: stretch;
 }
 
+.gsp-cards--kaspersky .gsp-card {
+  min-height: 180px;
+}
+
 .gsp-cards--kaspersky .gsp-card__stats {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-2);
