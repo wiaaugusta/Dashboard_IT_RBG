@@ -9,6 +9,7 @@
 
 import {
   loadManagePcKasperskyTable,
+  loadManagePcItamTable,
   loadManagePcList,
   loadManagePcSummary
 } from "./api.js";
@@ -26,6 +27,13 @@ const DATASET_CACHE = new Map();
    sesi client itu sendiri (logout / idle 5,5 jam / ganti user). */
 const KAV_TABLE_CACHE = new Map();
 const KAV_TABLE_REQUESTS = new Map();
+
+const ITAM_TABLE_CACHE = new Map();
+const ITAM_TABLE_REQUESTS = new Map();
+
+function itamTableKey(session) {
+  return `${ownerKey(session)}|itamtable|office`;
+}
 
 function ownerKey(session) {
   return `${session?.role || ""}|${session?.nik || ""}`;
@@ -242,32 +250,32 @@ export function getManagePcKasperskyCache(session) {
  * per sesi (owner role|NIK) lalu dipakai ulang saat pindah menu/kembali;
  * request yang sedang berjalan dideduplikasi.
  */
-export async function loadManagePcKasperskyCached(session, options = {}) {
-  const key = kavTableKey(session);
+export async function loadManagePcItamCached(session, options = {}) {
+  const key = itamTableKey(session);
 
-  if (!options.forceRefresh && KAV_TABLE_CACHE.has(key)) {
-    return { success: true, data: KAV_TABLE_CACHE.get(key) };
+  if (!options.forceRefresh && ITAM_TABLE_CACHE.has(key)) {
+    return { success: true, data: ITAM_TABLE_CACHE.get(key) };
   }
 
-  if (!options.forceRefresh && KAV_TABLE_REQUESTS.has(key)) {
-    return KAV_TABLE_REQUESTS.get(key);
+  if (!options.forceRefresh && ITAM_TABLE_REQUESTS.has(key)) {
+    return ITAM_TABLE_REQUESTS.get(key);
   }
 
-  const request = loadManagePcKasperskyTable("office", {
+  const request = loadManagePcItamTable("office", {
     sessionToken: session.sessionToken
   })
     .then((result) => {
-      KAV_TABLE_REQUESTS.delete(key);
+      ITAM_TABLE_REQUESTS.delete(key);
       if (result && result.success && result.data) {
-        KAV_TABLE_CACHE.set(key, result.data);
+        ITAM_TABLE_CACHE.set(key, result.data);
       }
       return result;
     })
     .catch((error) => {
-      KAV_TABLE_REQUESTS.delete(key);
+      ITAM_TABLE_REQUESTS.delete(key);
       throw error;
     });
 
-  KAV_TABLE_REQUESTS.set(key, request);
+  ITAM_TABLE_REQUESTS.set(key, request);
   return request;
 }

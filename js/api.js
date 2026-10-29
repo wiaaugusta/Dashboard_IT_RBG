@@ -268,3 +268,14 @@ export async function loadManagePcKasperskyTable(scope = "office", options = {})
     refresh: options.refresh ? true : undefined
   }, options);
 }
+
+/**
+ * Tabel endpoint ITAM dari blok O203:X400 sheet MASTER REPORT OFFICE.
+ * Backend juga mengirim blok detail O403:Y420 (data ITAM bermasalah).
+ */
+export async function loadManagePcItamTable(scope = "office", options = {}) {
+  return apiRequest("getManagePcItamTable", {
+    scope,
+    refresh: options.refresh ? true : undefined
+  }, options);
+}

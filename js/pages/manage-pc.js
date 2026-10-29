@@ -23,8 +23,10 @@ import { getQueryParam } from "../router.js";
 import { icon } from "../icons.js";
 import {
   getManagePcKasperskyCache,
+  getManagePcItamCache,
   getManagePcSummaryCache,
   loadManagePcKasperskyCached,
+  loadManagePcItamCached,
   loadManagePcSummaryCached
 } from "../manage-pc-cache.js";
 
@@ -193,6 +195,39 @@ const KASPERSKY_DETAIL_COLUMNS = [
 const KASPERSKY_PROBLEM_COLUMNS = [
   { key: "no", label: "No" },
   ...KASPERSKY_DETAIL_COLUMNS
+];
+
+const ITAM_TABLE_COLUMNS = [
+  { key: "no", label: "No", sortable: false },
+  { key: "namaKomputer", label: "Nama Komputer" },
+  { key: "alamatIp", label: "Alamat IP" },
+  { key: "workgroup", label: "Workgroup" },
+  { key: "versionItam", label: "Version ITAM" },
+  { key: "agentVersion", label: "Agent version" },
+  { key: "model", label: "Model" },
+  { key: "sistemOperasi", label: "Sistem Operasi" },
+  { key: "lastConnected", label: "Last connected" },
+  { key: "dnsName", label: "DNS name" },
+  { key: "status", label: "STATUS" }
+].map((column) => ({ ...column, sortable: column.sortable !== false }));
+
+const ITAM_DETAIL_COLUMNS = [
+  { key: "namaKomputer", label: "Nama Komputer" },
+  { key: "alamatIp", label: "Alamat IP" },
+  { key: "workgroup", label: "Workgroup" },
+  { key: "versionItam", label: "Version ITAM" },
+  { key: "agentVersion", label: "Agent version" },
+  { key: "model", label: "Model" },
+  { key: "sistemOperasi", label: "Sistem Operasi" },
+  { key: "lastConnected", label: "Last connected" },
+  { key: "dnsName", label: "DNS name" },
+  { key: "status", label: "STATUS" },
+  { key: "source", label: "Source" }
+].map((column, index) => ({ ...column, sourceIndex: index }));
+
+const ITAM_PROBLEM_COLUMNS = [
+  { key: "no", label: "No" },
+  ...ITAM_DETAIL_COLUMNS
 ];
 
 function escapeHtml(value) {
@@ -484,9 +519,45 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     const kaceNok = d.kace?.nok ?? (totalPc != null && kaceOk != null ? totalPc - kaceOk : (isLoading ? null : 0));
 
     return `
-      <section class="gsp-cards gsp-cards--kaspersky" data-mpc-summary aria-live="polite">
-        ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]]), "Status Deployment KACE", "purple")}
+      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
+        ${renderSummaryCardItem("kaspersky", "Kaspersky", "Endpoint Security - proteksi, update database & compliance.", makeStats([["Total Device", totalPc], ["Manage", kavOk], ["Not Manage", kavNok]], renderPercentStat(kavPercent, isLoading)), null, "blue", kavInfoHtml)}
+        ${renderSummaryCardItem("kaspersky", "Versi Kaspersky", "Memastikan Versi Kaspersky selalu up to date.", makeStats([["Total Device", totalPc], ["Version OK", verOk], ["Version NOK", verNok]], renderPercentStat(kavPercent, isLoading)), null, "blue", kavInfoHtml)}
+      </section>
+    `;
+  }
+
+  /* Submenu ITAM: 2 kotak (ITAM & Privilege) + Summary. */
+  if (moduleKey === "manage-pc-itam") {
+    const itam = d.itam || {};
+    const itamTotal = itam.managed ?? (isLoading ? null : 0);
+    const itamOk = itam.ok ?? 0;
+    const itamWarn = itam.warn ?? 0;
+    const itamDanger = itam.danger ?? 0;
+    const itamEmpty = itam.empty ?? 0;
+    const privOk = itam.privilegeOk ?? 0;
+    const privNok = itam.privilegeNok ?? 0;
+
+    const itamInfoHtml = `
+      <div class="gsp-card__info">
+        <div class="gsp-card__info-row">
+          <span class="gsp-card__info-label">${icon("monitor", { size: 14 })} Device Normal</span>
+          <span class="gsp-card__info-value">${itamOk}</span>
+        </div>
+        <div class="gsp-card__info-row">
+          <span class="gsp-card__info-label">${icon("alert", { size: 14 })} Device User Dobel</span>
+          <span class="gsp-card__info-value">${itamWarn}</span>
+        </div>
+        <div class="gsp-card__info-row">
+          <span class="gsp-card__info-label">${icon("shield", { size: 14 })} Privilege NOK</span>
+          <span class="gsp-card__info-value">${privNok}</span>
+        </div>
+      </div>
+    `;
+
+    return `
+      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
+        ${renderSummaryCardItem("itam", "ITAM", "Inventarisasi & lifecycle aset PC & hardware.", makeStats([["Total Device", itamTotal], ["Normal", itamOk], ["User Dobel", itamWarn], ["Danger", itamDanger], ["Empty", itamEmpty]]), null, "teal", itamInfoHtml)}
+        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", itamTotal], ["Privilege OK", privOk], ["Privilege NOK", privNok]]), null, "teal")}
       </section>
     `;
   }
@@ -733,6 +804,95 @@ function renderKasperskyPageNumbers(page, totalPages) {
     : `<button type="button" class="mpc-table__page-button${entry === page ? " is-active" : ""}"
         data-kav-page="${entry}" aria-label="Halaman ${entry}"${entry === page ? ' aria-current="page"' : ""}>${entry}</button>`
   ).join("");
+}
+
+function renderItamProblemSection() {
+  return `
+    <section class="mpc-table-card mpc-kav-problem-card" data-itam-problem-card aria-labelledby="mpcItamProblemTitle" hidden>
+      <button type="button" class="mpc-kav-problem-header" data-itam-problem-toggle aria-expanded="false" aria-controls="itamProblemContent" aria-label="Buka detail Data ITAM Bermasalah">
+        <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
+        <span class="mpc-kav-problem-title" id="mpcItamProblemTitle">Data ITAM Bermasalah</span>
+        <span class="mpc-kav-problem-count mpc-table-tab__count" data-itam-problem-count></span>
+        <span class="mpc-kav-problem-chevron" aria-hidden="true">${icon("chevron-down", { size: 16 })}</span>
+      </button>
+      <div id="itamProblemContent" class="mpc-kav-problem-content" aria-hidden="true">
+        <div class="mpc-kav-problem-content__inner">
+          <div class="mpc-table-wrapper">
+            <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data ITAM Bermasalah">
+              <thead>
+                <tr>
+                  ${ITAM_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+                </tr>
+              </thead>
+              <tbody data-itam-problem-rows></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderItamTableSection() {
+  return `
+    <section class="mpc-table-card mpc-kav-card" aria-labelledby="mpcItamTitle">
+      <header class="mpc-table-card__header">
+        <div class="mpc-table-card__title-group">
+          <span class="mpc-table-card__title-icon mpc-table-card__title-icon--teal" aria-hidden="true">${icon("itam", { size: 18 })}</span>
+          <div>
+            <h2 id="mpcItamTitle">Data ITAM Office</h2>
+            <p>Status data dashboard ITAM</p>
+          </div>
+        </div>
+        <div class="mpc-table-card__controls">
+          <label class="mpc-table-search">
+            ${icon("search", { size: 17 })}
+            <span class="visually-hidden">Cari perangkat</span>
+            <input type="search" data-itam-search placeholder="Cari perangkat..." autocomplete="off">
+          </label>
+        </div>
+      </header>
+      <div class="mpc-table-wrapper">
+        <table class="mpc-table mpc-kav-table">
+          <thead data-itam-head>${renderKasperskyTableHead()}</thead>
+          <tbody data-itam-rows>${renderKasperskySkeletonRows()}</tbody>
+        </table>
+      </div>
+      <footer class="mpc-table__footer">
+        <div class="mpc-table__count" data-itam-count aria-live="polite">Memuat data ITAM...</div>
+        <div class="mpc-table__footer-right" data-itam-pagination></div>
+      </footer>
+    </section>
+  `;
+}
+
+function bindItamTable(container, session) {
+  const card = container.querySelector(".mpc-kav-card");
+  if (!card) return;
+
+  const problemCard = container.querySelector("[data-itam-problem-card]");
+  const problemRowsElement = container.querySelector("[data-itam-problem-rows]");
+
+  loadManagePcItamCached(session)
+    .then((result) => {
+      if (!result.success) throw new Error(result.message);
+      const data = result.data || {};
+      const items = Array.isArray(data.items) ? data.items : [];
+      const detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
+      
+      const rowsHtml = renderKasperskyRows(items);
+      card.querySelector("[data-itam-rows]").innerHTML = rowsHtml;
+      
+      const probRowsHtml = renderKasperskyDetailRows(detailRows);
+      if (problemRowsElement) problemRowsElement.innerHTML = probRowsHtml;
+      if (problemCard) problemCard.hidden = !probRowsHtml;
+      
+      card.querySelector("[data-itam-count]").textContent = `Menampilkan ${items.length} perangkat`;
+    })
+    .catch((err) => {
+      console.error("ITAM table error:", err);
+      card.querySelector("[data-itam-count]").textContent = "Gagal memuat data.";
+    });
 }
 
 function renderKasperskyProblemSection() {
