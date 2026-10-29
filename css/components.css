@@ -4082,7 +4082,7 @@
 /* Grid 3 kolom untuk kartu Kaspersky (termasuk summary). */
 .gsp-cards--kaspersky-3 {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  align-items: start;
+  align-items: stretch;
 }
 
 .gsp-cards--kaspersky-3 .gsp-card {
