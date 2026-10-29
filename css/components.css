@@ -3960,6 +3960,114 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* Kartu summary Kaspersky: gaya info, bukan kartu statistik utama. */
+.gsp-card--summary {
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%);
+  border-color: #e2e8f0;
+}
+
+.gsp-card--summary:hover {
+  transform: none;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.gsp-card--summary .gsp-card__icon {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+.gsp-card__summary-total {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #eef2f7;
+}
+
+.gsp-card__summary-total > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gsp-card__summary-total-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.gsp-card__summary-total-note {
+  font-size: 10px;
+  color: #94a3b8;
+  line-height: 1.2;
+}
+
+.gsp-card__summary-total strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 28px;
+  font-size: 28px;
+  line-height: 1;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+.gsp-card__summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: auto;
+}
+
+.gsp-card__summary-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  font-size: 12px;
+}
+
+.gsp-card__summary-row + .gsp-card__summary-row {
+  border-top: 1px solid #edf1f6;
+}
+
+.gsp-card__summary-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.gsp-card__summary-dot--ok { background: #22c55e; }
+.gsp-card__summary-dot--warn { background: #f59e0b; }
+.gsp-card__summary-dot--danger { background: #ef4444; }
+.gsp-card__summary-dot--empty { background: #94a3b8; }
+
+.gsp-card__summary-label {
+  min-width: 0;
+  color: #475569;
+}
+
+.gsp-card__summary-value {
+  margin-left: auto;
+  font-weight: 700;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Grid 3 kolom untuk kartu Kaspersky (termasuk summary). */
+.gsp-cards--kaspersky-3 {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
 .gsp-card__header {
   display: flex;
   align-items: center;

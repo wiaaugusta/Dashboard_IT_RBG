@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<link rel="stylesheet" href="/css/style.css" />
+<link rel="stylesheet" href="/css/layout.css" />
+<link rel="stylesheet" href="/css/components.css" />
+</head>
+<body>
+<div id="app"></div>
+<pre id="out"></pre>
+<script type="module">
+  const mod = await import("/js/pages/__mpc-test.js");
+
+  const SUMMARY = {
+    success: true,
+    data: {
+      summary: { totalPc: 100 },
+      kaspersky: {
+        managed: 100, ok: 95, nok: 5,
+        versionOk: 95, versionNok: 5,
+        percent: 90, combinedOk: 90, combinedNok: 10,
+        info: {
+          version: "12.9.0.351",
+          agent: "13.0.4.2344",
+          server: "kscoffice.sat.co.id"
+        }
+      },
+      itam: {}, kace: {}
+    }
+  };
+
+  document.getElementById("app").innerHTML =
+    mod.renderSummary(SUMMARY, "manage-pc-kaspersky", false);
+
+  const section = document.querySelector("[data-mpc-summary]");
+  const cards = [...section.querySelectorAll(".gsp-card")];
+  const statCards = cards.slice(0, 2);
+  const summaryCard = cards[2];
+  const lastStrong = (card) => {
+    const stats = [...card.querySelectorAll(".gsp-card__stat")];
+    return stats.length ? stats[stats.length - 1].querySelector("strong").textContent.trim() : "";
+  };
+
+  const out = {
+    cardCount: cards.length,
+    statCounts: statCards.map((c) => c.querySelectorAll(".gsp-card__stat").length),
+    hasFourClass: statCards.map((c) => c.querySelector(".gsp-card__stats").classList.contains("gsp-card__stats--4")),
+    percentTexts: statCards.map(lastStrong),
+    infoRowCounts: statCards.map((c) => c.querySelectorAll(".gsp-card__info-row").length),
+    infoTexts: statCards.map((c) => c.querySelector(".gsp-card__info")?.textContent.replace(/\s+/g, " ").trim() || ""),
+    footerCount: section.querySelectorAll(".gsp-card__footer").length,
+    removedTextPresent: /Status Endpoint Security|Status Versi Antivirus/.test(section.textContent),
+    newDescPresent: /Memastikan Versi Kaspersky selalu up to date\./.test(section.textContent),
+    oldDescPresent: /Status OK dan NOK versi Kaspersky pada seluruh device\./.test(section.textContent),
+    summaryTitle: summaryCard?.querySelector("h4")?.textContent || "",
+    summaryRows: summaryCard?.querySelectorAll(".gsp-card__summary-row").length || 0,
+    summaryTotalLabel: summaryCard?.querySelector(".gsp-card__summary-total-label")?.textContent || "",
+    summarySkeletonPresent: !!summaryCard?.querySelector(".skeleton.metric-skeleton")
+  };
+
+  const checks = {
+    threeCards: out.cardCount === 3,
+    fourStatsEach: out.statCounts.length === 2 && out.statCounts.every((n) => n === 4),
+    fourClassEach: out.hasFourClass.length === 2 && out.hasFourClass.every(Boolean),
+    percent90Each: out.percentTexts.length === 2 && out.percentTexts.every((t) => t === "90%"),
+    threeInfoRowsEach: out.infoRowCounts.length === 2 && out.infoRowCounts.every((n) => n === 3),
+    infoValuesEach: out.infoTexts.length === 2 && out.infoTexts.every((t) =>
+      t.includes("Versi Kaspersky") && t.includes("12.9.0.351") &&
+      t.includes("Agent Kaspersky") && t.includes("13.0.4.2344") &&
+      t.includes("Server Kaspersky") && t.includes("kscoffice.sat.co.id")),
+    noFooter: out.footerCount === 0,
+    removedTextGone: !out.removedTextPresent,
+    newDescPresent: out.newDescPresent,
+    oldDescGone: !out.oldDescPresent,
+    summaryTitleCorrect: out.summaryTitle === "Summary Data Kaspersky",
+    summaryFourRows: out.summaryRows === 4,
+    summaryTotalLabelCorrect: out.summaryTotalLabel === "Total Device",
+    summaryShowsSkeleton: out.summarySkeletonPresent
+  };
+
+  out.checks = checks;
+  out.RESULT = Object.values(checks).every(Boolean) ? "PASS" : "FAIL";
+  document.getElementById("out").textContent = JSON.stringify(out, null, 2);
+</script>
+</body>
+</html>

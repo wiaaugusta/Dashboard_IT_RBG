@@ -336,10 +336,87 @@ function renderPercentStat(value, isLoading) {
   `;
 }
 
-function renderSummary(data, moduleKey, isLoading = false) {
+function kasperskyStatusCounts(items) {
+  const counts = { total: 0, normal: 0, nik: 0, user: 0, notfound: 0, other: 0 };
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const tone = kasperskyStatusTone(item && item.status);
+    if (tone === "empty") {
+      counts.notfound += 1;
+      return;
+    }
+    counts.total += 1;
+    if (tone === "ok") counts.normal += 1;
+    else if (tone === "warn") counts.nik += 1;
+    else if (tone === "danger") counts.user += 1;
+    else counts.other += 1;
+  });
+  return counts;
+}
+
+function renderKasperskyStatusSummary(items = null) {
+  const counts = Array.isArray(items) ? kasperskyStatusCounts(items) : null;
+  const value = (key) => counts
+    ? Number(counts[key]).toLocaleString("id-ID")
+    : '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>';
+  const row = (key, label, tone) => `
+    <div class="gsp-card__summary-row">
+      <span class="gsp-card__summary-dot gsp-card__summary-dot--${tone}" aria-hidden="true"></span>
+      <span class="gsp-card__summary-label">${escapeHtml(label)}</span>
+      <span class="gsp-card__summary-value" data-kav-summary-value="${key}">${value(key)}</span>
+    </div>`;
+
+  return `
+    <article class="gsp-card gsp-card--summary" data-kav-status-summary aria-live="polite">
+      <div class="gsp-card__header">
+        <div class="gsp-card__icon">${icon("kpi", { size: 21 })}</div>
+        <div class="gsp-card__body">
+          <h4>Summary Data Kaspersky</h4>
+          <p>Rekap status endpoint dari tabel Kaspersky.</p>
+        </div>
+      </div>
+      <div class="gsp-card__summary-total">
+        <div class="gsp-card__summary-total-copy">
+          <span class="gsp-card__summary-total-label">Total Device</span>
+          <span class="gsp-card__summary-total-note">tanpa status tidak ditemukan</span>
+        </div>
+        <strong data-kav-summary-value="total">${value("total")}</strong>
+      </div>
+      <div class="gsp-card__summary-list">
+        ${row("normal", "Device Normal", "ok")}
+        ${row("nik", "Device NIK Dobel", "warn")}
+        ${row("user", "Device User Dobel", "danger")}
+        ${row("notfound", "Device tidak ditemukan", "empty")}
+      </div>
+    </article>
+  `;
+}
+
+function updateKasperskyStatusSummary(container, items) {
+  const card = container.querySelector("[data-kav-status-summary]");
+  if (!card) return;
+  const counts = kasperskyStatusCounts(items);
+  Object.keys(counts).forEach((key) => {
+    const valueElement = card.querySelector(`[data-kav-summary-value="${key}"]`);
+    if (valueElement) valueElement.textContent = Number(counts[key]).toLocaleString("id-ID");
+  });
+}
+
+function setKasperskyStatusSummaryUnavailable(container) {
+  const card = container.querySelector("[data-kav-status-summary]");
+  if (!card) return;
+  card.querySelectorAll("[data-kav-summary-value]").forEach((valueElement) => {
+    valueElement.textContent = "—";
+  });
+}
+
+function renderSummary(data, moduleKey, isLoading = false, session = null) {
   const isError = data && data.success === false && data.message;
   const d = data?.data || data || {};
   const totalPc = d.summary?.totalPc ?? d.totalUser ?? (isLoading ? null : 0);
+  const cachedKavTable = moduleKey === "manage-pc-kaspersky" && session
+    ? getManagePcKasperskyCache(session)
+    : null;
+  const kavTableItems = cachedKavTable && Array.isArray(cachedKavTable.items) ? cachedKavTable.items : null;
 
   const makeStats = (statList, extraStat = "") => ({
     html: statList.map(([label, val]) => `
@@ -351,7 +428,7 @@ function renderSummary(data, moduleKey, isLoading = false) {
     hasPercent: Boolean(extraStat)
   });
 
-  // Submenu Kaspersky: 2 kotak (Kaspersky & Versi Kaspersky) persis menu utama
+  // Submenu Kaspersky: 3 kotak (Kaspersky, Versi Kaspersky & Summary)
   if (moduleKey === "manage-pc-kaspersky") {
     const kavOk = d.kaspersky?.ok ?? (isLoading ? null : 0);
     const kavNok = d.kaspersky?.nok ?? (totalPc != null && kavOk != null ? totalPc - kavOk : (isLoading ? null : 0));
@@ -363,10 +440,11 @@ function renderSummary(data, moduleKey, isLoading = false) {
     const kavInfoHtml = renderKasperskyInfo(kavInfo, isLoading);
 
     return `
-      <section class="gsp-cards gsp-cards--kaspersky" data-mpc-summary aria-live="polite">
+      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
         ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
         ${renderSummaryCardItem("kaspersky", "Kaspersky", "Endpoint Security - proteksi, update database & compliance.", makeStats([["Total Device", totalPc], ["Manage", kavOk], ["Not Manage", kavNok]], renderPercentStat(kavPercent, isLoading)), null, "blue", kavInfoHtml)}
         ${renderSummaryCardItem("kaspersky", "Versi Kaspersky", "Memastikan Versi Kaspersky selalu up to date.", makeStats([["Total Device", totalPc], ["Version OK", verOk], ["Version NOK", verNok]], renderPercentStat(kavPercent, isLoading)), null, "blue", kavInfoHtml)}
+        ${renderKasperskyStatusSummary(kavTableItems)}
       </section>
     `;
   }
@@ -955,6 +1033,7 @@ function bindKasperskyTable(container, session) {
     detailRows = Array.isArray(cached.detail?.rows) ? cached.detail.rows : [];
     loaded = true;
     renderProblem();
+    updateKasperskyStatusSummary(container, items);
   }
 
   renderPage();
@@ -969,6 +1048,7 @@ function bindKasperskyTable(container, session) {
       loaded = true;
       loadError = "";
       renderProblem();
+      updateKasperskyStatusSummary(container, items);
       renderPage();
     })
     .catch((error) => {
@@ -977,6 +1057,7 @@ function bindKasperskyTable(container, session) {
       loadError = error.message || "Data Kaspersky gagal dimuat.";
       detailRows = [];
       renderProblem();
+      setKasperskyStatusSummaryUnavailable(container);
       renderPage();
     });
 }
@@ -1079,7 +1160,8 @@ export function renderManagePcPage(container, routeInfo) {
     : renderSummary(
         cachedSummary ? { success: true, data: cachedSummary } : null,
         module.key,
-        !cachedSummary
+        !cachedSummary,
+        session
       );
 
   const contentHtml = `
@@ -1106,7 +1188,7 @@ export function renderManagePcPage(container, routeInfo) {
     .then((result) => {
       const summaryElement = container.querySelector("[data-mpc-summary]");
       if (summaryElement) {
-        summaryElement.outerHTML = renderSummary(result.success ? result.data : result, module.key, false);
+        summaryElement.outerHTML = renderSummary(result.success ? result.data : result, module.key, false, session);
       }
     })
     .catch((error) => {
@@ -1115,7 +1197,7 @@ export function renderManagePcPage(container, routeInfo) {
         summaryElement.outerHTML = renderSummary({
           success: false,
           message: error.message || "Ringkasan Manage PC gagal dimuat."
-        }, module.key, false);
+        }, module.key, false, session);
       }
     });
 }
