@@ -1245,6 +1245,10 @@ function renderScopePanel(module, activeScope) {
     return `${renderKasperskyProblemSection()}${renderKasperskyTableSection()}`;
   }
 
+  if (module.key === "manage-pc-itam" && activeScope === "office") {
+    return `${renderItamProblemSection()}${renderItamTableSection()}`;
+  }
+
   const scopeMeta = SCOPE_META[activeScope];
   const scopeDescription = module.scopes[activeScope] || "";
 
@@ -1354,6 +1358,10 @@ export function renderManagePcPage(container, routeInfo) {
 
   if (module.key === "manage-pc-kaspersky" && activeScope === "office") {
     bindKasperskyTable(container, session);
+  }
+
+  if (module.key === "manage-pc-itam" && activeScope === "office") {
+    bindItamTable(container, session);
   }
 
   if (activeScope !== "office" || cachedSummary) return;
