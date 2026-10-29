@@ -646,22 +646,24 @@ function renderKasperskyPageNumbers(page, totalPages) {
 function renderKasperskyProblemSection() {
   return `
     <section class="mpc-table-card mpc-kav-problem-card" data-kav-problem-card aria-labelledby="mpcKavProblemTitle" hidden>
-      <div class="mpc-kav-problem-header">
+      <button type="button" class="mpc-kav-problem-header" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent" aria-label="Buka detail Data kaspersky bermasalah">
         <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
-        <span class="mpc-kav-problem-title" id="mpcKavProblemTitle">data kaspersky bermasalah</span>
+        <span class="mpc-kav-problem-title" id="mpcKavProblemTitle">Data kaspersky bermasalah</span>
         <span class="mpc-kav-problem-count mpc-table-tab__count" data-kav-problem-count></span>
-        <button type="button" class="mpc-kav-problem-chevron" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent" aria-label="Buka detail Data Kaspersky Bermasalah">${icon("chevron-down", { size: 16 })}</button>
-      </div>
-      <div id="kavProblemContent" class="mpc-kav-problem-content" hidden>
-        <div class="mpc-table-wrapper">
-          <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
-            <thead>
-              <tr>
-                ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
-              </tr>
-            </thead>
-            <tbody data-kav-problem-rows></tbody>
-          </table>
+        <span class="mpc-kav-problem-chevron" aria-hidden="true">${icon("chevron-down", { size: 16 })}</span>
+      </button>
+      <div id="kavProblemContent" class="mpc-kav-problem-content" aria-hidden="true">
+        <div class="mpc-kav-problem-content__inner">
+          <div class="mpc-table-wrapper">
+            <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
+              <thead>
+                <tr>
+                  ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+                </tr>
+              </thead>
+              <tbody data-kav-problem-rows></tbody>
+            </table>
+          </div>
         </div>
       </div>
     </section>
@@ -923,10 +925,14 @@ function bindKasperskyTable(container, session) {
   if (toggle && content) {
     toggle.addEventListener("click", () => {
       const isExpanded = toggle.getAttribute("aria-expanded") === "true";
-      toggle.setAttribute("aria-expanded", String(!isExpanded));
-      toggle.setAttribute("aria-label", isExpanded ? "Buka detail Data Kaspersky Bermasalah" : "Tutup detail Data Kaspersky Bermasalah");
-      content.hidden = isExpanded;
-      if (!isExpanded) fitKasperskyProblemTable(problemCard);
+      const nextExpanded = !isExpanded;
+      toggle.setAttribute("aria-expanded", String(nextExpanded));
+      toggle.setAttribute("aria-label", nextExpanded ? "Tutup detail Data kaspersky bermasalah" : "Buka detail Data kaspersky bermasalah");
+      content.classList.toggle("is-open", nextExpanded);
+      content.setAttribute("aria-hidden", String(!nextExpanded));
+      if (nextExpanded) {
+        requestAnimationFrame(() => fitKasperskyProblemTable(problemCard));
+      }
     });
   }
 

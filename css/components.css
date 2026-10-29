@@ -1153,11 +1153,24 @@
   color: #526277;
 }
 
-/* Sumber kolom: lebar tetap agar tidak overflow dan konsistensi */
+/* Sumber kolom: lebar tetap + tetap terlihat di kanan saat halaman menyempit */
 .mpc-kav-table.mpc-kav-problem-table th[data-kav-col="source"],
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="source"] {
   min-width: 84px;
   width: 84px;
+  max-width: 84px;
+  position: sticky;
+  right: 0;
+  z-index: 1;
+  background: #fff;
+}
+
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="source"] {
+  background: #f6f8fb;
+}
+
+.mpc-kav-table.mpc-kav-problem-table tbody tr:hover td[data-kav-col="source"] {
+  background: #f8fafd;
 }
 
 /* Model header bisa mengecil bila ruang terbatas saja */
@@ -1170,17 +1183,32 @@
   max-width: var(--kav-problem-model-max, 60px);
 }
 
-/* Header kartu Data Kaspersky Bermasalah: ikon + judul + count, chevron kanan */
+/* Header kartu Data kaspersky bermasalah: seluruh header bisa diklik */
 .mpc-kav-problem-header {
+  all: unset;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 10px;
+  box-sizing: border-box;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.mpc-kav-problem-header:hover {
+  background: #f8fafd;
+}
+
+.mpc-kav-problem-header:focus-visible {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: -2px;
 }
 
 .mpc-kav-problem-title {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 14px;
   color: #1e3a5f;
 }
 
@@ -1189,33 +1217,37 @@
 }
 
 .mpc-kav-problem-chevron {
-  all: unset;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   margin-left: auto;
-  border-radius: 6px;
   color: #8492a6;
-  cursor: pointer;
   flex-shrink: 0;
 }
 
-.mpc-kav-problem-chevron:hover {
-  background: #f1f5f9;
-}
-
 .mpc-kav-problem-chevron svg {
-  transition: transform .2s;
+  transition: transform .25s ease;
 }
 
-.mpc-kav-problem-chevron[aria-expanded="true"] svg {
+.mpc-kav-problem-header[aria-expanded="true"] .mpc-kav-problem-chevron svg {
   transform: rotate(180deg);
 }
 
 .mpc-kav-problem-content {
-  padding-top: 8px;
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows .28s ease;
+}
+
+.mpc-kav-problem-content__inner {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.mpc-kav-problem-content.is-open {
+  grid-template-rows: 1fr;
 }
 
 .mpc-kav-status {
