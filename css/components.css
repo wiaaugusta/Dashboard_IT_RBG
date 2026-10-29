@@ -4089,6 +4089,37 @@
   min-height: 240px;
 }
 
+/* Kotak statistik & kotak versi lebih besar agar ruang di atasnya tertutup.
+   Ruang sisa kartu dibagi dua (auto margin): di atas kotak stat dan di bawah
+   kotak info, agar jarak header -> kotak stat tidak terlalu lebar. */
+.gsp-cards--kaspersky-3 .gsp-card__stats {
+  gap: 4px;
+}
+
+.gsp-cards--kaspersky-3 .gsp-card__stats .gsp-card__stat {
+  padding: 10px 4px;
+}
+
+.gsp-cards--kaspersky-3 .gsp-card__stats .gsp-card__stat small {
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.gsp-cards--kaspersky-3 .gsp-card__stats .gsp-card__stat strong {
+  font-size: 15px;
+  min-height: 20px;
+}
+
+.gsp-cards--kaspersky-3 .gsp-card__info {
+  padding: 7px 10px;
+  margin-bottom: auto;
+}
+
+.gsp-cards--kaspersky-3 .gsp-card__info-row {
+  padding: 8px 0;
+  font-size: var(--font-size-small);
+}
+
 .gsp-card__header {
   display: flex;
   align-items: center;
