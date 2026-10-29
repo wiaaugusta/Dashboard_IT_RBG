@@ -939,16 +939,17 @@
   white-space: nowrap;
 }
 
-/* Data status rata kiri; header tetap rata tengah. Label status yang
+/* Data status rata tengah (sejajar dengan header). Label status yang
    panjang dibungkus di dalam lebar kolom tetap, bukan memotong tabel. */
 .mpc-kav-table td.mpc-table__status {
-    padding-left: 0;
-    padding-right: 2px;
-    text-align: left;
+    padding-left: 6px;
+    padding-right: 6px;
+    text-align: center;
     overflow: hidden;
   }
 
 .mpc-kav-table .mpc-kav-status {
+    justify-content: center;
     max-width: 100%;
     white-space: nowrap;
     overflow: hidden;
@@ -1039,17 +1040,17 @@
   white-space: nowrap;
 }
 
-/* Header STATUS dibuat rata tengah, panah sort tetap di tepi kanan
-   supaya label tidak bergeser. */
+/* Header STATUS rata tengah sejajar dengan data, panah sort tetap di
+   tepi kanan supaya label tidak bergeser. */
 .mpc-kav-table th.mpc-kav-th--left .mpc-table__th-sort {
     position: relative;
-    justify-content: flex-start;
-    padding: 0 24px 0 0;
-    text-align: left;
+    justify-content: center;
+    padding: 0 24px;
+    text-align: center;
   }
 
 .mpc-kav-table th.mpc-kav-th--left .mpc-table__th-label {
-    text-align: left;
+    text-align: center;
   }
 
 .mpc-kav-table th.mpc-kav-th--left .mpc-table__sort-arrows {
@@ -1176,6 +1177,11 @@
   color: #526277;
 }
 
+/* Data Source tidak menempel ke tepi kanan kartu. */
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="source"] {
+  padding-right: 14px;
+}
+
 /* Sumber kolom: lebar tetap + tetap terlihat di kanan saat halaman menyempit */
 .mpc-kav-table.mpc-kav-problem-table th[data-kav-col="source"],
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="source"] {
@@ -1213,7 +1219,8 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  padding: 5px 10px;
+  /* Kiri 18px agar ikon+judul sejajar dengan kartu di bawahnya. */
+  padding: 5px 10px 5px 18px;
   box-sizing: border-box;
   cursor: pointer;
   text-align: left;
@@ -1277,6 +1284,11 @@
 .mpc-kav-card .mpc-table-card__header {
   padding: 16px 18px 12px;
   gap: 12px;
+}
+
+/* Judul "Data Kaspersky Office" sedikit lebih besar. */
+.mpc-kav-card .mpc-table-card__header h2 {
+  font-size: 17px;
 }
 
 .mpc-kav-card .mpc-table-card__title-group {
