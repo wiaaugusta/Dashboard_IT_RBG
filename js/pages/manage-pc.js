@@ -646,9 +646,9 @@ function renderKasperskyPageNumbers(page, totalPages) {
 function renderKasperskyProblemSection() {
   return `
     <section class="mpc-table-card mpc-kav-problem-card" data-kav-problem-card aria-labelledby="mpcKavProblemTitle" hidden>
-      <button type="button" class="mpc-kav-problem-header" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent" aria-label="Buka detail Data kaspersky bermasalah">
+      <button type="button" class="mpc-kav-problem-header" data-kav-problem-toggle aria-expanded="false" aria-controls="kavProblemContent" aria-label="Buka detail Data Kaspersky Bermasalah">
         <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
-        <span class="mpc-kav-problem-title" id="mpcKavProblemTitle">Data kaspersky bermasalah</span>
+        <span class="mpc-kav-problem-title" id="mpcKavProblemTitle">Data Kaspersky Bermasalah</span>
         <span class="mpc-kav-problem-count mpc-table-tab__count" data-kav-problem-count></span>
         <span class="mpc-kav-problem-chevron" aria-hidden="true">${icon("chevron-down", { size: 16 })}</span>
       </button>
@@ -927,7 +927,7 @@ function bindKasperskyTable(container, session) {
       const isExpanded = toggle.getAttribute("aria-expanded") === "true";
       const nextExpanded = !isExpanded;
       toggle.setAttribute("aria-expanded", String(nextExpanded));
-      toggle.setAttribute("aria-label", nextExpanded ? "Tutup detail Data kaspersky bermasalah" : "Buka detail Data kaspersky bermasalah");
+      toggle.setAttribute("aria-label", nextExpanded ? "Tutup detail Data Kaspersky Bermasalah" : "Buka detail Data Kaspersky Bermasalah");
       content.classList.toggle("is-open", nextExpanded);
       content.setAttribute("aria-hidden", String(!nextExpanded));
       if (nextExpanded) {
