@@ -21,6 +21,7 @@
   `clasp update-deployment AKfycbyld_jhumhTe3FY2Yta9csQDIsAYe5l_el0BO917FF7USX1Ssj_QQHFSG1gGejHuoRt -V <versi> -d "..."`
 - Jangan membuat deployment baru dan jangan memakai `clasp deploy` (URL berubah). Frontend harus tetap memakai URL stabil di atas.
 - Deploy backend terakhir: versi 44 (ITAM table columns O..X).
+- Test tabel ITAM (DOM): `node .harness/build-managepc-test.mjs; Copy-Item .harness\test-itam-table.html github-files\__test-itam.html; node .harness/run-itam-test.mjs` (hapus `__test-itam.html` setelahnya).
 
 ## Perintah & Lingkungan
 - Shell: Windows PowerShell 5.1. Jangan pakai `&&` atau `head`; gunakan `;`, `Get-ChildItem`, `Select-Object`. Gunakan parameter `workdir`, bukan `cd`.
