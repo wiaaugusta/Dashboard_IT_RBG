@@ -521,34 +521,6 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
 
   // Submenu ITAM: 2 kotak (ITAM & Privilege)
   if (moduleKey === "manage-pc-itam") {
-    const itamOk = d.itam?.ok ?? (isLoading ? null : 0);
-    const itamNok = d.itam?.nok ?? (totalPc != null && itamOk != null ? totalPc - itamOk : (isLoading ? null : 0));
-    const privOk = d.itam?.privilegeOk ?? (isLoading ? null : 0);
-    const privNok = d.itam?.privilegeNok ?? (totalPc != null && privOk != null ? totalPc - privOk : (isLoading ? null : 0));
-
-    return `
-      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
-        ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]]), "Status Inventaris Aset", "teal")}
-        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]]), "Status Hak Akses ITAM", "teal")}
-      </section>
-    `;
-  }
-
-  // Submenu KACE: 1 kotak (KACE)
-  if (moduleKey === "manage-pc-kace") {
-    const kaceOk = d.kace?.ok ?? (isLoading ? null : 0);
-    const kaceNok = d.kace?.nok ?? (totalPc != null && kaceOk != null ? totalPc - kaceOk : (isLoading ? null : 0));
-
-    return `
-      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
-        ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]]), "Status Deployment KACE", "purple")}
-      </section>
-    `;
-  }
-
-  /* Submenu ITAM: 2 kotak (ITAM & Privilege) + Summary. */
-  if (moduleKey === "manage-pc-itam") {
     const itam = d.itam || {};
     const itamTotal = itam.managed ?? (isLoading ? null : 0);
     const itamOk = itam.ok ?? 0;
@@ -577,8 +549,22 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
 
     return `
       <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
+        ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
         ${renderSummaryCardItem("itam", "ITAM", "Inventarisasi & lifecycle aset PC & hardware.", makeStats([["Total Device", itamTotal], ["Normal", itamOk], ["User Dobel", itamWarn], ["Danger", itamDanger], ["Empty", itamEmpty]]), null, "teal", itamInfoHtml)}
         ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", itamTotal], ["Privilege OK", privOk], ["Privilege NOK", privNok]]), null, "teal")}
+      </section>
+    `;
+  }
+
+  // Submenu KACE: 1 kotak (KACE)
+  if (moduleKey === "manage-pc-kace") {
+    const kaceOk = d.kace?.ok ?? (isLoading ? null : 0);
+    const kaceNok = d.kace?.nok ?? (totalPc != null && kaceOk != null ? totalPc - kaceOk : (isLoading ? null : 0));
+
+    return `
+      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
+        ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
+        ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]]), "Status Deployment KACE", "purple")}
       </section>
     `;
   }
@@ -1038,7 +1024,7 @@ function fitProblemTable(problemCard, fitPlan = KASPERSKY_FIT_PLAN) {
  * search, sort per kolom, pagination client-side, marquee, kartu
  * "Data Bermasalah" + pemotongan kolom adaptif, dan cache-first load.
  */
-function bindEndpointTable(container, options) {
+function bindEndpointTable(container, session, options) {
   const {
     cardSelector,
     headSelector,
@@ -1302,7 +1288,7 @@ function bindEndpointTable(container, options) {
 }
 
 function bindKasperskyTable(container, session) {
-  bindEndpointTable(container, {
+  bindEndpointTable(container, session, {
     cardSelector: ".mpc-kav-card",
     headSelector: "[data-kav-head]",
     rowsSelector: "[data-kav-rows]",
@@ -1331,7 +1317,7 @@ function bindKasperskyTable(container, session) {
 }
 
 function bindItamTable(container, session) {
-  bindEndpointTable(container, {
+  bindEndpointTable(container, session, {
     cardSelector: ".mpc-kav-card",
     headSelector: "[data-itam-head]",
     rowsSelector: "[data-itam-rows]",
