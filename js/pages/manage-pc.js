@@ -191,43 +191,65 @@ const KASPERSKY_DETAIL_COLUMNS = [
 
 /* Tampilan kartu "Data Kaspersky Bermasalah": No urut + seluruh kolom
    B..L. Bila ruang kurang, Sistem Operasi lebih dulu dipotong, lalu
-   Last connected (lihat fitKasperskyProblemTable). */
+   Last connected (lihat fitProblemTable). */
 const KASPERSKY_PROBLEM_COLUMNS = [
   { key: "no", label: "No" },
   ...KASPERSKY_DETAIL_COLUMNS
 ];
 
+/* Urutan pemotongan kolom Kaspersky bila tabel meluber: Sistem Operasi,
+   lalu Last connected, lalu Model. */
+const KASPERSKY_FIT_PLAN = [
+  { key: "sistemOperasi", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 80 },
+  { key: "lastConnected", cls: "is-clip-last", cssVar: "--kav-problem-last-max", minWidth: 80 },
+  { key: "model", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 60 }
+];
+
+/* Tabel endpoint ITAM (MASTER REPORT OFFICE blok O203:X400). Kolom
+   mengikuti sheet; STATUS sudah berisi keterangan di kolom X. */
+const ITAM_TABLE_PAGE_SIZE = 15;
 const ITAM_TABLE_COLUMNS = [
   { key: "no", label: "No", sortable: false },
   { key: "namaKomputer", label: "Nama Komputer" },
   { key: "alamatIp", label: "Alamat IP" },
   { key: "workgroup", label: "Workgroup" },
-  { key: "versionItam", label: "Version ITAM" },
-  { key: "agentVersion", label: "Agent version" },
-  { key: "model", label: "Model" },
-  { key: "sistemOperasi", label: "Sistem Operasi" },
-  { key: "lastConnected", label: "Last connected" },
-  { key: "dnsName", label: "DNS name" },
-  { key: "status", label: "STATUS" }
+  { key: "osName", label: "OS Name" },
+  { key: "groupAdministrator", label: "Group Administrator" },
+  { key: "groupUser", label: "Group User" },
+  { key: "itamVersion", label: "Itam Version" },
+  { key: "statusPrivilege", label: "Status Privilege" },
+  { key: "lastInventory", label: "Last Inventory" },
+  { key: "status", label: "Status" }
 ].map((column) => ({ ...column, sortable: column.sortable !== false }));
 
 const ITAM_DETAIL_COLUMNS = [
   { key: "namaKomputer", label: "Nama Komputer" },
   { key: "alamatIp", label: "Alamat IP" },
   { key: "workgroup", label: "Workgroup" },
-  { key: "versionItam", label: "Version ITAM" },
-  { key: "agentVersion", label: "Agent version" },
-  { key: "model", label: "Model" },
-  { key: "sistemOperasi", label: "Sistem Operasi" },
-  { key: "lastConnected", label: "Last connected" },
-  { key: "dnsName", label: "DNS name" },
-  { key: "status", label: "STATUS" },
+  { key: "osName", label: "OS Name" },
+  { key: "groupAdministrator", label: "Group Administrator" },
+  { key: "groupUser", label: "Group User" },
+  { key: "itamVersion", label: "Itam Version" },
+  { key: "statusPrivilege", label: "Status Privilege" },
+  { key: "lastInventory", label: "Last Inventory" },
+  { key: "status", label: "Status" },
   { key: "source", label: "Source" }
 ].map((column, index) => ({ ...column, sourceIndex: index }));
 
 const ITAM_PROBLEM_COLUMNS = [
   { key: "no", label: "No" },
   ...ITAM_DETAIL_COLUMNS
+];
+
+/* Kolom teks panjang ITAM: satu baris + marquee saat hover. */
+const ITAM_MARQUEE_KEYS = ["osName", "groupAdministrator", "groupUser", "lastInventory"];
+
+/* Urutan pemotongan kolom ITAM di kartu "Data ITAM Bermasalah" bila
+   tabel meluber: OS Name, lalu Last Inventory, lalu Group Administrator. */
+const ITAM_FIT_PLAN = [
+  { key: "osName", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 80 },
+  { key: "lastInventory", cls: "is-clip-last", cssVar: "--kav-problem-last-max", minWidth: 80 },
+  { key: "groupAdministrator", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 60 }
 ];
 
 function escapeHtml(value) {
@@ -706,14 +728,14 @@ function renderKasperskyHeaderCell(column) {
   `;
 }
 
-function renderKasperskyTableHead() {
-  return `<tr>${KASPERSKY_TABLE_COLUMNS.map(renderKasperskyHeaderCell).join("")}</tr>`;
+function renderTableHead(columns = KASPERSKY_TABLE_COLUMNS) {
+  return `<tr>${columns.map(renderKasperskyHeaderCell).join("")}</tr>`;
 }
 
-function renderKasperskySkeletonRows() {
+function renderSkeletonRows(columns = KASPERSKY_TABLE_COLUMNS) {
   const rows = [];
   for (let row = 0; row < 6; row++) {
-    const cells = KASPERSKY_TABLE_COLUMNS.map((_, col) => {
+    const cells = columns.map((_, col) => {
       const width = col === 0 ? 85 : 62 + ((row + col) % 3) * 12;
       return `<td><span class="skeleton mpc-table__skeleton-bar" style="width:${width}%"></span></td>`;
     });
@@ -750,13 +772,69 @@ function renderKasperskyRows(items, startIndex = 0) {
   `).join("");
 }
 
+/* Sel marquee generik: teks panjang dipotong satu baris. */
+function renderMarqueeCell(key, content) {
+  return `<td data-kav-col="${key}"><span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${content}</span></span></td>`;
+}
+
+function renderItamRows(items, startIndex = 0) {
+  if (items.length === 0) {
+    return `<tr><td colspan="${ITAM_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
+  }
+
+  return items.map((item, index) => `
+    <tr class="mpc-table__row">
+      <td class="mpc-table__number" data-kav-col="no">${startIndex + index + 1}</td>
+      <td data-kav-col="namaKomputer" class="mpc-table__device">${escapeHtml(item.namaKomputer || "—")}</td>
+      <td data-kav-col="alamatIp">${escapeHtml(item.alamatIp || "—")}</td>
+      <td data-kav-col="workgroup">${escapeHtml(item.workgroup || "—")}</td>
+      ${renderMarqueeCell("osName", escapeHtml(item.osName || "—"))}
+      ${renderMarqueeCell("groupAdministrator", escapeHtml(item.groupAdministrator || "—"))}
+      ${renderMarqueeCell("groupUser", escapeHtml(item.groupUser || "—"))}
+      <td data-kav-col="itamVersion">${escapeHtml(item.itamVersion || "—")}</td>
+      <td data-kav-col="statusPrivilege">${escapeHtml(item.statusPrivilege || "—")}</td>
+      ${renderMarqueeCell("lastInventory", escapeHtml(item.lastInventory || "—"))}
+      <td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(item.status)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderItamDetailCell(column, value) {
+  const text = String(value == null ? "" : value).trim();
+  if (column.key === "status") {
+    return `<td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(text)}</td>`;
+  }
+  if (column.key === "source") {
+    return `<td data-kav-col="source">${renderKasperskySource(text)}</td>`;
+  }
+  if (ITAM_MARQUEE_KEYS.indexOf(column.key) !== -1) {
+    return renderMarqueeCell(column.key, escapeHtml(text || "—"));
+  }
+  const className = column.key === "namaKomputer" ? ' class="mpc-table__device"' : "";
+  return `<td data-kav-col="${column.key}"${className}>${escapeHtml(text || "—")}</td>`;
+}
+
+function renderItamDetailRows(rows) {
+  return kasperskyDetailDataRows(rows).map((row, rowIndex) => `
+    <tr class="mpc-table__row">
+      ${ITAM_PROBLEM_COLUMNS.map((column) => {
+        if (column.key === "no") {
+          return `<td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>`;
+        }
+        return renderItamDetailCell(column, row[column.sourceIndex]);
+      }).join("")}
+    </tr>
+  `).join("");
+}
+
 /**
- * Kolom Model, Sistem Operasi & Last connected dipotong satu baris. Saat
- * hover, teks bergeser SATU KALI ke kiri (tanpa bolak-balik) bila melebihi
- * lebar kolom. Kecepatan ~100px/detik dan durasi menyesuaikan panjang teks.
+ * Kolom teks panjang dipotong satu baris. Saat hover, teks bergeser SATU
+ * KALI ke kiri (tanpa bolak-balik) bila melebihi lebar kolom. Kecepatan
+ * ~100px/detik dan durasi menyesuaikan panjang teks.
  */
-function bindKasperskyMarquee(containerElement) {
-  const MARQUEE_CELL = '[data-kav-col="model"], [data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]';
+function bindMarquee(containerElement, marqueeCells) {
+  const MARQUEE_CELL = marqueeCells ||
+    '[data-kav-col="model"], [data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]';
 
   containerElement.addEventListener("mouseover", (event) => {
     const cell = event.target.closest(MARQUEE_CELL);
@@ -853,8 +931,8 @@ function renderItamTableSection() {
       </header>
       <div class="mpc-table-wrapper">
         <table class="mpc-table mpc-kav-table">
-          <thead data-itam-head>${renderKasperskyTableHead()}</thead>
-          <tbody data-itam-rows>${renderKasperskySkeletonRows()}</tbody>
+          <thead data-itam-head>${renderTableHead(ITAM_TABLE_COLUMNS)}</thead>
+          <tbody data-itam-rows>${renderSkeletonRows(ITAM_TABLE_COLUMNS)}</tbody>
         </table>
       </div>
       <footer class="mpc-table__footer">
@@ -863,35 +941,6 @@ function renderItamTableSection() {
       </footer>
     </section>
   `;
-}
-
-function bindItamTable(container, session) {
-  const card = container.querySelector(".mpc-kav-card");
-  if (!card) return;
-
-  const problemCard = container.querySelector("[data-itam-problem-card]");
-  const problemRowsElement = container.querySelector("[data-itam-problem-rows]");
-
-  loadManagePcItamCached(session)
-    .then((result) => {
-      if (!result.success) throw new Error(result.message);
-      const data = result.data || {};
-      const items = Array.isArray(data.items) ? data.items : [];
-      const detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
-      
-      const rowsHtml = renderKasperskyRows(items);
-      card.querySelector("[data-itam-rows]").innerHTML = rowsHtml;
-      
-      const probRowsHtml = renderKasperskyDetailRows(detailRows);
-      if (problemRowsElement) problemRowsElement.innerHTML = probRowsHtml;
-      if (problemCard) problemCard.hidden = !probRowsHtml;
-      
-      card.querySelector("[data-itam-count]").textContent = `Menampilkan ${items.length} perangkat`;
-    })
-    .catch((err) => {
-      console.error("ITAM table error:", err);
-      card.querySelector("[data-itam-count]").textContent = "Gagal memuat data.";
-    });
 }
 
 function renderKasperskyProblemSection() {
@@ -942,8 +991,8 @@ function renderKasperskyTableSection() {
       </header>
       <div class="mpc-table-wrapper">
         <table class="mpc-table mpc-kav-table">
-          <thead data-kav-head>${renderKasperskyTableHead()}</thead>
-          <tbody data-kav-rows>${renderKasperskySkeletonRows()}</tbody>
+          <thead data-kav-head>${renderTableHead()}</thead>
+          <tbody data-kav-rows>${renderSkeletonRows()}</tbody>
         </table>
       </div>
       <footer class="mpc-table__footer">
@@ -954,19 +1003,17 @@ function renderKasperskyTableSection() {
   `;
 }
 
-/* Utamakan lebar alami. Hanya bila tabel meluber: potong Sistem Operasi
-   lebih dulu, lalu Last connected. Dengan begitu tidak ada data yang
-   membungkus ke baris baru. */
-function fitKasperskyProblemTable(problemCard) {
+/* Utamakan lebar alami. Hanya bila tabel meluber: potong kolom sesuai
+   fit plan (urutan + css var per modul). Dengan begitu tidak ada data
+   yang membungkus ke baris baru. */
+function fitProblemTable(problemCard, fitPlan = KASPERSKY_FIT_PLAN) {
   if (!problemCard || problemCard.hidden) return;
   const wrapper = problemCard.querySelector(".mpc-table-wrapper");
   const table = problemCard.querySelector(".mpc-kav-problem-table");
   if (!wrapper || !table) return;
 
   table.classList.remove("is-clip-os", "is-clip-last", "is-clip-model");
-  table.style.removeProperty("--kav-problem-os-max");
-  table.style.removeProperty("--kav-problem-last-max");
-  table.style.removeProperty("--kav-problem-model-max");
+  fitPlan.forEach((step) => table.style.removeProperty(step.cssVar));
 
   const overflow = () => wrapper.scrollWidth - wrapper.clientWidth;
   const widestText = (columnKey) => {
@@ -974,43 +1021,62 @@ function fitKasperskyProblemTable(problemCard) {
     return Math.max(0, ...Array.from(texts, (text) => text.getBoundingClientRect().width));
   };
 
-  if (overflow() <= 1) return;
-
-  const osWidth = widestText("sistemOperasi");
-  if (osWidth) {
-    const targetWidth = Math.max(80, Math.ceil(osWidth - overflow()) - 1);
-    table.style.setProperty("--kav-problem-os-max", `${targetWidth}px`);
-    table.classList.add("is-clip-os");
-  }
-  if (overflow() <= 1) return;
-
-  const lastWidth = widestText("lastConnected");
-  if (lastWidth) {
-    const targetWidth = Math.max(80, Math.ceil(lastWidth - overflow()) - 1);
-    table.style.setProperty("--kav-problem-last-max", `${targetWidth}px`);
-    table.classList.add("is-clip-last");
-  }
-  if (overflow() <= 1) return;
-
-  const modelWidth = widestText("model");
-  if (modelWidth) {
-    const targetWidth = Math.max(60, Math.ceil(modelWidth - overflow()) - 1);
-    table.style.setProperty("--kav-problem-model-max", `${targetWidth}px`);
-    table.classList.add("is-clip-model");
+  for (let i = 0; i < fitPlan.length; i++) {
+    if (overflow() <= 1) return;
+    const step = fitPlan[i];
+    const textWidth = widestText(step.key);
+    if (textWidth) {
+      const targetWidth = Math.max(step.minWidth, Math.ceil(textWidth - overflow()) - 1);
+      table.style.setProperty(step.cssVar, `${targetWidth}px`);
+      table.classList.add(step.cls);
+    }
   }
 }
 
-function bindKasperskyTable(container, session) {
-  const card = container.querySelector(".mpc-kav-card");
+/**
+ * Binding tabel endpoint generik (dipakai Kaspersky & ITAM):
+ * search, sort per kolom, pagination client-side, marquee, kartu
+ * "Data Bermasalah" + pemotongan kolom adaptif, dan cache-first load.
+ */
+function bindEndpointTable(container, options) {
+  const {
+    cardSelector,
+    headSelector,
+    rowsSelector,
+    searchSelector,
+    countSelector,
+    paginationSelector,
+    problemCardSelector,
+    problemRowsSelector,
+    problemCountSelector,
+    problemToggleSelector,
+    problemContentId,
+    problemTitle,
+    loadingLabel,
+    navLabel,
+    columns,
+    pageSize,
+    dateSortKeys = [],
+    fitPlan,
+    marqueeCells,
+    renderRows,
+    renderDetailRows,
+    loadCached,
+    getCached,
+    onLoaded,
+    onLoadError
+  } = options;
+
+  const card = container.querySelector(cardSelector);
   if (!card) return;
 
-  const headElement = card.querySelector("[data-kav-head]");
-  const rowsElement = card.querySelector("[data-kav-rows]");
-  const searchInput = card.querySelector("[data-kav-search]");
-  const countElement = card.querySelector("[data-kav-count]");
-  const paginationElement = card.querySelector("[data-kav-pagination]");
-  const problemCard = container.querySelector("[data-kav-problem-card]");
-  const problemRowsElement = container.querySelector("[data-kav-problem-rows]");
+  const headElement = card.querySelector(headSelector);
+  const rowsElement = card.querySelector(rowsSelector);
+  const searchInput = card.querySelector(searchSelector);
+  const countElement = card.querySelector(countSelector);
+  const paginationElement = card.querySelector(paginationSelector);
+  const problemCard = container.querySelector(problemCardSelector);
+  const problemRowsElement = container.querySelector(problemRowsSelector);
 
   let items = [];
   let detailRows = [];
@@ -1025,14 +1091,14 @@ function bindKasperskyTable(container, session) {
 
   function renderProblem() {
     const dataRows = kasperskyDetailDataRows(detailRows);
-    const html = renderKasperskyDetailRows(dataRows);
+    const html = renderDetailRows(dataRows);
     if (problemRowsElement) problemRowsElement.innerHTML = html;
     if (problemCard) {
       problemCard.hidden = !html;
-      const countEl = problemCard.querySelector("[data-kav-problem-count]");
+      const countEl = problemCard.querySelector(problemCountSelector);
       if (countEl) countEl.textContent = dataRows.length ? String(dataRows.length) : "";
     }
-    fitKasperskyProblemTable(problemCard);
+    fitProblemTable(problemCard, fitPlan);
   }
 
   function updateSortHeaders() {
@@ -1060,7 +1126,7 @@ function bindKasperskyTable(container, session) {
   }
 
   function compareItems(left, right) {
-    if (sortBy === "lastConnected") {
+    if (dateSortKeys.indexOf(sortBy) !== -1) {
       const aTime = Date.parse(left[sortBy]);
       const bTime = Date.parse(right[sortBy]);
       if (!Number.isNaN(aTime) && !Number.isNaN(bTime)) return aTime - bTime;
@@ -1075,7 +1141,7 @@ function bindKasperskyTable(container, session) {
     let result = items.slice();
     if (query) {
       result = result.filter((item) =>
-        KASPERSKY_TABLE_COLUMNS.some((column) =>
+        columns.some((column) =>
           String(item[column.key] == null ? "" : item[column.key]).toUpperCase().indexOf(query) !== -1));
     }
     if (sortBy) {
@@ -1086,13 +1152,13 @@ function bindKasperskyTable(container, session) {
   }
 
   function updatePagination(total) {
-    totalPages = Math.max(1, Math.ceil(total / KASPERSKY_TABLE_PAGE_SIZE));
+    totalPages = Math.max(1, Math.ceil(total / pageSize));
     page = Math.max(1, Math.min(totalPages, page));
-    const first = total ? ((page - 1) * KASPERSKY_TABLE_PAGE_SIZE) + 1 : 0;
-    const last = Math.min(page * KASPERSKY_TABLE_PAGE_SIZE, total);
+    const first = total ? ((page - 1) * pageSize) + 1 : 0;
+    const last = Math.min(page * pageSize, total);
     countElement.textContent = `Menampilkan ${first}–${last} dari ${total} perangkat`;
     paginationElement.innerHTML = totalPages > 1 ? `
-      <div class="mpc-table__page-actions" role="navigation" aria-label="Navigasi halaman Kaspersky">
+      <div class="mpc-table__page-actions" role="navigation" aria-label="${escapeHtml(navLabel)}">
         <button type="button" class="mpc-table__page-button" data-kav-page="prev"
           aria-label="Halaman sebelumnya" ${page <= 1 ? "disabled" : ""}>&lsaquo;</button>
         ${renderKasperskyPageNumbers(page, totalPages)}
@@ -1104,14 +1170,14 @@ function bindKasperskyTable(container, session) {
 
   function renderPage() {
     if (!loaded) {
-      rowsElement.innerHTML = renderKasperskySkeletonRows();
-      countElement.textContent = "Memuat data Kaspersky...";
+      rowsElement.innerHTML = renderSkeletonRows(columns);
+      countElement.textContent = `Memuat data ${loadingLabel}...`;
       paginationElement.innerHTML = "";
       return;
     }
 
     if (loadError) {
-      rowsElement.innerHTML = `<tr><td colspan="${KASPERSKY_TABLE_COLUMNS.length}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(loadError)}</td></tr>`;
+      rowsElement.innerHTML = `<tr><td colspan="${columns.length}" class="mpc-table__state mpc-table__state--error" role="alert">${escapeHtml(loadError)}</td></tr>`;
       countElement.textContent = "";
       paginationElement.innerHTML = "";
       return;
@@ -1119,13 +1185,13 @@ function bindKasperskyTable(container, session) {
 
     const filtered = filteredItems();
     const total = filtered.length;
-    totalPages = Math.max(1, Math.ceil(total / KASPERSKY_TABLE_PAGE_SIZE));
+    totalPages = Math.max(1, Math.ceil(total / pageSize));
     page = Math.max(1, Math.min(totalPages, page));
-    const startIndex = (page - 1) * KASPERSKY_TABLE_PAGE_SIZE;
+    const startIndex = (page - 1) * pageSize;
 
-    rowsElement.innerHTML = renderKasperskyRows(
-      filtered.slice(startIndex, startIndex + KASPERSKY_TABLE_PAGE_SIZE), startIndex);
-    if (headElement) headElement.innerHTML = renderKasperskyTableHead();
+    rowsElement.innerHTML = renderRows(
+      filtered.slice(startIndex, startIndex + pageSize), startIndex);
+    if (headElement) headElement.innerHTML = renderTableHead(columns);
     updatePagination(total);
     updateSortHeaders();
   }
@@ -1168,21 +1234,21 @@ function bindKasperskyTable(container, session) {
     renderPage();
   });
 
-  bindKasperskyMarquee(card);
-  if (problemCard) bindKasperskyMarquee(problemCard);
+  bindMarquee(card, marqueeCells);
+  if (problemCard) bindMarquee(problemCard, marqueeCells);
 
-  const toggle = problemCard?.querySelector("[data-kav-problem-toggle]");
-  const content = problemCard?.querySelector("[id='kavProblemContent']");
+  const toggle = problemCard?.querySelector(problemToggleSelector);
+  const content = problemCard?.querySelector(`[id='${problemContentId}']`);
   if (toggle && content) {
     toggle.addEventListener("click", () => {
       const isExpanded = toggle.getAttribute("aria-expanded") === "true";
       const nextExpanded = !isExpanded;
       toggle.setAttribute("aria-expanded", String(nextExpanded));
-      toggle.setAttribute("aria-label", nextExpanded ? "Tutup detail Data Kaspersky Bermasalah" : "Buka detail Data Kaspersky Bermasalah");
+      toggle.setAttribute("aria-label", nextExpanded ? `Tutup detail ${problemTitle}` : `Buka detail ${problemTitle}`);
       content.classList.toggle("is-open", nextExpanded);
       content.setAttribute("aria-hidden", String(!nextExpanded));
       if (nextExpanded) {
-        requestAnimationFrame(() => fitKasperskyProblemTable(problemCard));
+        requestAnimationFrame(() => fitProblemTable(problemCard, fitPlan));
       }
     });
   }
@@ -1194,45 +1260,101 @@ function bindKasperskyTable(container, session) {
       const width = Math.round(entries[0].contentRect.width);
       if (width === lastWidth) return;
       lastWidth = width;
-      fitKasperskyProblemTable(problemCard);
+      fitProblemTable(problemCard, fitPlan);
     });
     observer.observe(problemCard.querySelector(".mpc-table-wrapper") || problemCard);
   }
 
-  /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
-  const cached = getManagePcKasperskyCache(session);
-  if (cached) {
-    items = Array.isArray(cached.items) ? cached.items : [];
-    detailRows = Array.isArray(cached.detail?.rows) ? cached.detail.rows : [];
+  function applyData(data) {
+    items = Array.isArray(data.items) ? data.items : [];
+    detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
     loaded = true;
+    loadError = "";
     renderProblem();
-    updateKasperskyStatusSummary(container, items);
+    if (onLoaded) onLoaded(container, items);
+    renderPage();
+  }
+
+  /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
+  const cached = getCached(session);
+  if (cached) {
+    loaded = true;
+    applyData(cached);
   }
 
   renderPage();
 
-  loadManagePcKasperskyCached(session)
+  loadCached(session)
     .then((result) => {
       if (!card.isConnected) return;
-      if (!result.success) throw new Error(result.message || "Data Kaspersky gagal dimuat.");
-      const data = result.data || {};
-      items = Array.isArray(data.items) ? data.items : [];
-      detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
-      loaded = true;
-      loadError = "";
-      renderProblem();
-      updateKasperskyStatusSummary(container, items);
-      renderPage();
+      if (!result.success) throw new Error(result.message || `Data ${loadingLabel} gagal dimuat.`);
+      applyData(result.data || {});
     })
     .catch((error) => {
       if (!card.isConnected) return;
       loaded = true;
-      loadError = error.message || "Data Kaspersky gagal dimuat.";
+      loadError = error.message || `Data ${loadingLabel} gagal dimuat.`;
       detailRows = [];
       renderProblem();
-      setKasperskyStatusSummaryUnavailable(container);
+      if (onLoadError) onLoadError(container);
       renderPage();
     });
+}
+
+function bindKasperskyTable(container, session) {
+  bindEndpointTable(container, {
+    cardSelector: ".mpc-kav-card",
+    headSelector: "[data-kav-head]",
+    rowsSelector: "[data-kav-rows]",
+    searchSelector: "[data-kav-search]",
+    countSelector: "[data-kav-count]",
+    paginationSelector: "[data-kav-pagination]",
+    problemCardSelector: "[data-kav-problem-card]",
+    problemRowsSelector: "[data-kav-problem-rows]",
+    problemCountSelector: "[data-kav-problem-count]",
+    problemToggleSelector: "[data-kav-problem-toggle]",
+    problemContentId: "kavProblemContent",
+    problemTitle: "Data Kaspersky Bermasalah",
+    loadingLabel: "Kaspersky",
+    navLabel: "Navigasi halaman Kaspersky",
+    columns: KASPERSKY_TABLE_COLUMNS,
+    pageSize: KASPERSKY_TABLE_PAGE_SIZE,
+    dateSortKeys: ["lastConnected"],
+    fitPlan: KASPERSKY_FIT_PLAN,
+    renderRows: renderKasperskyRows,
+    renderDetailRows: renderKasperskyDetailRows,
+    loadCached: loadManagePcKasperskyCached,
+    getCached: (sess) => getManagePcKasperskyCache(sess),
+    onLoaded: (target, loadedItems) => updateKasperskyStatusSummary(target, loadedItems),
+    onLoadError: (target) => setKasperskyStatusSummaryUnavailable(target)
+  });
+}
+
+function bindItamTable(container, session) {
+  bindEndpointTable(container, {
+    cardSelector: ".mpc-kav-card",
+    headSelector: "[data-itam-head]",
+    rowsSelector: "[data-itam-rows]",
+    searchSelector: "[data-itam-search]",
+    countSelector: "[data-itam-count]",
+    paginationSelector: "[data-itam-pagination]",
+    problemCardSelector: "[data-itam-problem-card]",
+    problemRowsSelector: "[data-itam-problem-rows]",
+    problemCountSelector: "[data-itam-problem-count]",
+    problemToggleSelector: "[data-itam-problem-toggle]",
+    problemContentId: "itamProblemContent",
+    problemTitle: "Data ITAM Bermasalah",
+    loadingLabel: "ITAM",
+    navLabel: "Navigasi halaman ITAM",
+    columns: ITAM_TABLE_COLUMNS,
+    pageSize: ITAM_TABLE_PAGE_SIZE,
+    dateSortKeys: ["lastInventory"],
+    fitPlan: ITAM_FIT_PLAN,
+    renderRows: renderItamRows,
+    renderDetailRows: renderItamDetailRows,
+    loadCached: loadManagePcItamCached,
+    getCached: (sess) => getManagePcItamCache(sess)
+  });
 }
 
 /* Panel konten utama per (modul + scope). Saat backend modul siap,

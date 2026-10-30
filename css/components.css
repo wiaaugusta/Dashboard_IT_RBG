@@ -1015,7 +1015,11 @@
 }
 
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee,
-.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="lastConnected"] .mpc-kav-marquee {
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="lastConnected"] .mpc-kav-marquee,
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="osName"] .mpc-kav-marquee,
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="groupAdministrator"] .mpc-kav-marquee,
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="groupUser"] .mpc-kav-marquee,
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="lastInventory"] .mpc-kav-marquee {
   width: auto;
   max-width: none;
 }
@@ -1026,6 +1030,19 @@
 
 .mpc-kav-table.mpc-kav-problem-table.is-clip-last td[data-kav-col="lastConnected"] .mpc-kav-marquee {
   max-width: var(--kav-problem-last-max, 96px);
+}
+
+/* ITAM bermasalah: urutan potong OS Name, Last Inventory, Group Admin. */
+.mpc-kav-table.mpc-kav-problem-table.is-clip-os td[data-kav-col="osName"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-os-max, 96px);
+}
+
+.mpc-kav-table.mpc-kav-problem-table.is-clip-last td[data-kav-col="lastInventory"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-last-max, 96px);
+}
+
+.mpc-kav-table.mpc-kav-problem-table.is-clip-model td[data-kav-col="groupAdministrator"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-model-max, 96px);
 }
 
 .mpc-kav-table.mpc-kav-problem-table .mpc-table__status {
@@ -1079,6 +1096,18 @@
 .mpc-kav-table td[data-kav-col="model"] .mpc-kav-marquee,
 .mpc-kav-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
   max-width: 100px;
+}
+
+/* Tabel ITAM: kolom OS Name / Group User / Last Inventory dirapatkan,
+   Group Administrator sedikit lebih lebar. */
+.mpc-kav-table td[data-kav-col="osName"] .mpc-kav-marquee,
+.mpc-kav-table td[data-kav-col="groupUser"] .mpc-kav-marquee,
+.mpc-kav-table td[data-kav-col="lastInventory"] .mpc-kav-marquee {
+  max-width: 100px;
+}
+
+.mpc-kav-table td[data-kav-col="groupAdministrator"] .mpc-kav-marquee {
+  max-width: 120px;
 }
 
 /* DNS Name juga dipotong bila perlu. */
