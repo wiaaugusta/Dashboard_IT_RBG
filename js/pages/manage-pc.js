@@ -471,15 +471,97 @@ function updateKasperskyStatusSummary(container, items) {
   });
 }
 
-function setKasperskyStatusSummaryUnavailable(container) {
-  const card = container.querySelector("[data-kav-status-summary]");
-  if (!card) return;
-  card.querySelectorAll("[data-kav-summary-value]").forEach((valueElement) => {
-    valueElement.textContent = "—";
+function itamStatusCounts(items) {
+  const counts = { total: 0, normal: 0, userDobel: 0, privNok: 0, notfound: 0, inactive: 0 };
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    const status = String(item?.status || "").trim().toUpperCase();
+    const priv = String(item?.statusPrivilege || "").trim().toUpperCase();
+    const last = String(item?.lastInventory || "").trim().toUpperCase();
+    
+    const isInactive = /\(\s*\d+\s*DAYS?\s*\)|\b\d+\s*DAYS?\b/i.test(last) || parseInt(last) > 4;
+
+    if (status === "NORMAL" || status === "OK") counts.normal += 1;
+    else if (status === "USER DOBEL" || status === "NIK DOBEL") counts.userDobel += 1;
+    else if (status === "TIDAK DITEMUKAN" || status === "NOT FOUND") counts.notfound += 1;
+    
+    if (priv === "NOK") counts.privNok += 1;
+    if (isInactive) counts.inactive += 1;
   });
+  
+  // Total device rumus kaspersky: normal + userDobel + privNok + inactive
+  counts.total = counts.normal + counts.userDobel + counts.privNok + counts.inactive;
+  return counts;
 }
 
-function renderSummary(data, moduleKey, isLoading = false, session = null) {
+function renderItamStatusSummary(items = null) {
+  const counts = Array.isArray(items) ? itamStatusCounts(items) : null;
+  const value = (key) => counts ? Number(counts[key]).toLocaleString("id-ID") : '<span class="skeleton metric-skeleton"></span>';
+  const row = (key, label, tone) => `
+    <div class="gsp-card__summary-row">
+      <span class="gsp-card__summary-dot gsp-card__summary-dot--${tone}" aria-hidden="true"></span>
+      <span class="gsp-card__summary-label">${escapeHtml(label)}</span>
+      <span class="gsp-card__summary-value" data-itam-summary-value="${key}">${value(key)}</span>
+    </div>`;
+
+  return `
+    <article class="gsp-card gsp-card--summary" data-itam-status-summary aria-live="polite">
+      <div class="gsp-card__header">
+        <div class="gsp-card__icon">${icon("kpi", { size: 21 })}</div>
+        <div class="gsp-card__body">
+          <h4>Summary Data ITAM</h4>
+          <p>Rekap status endpoint dari tabel ITAM.</p>
+        </div>
+      </div>
+      <div class="gsp-card__summary-total">
+        <div class="gsp-card__summary-total-copy">
+          <span class="gsp-card__summary-total-label">Total Device</span>
+        </div>
+        <strong data-itam-summary-value="total">${value("total")}</strong>
+      </div>
+      <div class="gsp-card__summary-list">
+        ${row("normal", "Device Normal", "ok")}
+        ${row("userDobel", "Device User Dobel", "danger")}
+        ${row("privNok", "Privilege NOK", "warn")}
+        ${row("notfound", "Device tidak ditemukan", "empty")}
+        ${row("inactive", "Last connected > 4 day", "late")}
+      </div>
+    </article>
+  `;
+}
+
+function renderItamStatusSummary(items = null) {
+  const counts = Array.isArray(items) ? itamStatusCounts(items) : null;
+  const value = (key) => counts ? Number(counts[key]).toLocaleString("id-ID") : '<span class="skeleton metric-skeleton"></span>';
+  const row = (key, label, tone) => `
+    <div class="gsp-card__summary-row">
+      <span class="gsp-card__summary-dot gsp-card__summary-dot--${tone}" aria-hidden="true"></span>
+      <span class="gsp-card__summary-label">${escapeHtml(label)}</span>
+      <span class="gsp-card__summary-value" data-itam-summary-value="${key}">${value(key)}</span>
+    </div>`;
+
+  return `
+    <article class="gsp-card gsp-card--summary" data-itam-status-summary aria-live="polite">
+      <div class="gsp-card__header">
+        <div class="gsp-card__icon">${icon("kpi", { size: 21 })}</div>
+        <div class="gsp-card__body">
+          <h4>Summary Data ITAM</h4>
+          <p>Rekap status endpoint dari tabel ITAM.</p>
+        </div>
+      </div>
+      <div class="gsp-card__summary-total">
+        <span class="gsp-card__summary-total-label">Total Device</span>
+        <strong data-itam-summary-value="total">${value("total")}</strong>
+      </div>
+      <div class="gsp-card__summary-list">
+        ${row("normal", "Device Normal", "ok")}
+        ${row("userDobel", "Device User Dobel", "danger")}
+        ${row("privNok", "Privilege NOK", "warn")}
+        ${row("notfound", "Device tidak ditemukan", "empty")}
+        ${row("inactive", "Last connected > 4 day", "late")}
+      </div>
+    </article>
+  `;
+}
   const isError = data && data.success === false && data.message;
   const d = data?.data || data || {};
   const totalPc = d.summary?.totalPc ?? d.totalUser ?? (isLoading ? null : 0);
@@ -522,7 +604,6 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
   // Submenu ITAM: 2 kotak (ITAM & Privilege)
   if (moduleKey === "manage-pc-itam") {
     const itam = d.itam || {};
-    const itamTotal = itam.managed ?? (isLoading ? null : 0);
     const itamOk = itam.ok ?? 0;
     const itamNok = itam.nok ?? (totalPc != null && itamOk != null ? totalPc - itamOk : 0);
     const privOk = itam.privilegeOk ?? 0;
@@ -531,11 +612,15 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     const itamPercent = totalPc > 0 ? Math.round((itamOk / totalPc) * 100) : 0;
     const privPercent = totalPc > 0 ? Math.round((privOk / totalPc) * 100) : 0;
 
+    const cachedItamTable = session ? getManagePcItamCache(session) : null;
+    const itamTableItems = cachedItamTable && Array.isArray(cachedItamTable.items) ? cachedItamTable.items : null;
+
     return `
       <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
         ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]], renderPercentStat(itamPercent, isLoading)), "Status Inventaris Aset", "teal")}
-        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]], renderPercentStat(privPercent, isLoading)), "Status Hak Akses ITAM", "teal")}
+        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]], renderPercentStat(itamPercent, isLoading)), null, "teal")}
+        ${renderSummaryCardItem("itam", "Privilege ITAM", "Hak akses ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]], renderPercentStat(privPercent, isLoading)), null, "teal")}
+        ${renderItamStatusSummary(itamTableItems)}
       </section>
     `;
   }
@@ -1269,62 +1354,6 @@ function bindEndpointTable(container, session, options) {
       if (onLoadError) onLoadError(container);
       renderPage();
     });
-}
-
-function bindKasperskyTable(container, session) {
-  bindEndpointTable(container, session, {
-    cardSelector: ".mpc-kav-card",
-    headSelector: "[data-kav-head]",
-    rowsSelector: "[data-kav-rows]",
-    searchSelector: "[data-kav-search]",
-    countSelector: "[data-kav-count]",
-    paginationSelector: "[data-kav-pagination]",
-    problemCardSelector: "[data-kav-problem-card]",
-    problemRowsSelector: "[data-kav-problem-rows]",
-    problemCountSelector: "[data-kav-problem-count]",
-    problemToggleSelector: "[data-kav-problem-toggle]",
-    problemContentId: "kavProblemContent",
-    problemTitle: "Data Kaspersky Bermasalah",
-    loadingLabel: "Kaspersky",
-    navLabel: "Navigasi halaman Kaspersky",
-    columns: KASPERSKY_TABLE_COLUMNS,
-    pageSize: KASPERSKY_TABLE_PAGE_SIZE,
-    dateSortKeys: ["lastConnected"],
-    fitPlan: KASPERSKY_FIT_PLAN,
-    renderRows: renderKasperskyRows,
-    renderDetailRows: renderKasperskyDetailRows,
-    loadCached: loadManagePcKasperskyCached,
-    getCached: (sess) => getManagePcKasperskyCache(sess),
-    onLoaded: (target, loadedItems) => updateKasperskyStatusSummary(target, loadedItems),
-    onLoadError: (target) => setKasperskyStatusSummaryUnavailable(target)
-  });
-}
-
-function bindItamTable(container, session) {
-  bindEndpointTable(container, session, {
-    cardSelector: ".mpc-kav-card",
-    headSelector: "[data-itam-head]",
-    rowsSelector: "[data-itam-rows]",
-    searchSelector: "[data-itam-search]",
-    countSelector: "[data-itam-count]",
-    paginationSelector: "[data-itam-pagination]",
-    problemCardSelector: "[data-itam-problem-card]",
-    problemRowsSelector: "[data-itam-problem-rows]",
-    problemCountSelector: "[data-itam-problem-count]",
-    problemToggleSelector: "[data-itam-problem-toggle]",
-    problemContentId: "itamProblemContent",
-    problemTitle: "Data ITAM Bermasalah",
-    loadingLabel: "ITAM",
-    navLabel: "Navigasi halaman ITAM",
-    columns: ITAM_TABLE_COLUMNS,
-    pageSize: ITAM_TABLE_PAGE_SIZE,
-    dateSortKeys: ["lastInventory"],
-    fitPlan: ITAM_FIT_PLAN,
-    renderRows: renderItamRows,
-    renderDetailRows: renderItamDetailRows,
-    loadCached: loadManagePcItamCached,
-    getCached: (sess) => getManagePcItamCache(sess)
-  });
 }
 
 /* Panel konten utama per (modul + scope). Saat backend modul siap,
