@@ -23,6 +23,7 @@
 - Deploy backend terakhir: versi 44 (ITAM table columns O..X).
 - Test tabel ITAM (DOM): `node .harness/build-managepc-test.mjs; Copy-Item .harness\test-itam-table.html github-files\__test-itam.html; node .harness/run-itam-test.mjs` (hapus `__test-itam.html` setelahnya).
 
+
 ## Perintah & Lingkungan
 - Shell: Windows PowerShell 5.1. Jangan pakai `&&` atau `head`; gunakan `;`, `Get-ChildItem`, `Select-Object`. Gunakan parameter `workdir`, bukan `cd`.
 - Root repo tidak punya remote; push hanya dari `github-files/`.
