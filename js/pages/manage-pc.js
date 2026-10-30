@@ -524,34 +524,18 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     const itam = d.itam || {};
     const itamTotal = itam.managed ?? (isLoading ? null : 0);
     const itamOk = itam.ok ?? 0;
-    const itamWarn = itam.warn ?? 0;
-    const itamDanger = itam.danger ?? 0;
-    const itamEmpty = itam.empty ?? 0;
+    const itamNok = itam.nok ?? (totalPc != null && itamOk != null ? totalPc - itamOk : 0);
     const privOk = itam.privilegeOk ?? 0;
-    const privNok = itam.privilegeNok ?? 0;
-
-    const itamInfoHtml = `
-      <div class="gsp-card__info">
-        <div class="gsp-card__info-row">
-          <span class="gsp-card__info-label">${icon("monitor", { size: 14 })} Device Normal</span>
-          <span class="gsp-card__info-value">${itamOk}</span>
-        </div>
-        <div class="gsp-card__info-row">
-          <span class="gsp-card__info-label">${icon("alert", { size: 14 })} Device User Dobel</span>
-          <span class="gsp-card__info-value">${itamWarn}</span>
-        </div>
-        <div class="gsp-card__info-row">
-          <span class="gsp-card__info-label">${icon("shield", { size: 14 })} Privilege NOK</span>
-          <span class="gsp-card__info-value">${privNok}</span>
-        </div>
-      </div>
-    `;
+    const privNok = itam.privilegeNok ?? (totalPc != null && privOk != null ? totalPc - privOk : 0);
+    
+    const itamPercent = totalPc > 0 ? Math.round((itamOk / totalPc) * 100) : 0;
+    const privPercent = totalPc > 0 ? Math.round((privOk / totalPc) * 100) : 0;
 
     return `
       <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
         ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("itam", "ITAM", "Inventarisasi & lifecycle aset PC & hardware.", makeStats([["Total Device", itamTotal], ["Normal", itamOk], ["User Dobel", itamWarn], ["Danger", itamDanger], ["Empty", itamEmpty]]), null, "teal", itamInfoHtml)}
-        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", itamTotal], ["Privilege OK", privOk], ["Privilege NOK", privNok]]), null, "teal")}
+        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]], renderPercentStat(itamPercent, isLoading)), "Status Inventaris Aset", "teal")}
+        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]], renderPercentStat(privPercent, isLoading)), "Status Hak Akses ITAM", "teal")}
       </section>
     `;
   }
