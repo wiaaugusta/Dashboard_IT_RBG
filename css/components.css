@@ -974,6 +974,11 @@
   padding-right: 6px;
 }
 
+.mpc-kav-table th,
+.mpc-kav-table td {
+  white-space: nowrap;
+}
+
 /* Kolom No dipersempit. */
 .mpc-kav-table th.mpc-table__number {
   width: 34px;
@@ -1119,6 +1124,47 @@
 /* DNS Name juga dipotong bila perlu. */
 .mpc-kav-table td[data-kav-col="dnsName"] .mpc-kav-marquee {
   max-width: 120px;
+}
+
+/* Kolom last connected tetap tampil utuh; kolom KACE yang dipilih untuk
+   pemotongan ditangani terpisah di tabel KACE. */
+.mpc-kav-table td[data-kav-col="lastConnected"] .mpc-kav-marquee {
+  max-width: none;
+}
+
+.mpc-kace-table th,
+.mpc-kace-table td {
+  white-space: nowrap;
+}
+
+.mpc-kace-table td[data-kav-col="osName"] .mpc-kav-marquee {
+  max-width: 100px;
+}
+
+.mpc-kace-table td[data-kav-col="administrator"] .mpc-kav-marquee {
+  max-width: 120px;
+}
+
+.mpc-kace-table td[data-kav-col="groupUser"] .mpc-kav-marquee {
+  max-width: 100px;
+}
+
+.mpc-kace-table td[data-kav-col="modelKomputer"] .mpc-kav-marquee,
+.mpc-kace-table td[data-kav-col="totalHardisk"] .mpc-kav-marquee,
+.mpc-kace-table td[data-kav-col="lastInv"] .mpc-kav-marquee {
+  max-width: none;
+}
+
+.mpc-kace-table.mpc-kav-problem-table.is-clip-os td[data-kav-col="osName"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-os-max, 96px);
+}
+
+.mpc-kace-table.mpc-kav-problem-table.is-clip-last td[data-kav-col="administrator"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-last-max, 96px);
+}
+
+.mpc-kace-table.mpc-kav-problem-table.is-clip-model td[data-kav-col="groupUser"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-model-max, 96px);
 }
 
 .mpc-kav-marquee__text {

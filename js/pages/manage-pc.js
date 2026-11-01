@@ -203,7 +203,6 @@ const KASPERSKY_PROBLEM_COLUMNS = [
    lalu Last connected, lalu Model. */
 const KASPERSKY_FIT_PLAN = [
   { key: "sistemOperasi", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 80 },
-  { key: "lastConnected", cls: "is-clip-last", cssVar: "--kav-problem-last-max", minWidth: 80 },
   { key: "model", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 60 }
 ];
 
@@ -257,12 +256,30 @@ const ITAM_FIT_PLAN = [
 const KACE_TABLE_PAGE_SIZE = 15;
 const KACE_TABLE_COLUMNS = [
   { key: "no", label: "No", sortable: false },
-  ...Array.from({ length: 9 }, (_, index) => ({
-    key: `field${index + 1}`,
-    label: `Kolom ${["AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ"][index]}`
-  })),
-  { key: "status", label: "Status" }
+  { key: "namaKomputer", label: "Nama Komputer" },
+  { key: "alamatIp", label: "Alamat IP" },
+  { key: "workgroup", label: "Workgroup" },
+  { key: "osName", label: "OS Name" },
+  { key: "administrator", label: "Administrator" },
+  { key: "groupUser", label: "Group User" },
+  { key: "modelKomputer", label: "model komputer" },
+  { key: "totalHardisk", label: "total hardisk" },
+  { key: "lastInv", label: "last inv" },
+  { key: "status", label: "STATUS" }
 ].map((column) => ({ ...column, sortable: column.sortable !== false }));
+const KACE_PROBLEM_COLUMNS = [
+  { key: "no", label: "No" },
+  ...KACE_TABLE_COLUMNS.slice(1, 8),
+  { key: "lastInv", label: "last inv" },
+  { key: "status", label: "STATUS" },
+  { key: "source", label: "Source" }
+];
+const KACE_MARQUEE_KEYS = ["osName", "administrator", "groupUser", "modelKomputer", "totalHardisk", "lastInv"];
+const KACE_FIT_PLAN = [
+  { key: "osName", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 80 },
+  { key: "administrator", cls: "is-clip-last", cssVar: "--kav-problem-last-max", minWidth: 80 },
+  { key: "groupUser", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 60 }
+];
 
 function escapeHtml(value) {
   return String(value)
@@ -835,7 +852,9 @@ function renderKaceRows(items, startIndex = 0) {
       <td class="mpc-table__number" data-kav-col="no">${startIndex + index + 1}</td>
       ${KACE_TABLE_COLUMNS.slice(1).map((column) => column.key === "status"
         ? `<td data-kav-col="status" class="mpc-table__status">${renderKaceStatus(item.status)}</td>`
-        : `<td data-kav-col="${column.key}">${escapeHtml(item[column.key] || "—")}</td>`
+        : KACE_MARQUEE_KEYS.includes(column.key)
+          ? renderMarqueeCell(column.key, escapeHtml(item[column.key] || "—"))
+          : `<td data-kav-col="${column.key}">${escapeHtml(item[column.key] || "—")}</td>`
       ).join("")}
     </tr>
   `).join("");
@@ -845,9 +864,13 @@ function renderKaceDetailRows(rows) {
   return kasperskyDetailDataRows(rows).map((row, rowIndex) => `
     <tr class="mpc-table__row">
       <td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>
-      ${KACE_TABLE_COLUMNS.slice(1).map((column, index) => column.key === "status"
+      ${KACE_PROBLEM_COLUMNS.slice(1).map((column, index) => column.key === "status"
         ? `<td data-kav-col="status" class="mpc-table__status">${renderKaceStatus(row[index])}</td>`
-        : `<td data-kav-col="${column.key}">${escapeHtml(row[index] || "—")}</td>`
+        : column.key === "source"
+          ? `<td data-kav-col="source">${renderKasperskySource(row[index])}</td>`
+          : KACE_MARQUEE_KEYS.includes(column.key)
+            ? renderMarqueeCell(column.key, escapeHtml(row[index] || "—"))
+            : `<td data-kav-col="${column.key}">${escapeHtml(row[index] || "—")}</td>`
       ).join("")}
     </tr>
   `).join("");
@@ -1069,7 +1092,7 @@ function renderKaceProblemSection() {
       <div id="kaceProblemContent" class="mpc-kav-problem-content" aria-hidden="true">
         <div class="mpc-kav-problem-content__inner">
           <div class="mpc-table-wrapper">
-            <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data KACE Bermasalah">
+            <table class="mpc-table mpc-kav-table mpc-kav-problem-table mpc-kace-table" aria-label="Data KACE Bermasalah">
               <thead data-kace-problem-head></thead>
               <tbody data-kace-problem-rows></tbody>
             </table>
@@ -1100,7 +1123,7 @@ function renderKaceTableSection() {
         </div>
       </header>
       <div class="mpc-table-wrapper">
-        <table class="mpc-table mpc-kav-table">
+        <table class="mpc-table mpc-kav-table mpc-kace-table">
           <thead data-kace-head>${renderTableHead(KACE_TABLE_COLUMNS)}</thead>
           <tbody data-kace-rows>${renderSkeletonRows(KACE_TABLE_COLUMNS)}</tbody>
         </table>
@@ -1502,18 +1525,19 @@ function bindKaceTable(container, session) {
       return [
         fallback[0],
         ...data.columns.map((column, index) => ({
-          key: index === 9 ? "status" : `field${index + 1}`,
+          key: fallback[index + 1].key,
           label: String(column.label || fallback[index + 1].label)
         }))
       ];
     },
-    renderProblemHead: (columns) => `<tr>${columns.map((column) => `
+    renderProblemHead: () => `<tr>${KACE_PROBLEM_COLUMNS.map((column) => `
       <th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}>
         <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
       </th>
     `).join("")}</tr>`,
     pageSize: KACE_TABLE_PAGE_SIZE,
-    fitPlan: [],
+    fitPlan: KACE_FIT_PLAN,
+    marqueeCells: KACE_MARQUEE_KEYS.map((key) => `[data-kav-col="${key}"]`).join(", "),
     renderRows: renderKaceRows,
     renderDetailRows: renderKaceDetailRows,
     loadCached: loadManagePcKaceCached,
