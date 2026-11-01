@@ -1145,6 +1145,10 @@
   max-width: none;
 }
 
+.mpc-kace-table td[data-kav-col="administrator"] {
+  text-align: center;
+}
+
 .mpc-kace-table td[data-kav-col="modelKomputer"] .mpc-kav-marquee {
   max-width: 120px;
 }
@@ -4375,15 +4379,21 @@
   font-size: var(--font-size-small);
 }
 
-/* Kartu ITAM: baris statistik (Total Device..Persen) naik ke atas,
-   lalu blok ITAM Version menempel di paling bawah kartu. */
+/* Kartu ITAM: baris statistik (Total Device..Persen) turun sedikit agar
+   jaraknya sama dengan kartu Kaspersky, lalu blok ITAM Version menempel
+   di paling bawah kartu. */
 .gsp-cards--itam .gsp-card__stats {
-  margin-top: 0;
+  margin-top: var(--space-3);
 }
 
 .gsp-cards--itam .gsp-card__info {
   margin-top: auto;
   margin-bottom: 0;
+}
+
+/* Kartu KACE: posisi kotak statistik disamakan dengan Kaspersky. */
+.gsp-cards--kace .gsp-card__stats {
+  margin-top: var(--space-3);
 }
 
 .gsp-card__header {

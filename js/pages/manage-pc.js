@@ -730,7 +730,7 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     );
 
     return `
-      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
+      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3 gsp-cards--kace" data-mpc-summary aria-live="polite">
         ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]], renderPercentStat(kacePercent, isLoading)), null, "purple")}
         ${renderKaceStatusSummary(kaceTableItems)}
       </section>
