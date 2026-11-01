@@ -215,7 +215,7 @@ const ITAM_TABLE_COLUMNS = [
   { key: "alamatIp", label: "Alamat IP" },
   { key: "workgroup", label: "Workgroup" },
   { key: "osName", label: "OS Name" },
-  { key: "groupAdministrator", label: "Group Administrator" },
+  { key: "groupAdministrator", label: "Administrator" },
   { key: "groupUser", label: "Group User" },
   { key: "itamVersion", label: "Itam Version" },
   { key: "statusPrivilege", label: "Status Privilege" },

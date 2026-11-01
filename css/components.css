@@ -1220,6 +1220,13 @@
   margin-right: auto;
 }
 
+.mpc-itam-table td[data-kav-col="itamVersion"],
+.mpc-itam-table td[data-kav-col="statusPrivilege"],
+.mpc-itam-problem-table td[data-kav-col="itamVersion"],
+.mpc-itam-problem-table td[data-kav-col="statusPrivilege"] {
+  text-align: center;
+}
+
 .mpc-itam-table td[data-kav-col="lastInventory"] .mpc-kav-marquee {
   max-width: none;
 }
@@ -4369,9 +4376,14 @@
 }
 
 /* Kartu ITAM: baris statistik (Total Device..Persen) naik ke atas,
-   lalu blok ITAM Version tampil tepat di bawahnya. */
+   lalu blok ITAM Version menempel di paling bawah kartu. */
 .gsp-cards--itam .gsp-card__stats {
   margin-top: 0;
+}
+
+.gsp-cards--itam .gsp-card__info {
+  margin-top: auto;
+  margin-bottom: 0;
 }
 
 .gsp-card__header {
