@@ -1063,6 +1063,7 @@ function bindEndpointTable(container, options) {
     renderDetailRows,
     loadCached,
     getCached,
+    session,
     onLoaded,
     onLoadError
   } = options;
@@ -1325,6 +1326,7 @@ function bindKasperskyTable(container, session) {
     renderDetailRows: renderKasperskyDetailRows,
     loadCached: loadManagePcKasperskyCached,
     getCached: (sess) => getManagePcKasperskyCache(sess),
+    session,
     onLoaded: (target, loadedItems) => updateKasperskyStatusSummary(target, loadedItems),
     onLoadError: (target) => setKasperskyStatusSummaryUnavailable(target)
   });
@@ -1353,7 +1355,8 @@ function bindItamTable(container, session) {
     renderRows: renderItamRows,
     renderDetailRows: renderItamDetailRows,
     loadCached: loadManagePcItamCached,
-    getCached: (sess) => getManagePcItamCache(sess)
+    getCached: (sess) => getManagePcItamCache(sess),
+    session
   });
 }
 
