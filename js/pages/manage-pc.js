@@ -419,6 +419,18 @@ function renderKasperskyInfo(info = {}, isLoading = false) {
   `).join("");
 }
 
+/** Info ITAM Version (sheet SOURCE, kolom BD baris 1). */
+function renderItamInfo(info = {}, isLoading = false) {
+  return `
+    <div class="gsp-card__info-row">
+      <span class="gsp-card__info-label">${icon("itam", { size: 14 })}<span>ITAM Version</span></span>
+      <span class="gsp-card__info-value">${isLoading
+        ? '<span class="skeleton" style="width:72px;height:12px;display:inline-block" aria-label="Memuat nilai"></span>'
+        : escapeHtml(info.version || "—")}</span>
+    </div>
+  `;
+}
+
 /**
  * Render satu kotak statistik persen.
  * Nilai persen mengikuti perhitungan modul yang ditampilkan.
@@ -443,7 +455,7 @@ function kasperskyStatusCounts(items) {
     const tone = kasperskyStatusTone(item && item.status);
     const lastConnected = String(item?.lastConnected || "").trim().toUpperCase();
     const isInactive = /\(\s*\d+\s*DAYS?\s*\)|\b\d+\s*DAYS?\b/i.test(lastConnected);
-    
+
     if (tone === "empty") {
       counts.notfound += 1;
     } else if (isInactive) {
@@ -695,12 +707,13 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     const privilegePercent = totalPc != null && privOk != null
       ? (totalPc > 0 ? Math.round((privOk / totalPc) * 100) : 0)
       : (isLoading ? null : 0);
+    const itamInfoHtml = renderItamInfo(d.itam?.info || {}, isLoading);
 
     return `
-      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
+      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3 gsp-cards--itam" data-mpc-summary aria-live="polite">
         ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]], renderPercentStat(itamPercent, isLoading)), null, "teal")}
-        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]], renderPercentStat(privilegePercent, isLoading)), null, "teal")}
+        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]], renderPercentStat(itamPercent, isLoading)), null, "teal", itamInfoHtml)}
+        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]], renderPercentStat(privilegePercent, isLoading)), null, "teal", itamInfoHtml)}
         ${renderItamStatusSummary(itamTableItems)}
       </section>
     `;
@@ -720,42 +733,6 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
       <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
         ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]], renderPercentStat(kacePercent, isLoading)), null, "purple")}
         ${renderKaceStatusSummary(kaceTableItems)}
-      </section>
-    `;
-  }
-
-  /* Submenu ITAM: 2 kotak (ITAM & Privilege) + Summary. */
-  if (moduleKey === "manage-pc-itam") {
-    const itam = d.itam || {};
-    const itamTotal = itam.managed ?? (isLoading ? null : 0);
-    const itamOk = itam.ok ?? 0;
-    const itamWarn = itam.warn ?? 0;
-    const itamDanger = itam.danger ?? 0;
-    const itamEmpty = itam.empty ?? 0;
-    const privOk = itam.privilegeOk ?? 0;
-    const privNok = itam.privilegeNok ?? 0;
-
-    const itamInfoHtml = `
-      <div class="gsp-card__info">
-        <div class="gsp-card__info-row">
-          <span class="gsp-card__info-label">${icon("monitor", { size: 14 })} Device Normal</span>
-          <span class="gsp-card__info-value">${itamOk}</span>
-        </div>
-        <div class="gsp-card__info-row">
-          <span class="gsp-card__info-label">${icon("alert", { size: 14 })} Device User Dobel</span>
-          <span class="gsp-card__info-value">${itamWarn}</span>
-        </div>
-        <div class="gsp-card__info-row">
-          <span class="gsp-card__info-label">${icon("shield", { size: 14 })} Privilege NOK</span>
-          <span class="gsp-card__info-value">${privNok}</span>
-        </div>
-      </div>
-    `;
-
-    return `
-      <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
-        ${renderSummaryCardItem("itam", "ITAM", "Inventarisasi & lifecycle aset PC & hardware.", makeStats([["Total Device", itamTotal], ["Normal", itamOk], ["User Dobel", itamWarn], ["Danger", itamDanger], ["Empty", itamEmpty]]), null, "teal", itamInfoHtml)}
-        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", itamTotal], ["Privilege OK", privOk], ["Privilege NOK", privNok]]), null, "teal")}
       </section>
     `;
   }
@@ -1079,11 +1056,10 @@ function renderItamDetailRows(rows) {
 /**
  * Kolom teks panjang dipotong satu baris. Saat hover, teks bergeser SATU
  * KALI ke kiri (tanpa bolak-balik) bila melebihi lebar kolom. Kecepatan
- * ~100px/detik dan durasi menyesuaikan panjang teks.
- * `keepShift` (dipakai ITAM): setelah bergeser, teks tidak kembali ke kanan.
+ * ~100px/detik dan durasi menyesuaikan panjang teks. Saat mouse keluar,
+ * teks kembali ke posisi awal.
  */
-function bindMarquee(containerElement, marqueeCells, options = {}) {
-  const { keepShift = false } = options;
+function bindMarquee(containerElement, marqueeCells) {
   const MARQUEE_CELL = marqueeCells ||
     '[data-kav-col="model"], [data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]';
 
@@ -1103,7 +1079,6 @@ function bindMarquee(containerElement, marqueeCells, options = {}) {
   });
 
   containerElement.addEventListener("mouseout", (event) => {
-    if (keepShift) return;
     const cell = event.target.closest(MARQUEE_CELL);
     if (!cell || cell.contains(event.relatedTarget)) return;
     const text = cell.querySelector(".mpc-kav-marquee__text");
@@ -1377,7 +1352,6 @@ function bindEndpointTable(container, options) {
     dateSortKeys = [],
     fitPlan,
     marqueeCells,
-    marqueeKeepShift = false,
     renderRows,
     renderDetailRows,
     loadCached,
@@ -1618,8 +1592,8 @@ function bindEndpointTable(container, options) {
     renderPage();
   });
 
-  bindMarquee(card, marqueeCells, { keepShift: marqueeKeepShift });
-  if (problemCard) bindMarquee(problemCard, marqueeCells, { keepShift: marqueeKeepShift });
+  bindMarquee(card, marqueeCells);
+  if (problemCard) bindMarquee(problemCard, marqueeCells);
 
   const toggle = problemCard?.querySelector(problemToggleSelector);
   const content = problemCard?.querySelector(`[id='${problemContentId}']`);
@@ -1740,7 +1714,6 @@ function bindItamTable(container, session) {
     dateSortKeys: ["lastInventory"],
     fitPlan: ITAM_FIT_PLAN,
     marqueeCells: ITAM_MARQUEE_KEYS.map((key) => `[data-kav-col="${key}"]`).join(", "),
-    marqueeKeepShift: true,
     renderRows: renderItamRows,
     renderDetailRows: renderItamDetailRows,
     loadCached: loadManagePcItamCached,

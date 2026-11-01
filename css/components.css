@@ -4368,6 +4368,12 @@
   font-size: var(--font-size-small);
 }
 
+/* Kartu ITAM: baris statistik (Total Device..Persen) naik ke atas,
+   lalu blok ITAM Version tampil tepat di bawahnya. */
+.gsp-cards--itam .gsp-card__stats {
+  margin-top: 0;
+}
+
 .gsp-card__header {
   display: flex;
   align-items: center;
