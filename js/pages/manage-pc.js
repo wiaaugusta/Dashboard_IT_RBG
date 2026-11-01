@@ -268,13 +268,25 @@ const KACE_TABLE_COLUMNS = [
   { key: "status", label: "STATUS" }
 ].map((column) => ({ ...column, sortable: column.sortable !== false }));
 const KACE_PROBLEM_COLUMNS = [
-  { key: "no", label: "No" },
+  { key: "no", label: "No", sortable: false },
   ...KACE_TABLE_COLUMNS.slice(1, 8),
   { key: "lastInv", label: "last inv" },
-  { key: "status", label: "STATUS" },
-  { key: "source", label: "Source" }
-];
-const KACE_MARQUEE_KEYS = ["osName", "administrator", "groupUser", "modelKomputer", "totalHardisk", "lastInv"];
+  { key: "source", label: "Source" },
+  { key: "status", label: "STATUS" }
+].map((column) => ({ ...column, sortable: column.sortable !== false }));
+const KACE_PROBLEM_ROW_INDEX = {
+  namaKomputer: 0,
+  alamatIp: 1,
+  workgroup: 2,
+  osName: 3,
+  administrator: 4,
+  groupUser: 5,
+  modelKomputer: 6,
+  lastInv: 7,
+  status: 8,
+  source: 9
+};
+const KACE_MARQUEE_KEYS = ["osName", "administrator", "groupUser", "modelKomputer", "totalHardisk"];
 const KACE_FIT_PLAN = [
   { key: "osName", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 80 },
   { key: "administrator", cls: "is-clip-last", cssVar: "--kav-problem-last-max", minWidth: 80 },
@@ -406,7 +418,7 @@ function renderKasperskyInfo(info = {}, isLoading = false) {
 
 /**
  * Render satu kotak statistik persen.
- * Nilai persen sudah dihitung backend dari gabungan KAV + Versi.
+ * Nilai persen mengikuti perhitungan modul yang ditampilkan.
  */
 function renderPercentStat(value, isLoading) {
   const body = isLoading
@@ -508,6 +520,79 @@ function setKasperskyStatusSummaryUnavailable(container) {
   });
 }
 
+function kaceStatusCounts(items) {
+  const counts = { total: 0, normal: 0, userDobel: 0, privilegeNok: 0, notFound: 0, lastInvOver4Day: 0 };
+  (Array.isArray(items) ? items : []).forEach((item) => {
+    counts.total += 1;
+    const status = String(item?.status || "").trim().toUpperCase();
+    const lastInv = String(item?.lastInv || "").trim();
+    const dayMatch = lastInv.match(/\(\s*(\d+)\s*DAYS?\s*\)/i);
+
+    if (/\bNORMAL\b|^OK$/.test(status)) counts.normal += 1;
+    if (/USER\s*(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(status)) counts.userDobel += 1;
+    if (/PRIVILEGE\s*NOK|NOK\s*PRIVILEGE/.test(status)) counts.privilegeNok += 1;
+    if (/NOT\s*FOUND|TIDAK\s*(DI\s*)?TEMUKAN/.test(status)) counts.notFound += 1;
+    if (dayMatch && Number(dayMatch[1]) > 4) counts.lastInvOver4Day += 1;
+  });
+  return counts;
+}
+
+function renderKaceStatusSummary(items = null) {
+  const counts = Array.isArray(items) ? kaceStatusCounts(items) : null;
+  const value = (key) => counts
+    ? Number(counts[key]).toLocaleString("id-ID")
+    : '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>';
+  const row = (key, label, tone) => `
+    <div class="gsp-card__summary-row">
+      <span class="gsp-card__summary-dot gsp-card__summary-dot--${tone}" aria-hidden="true"></span>
+      <span class="gsp-card__summary-label">${escapeHtml(label)}</span>
+      <span class="gsp-card__summary-value" data-kace-summary-value="${key}">${value(key)}</span>
+    </div>`;
+
+  return `
+    <article class="gsp-card gsp-card--summary" data-kace-status-summary aria-live="polite">
+      <div class="gsp-card__header">
+        <div class="gsp-card__icon">${icon("kpi", { size: 21 })}</div>
+        <div class="gsp-card__body">
+          <h4>Summary Data KACE</h4>
+          <p>Rekap status endpoint dari tabel KACE.</p>
+        </div>
+      </div>
+      <div class="gsp-card__summary-total">
+        <div class="gsp-card__summary-total-copy">
+          <span class="gsp-card__summary-total-label">Total Device</span>
+        </div>
+        <strong data-kace-summary-value="total">${value("total")}</strong>
+      </div>
+      <div class="gsp-card__summary-list">
+        ${row("normal", "Device Normal", "ok")}
+        ${row("userDobel", "Device User Dobel", "danger")}
+        ${row("privilegeNok", "Privilege NOK", "danger")}
+        ${row("notFound", "Device tidak ditemukan", "empty")}
+        ${row("lastInvOver4Day", "Last Inv >4 day", "late")}
+      </div>
+    </article>
+  `;
+}
+
+function updateKaceStatusSummary(container, items) {
+  const card = container.querySelector("[data-kace-status-summary]");
+  if (!card) return;
+  const counts = kaceStatusCounts(items);
+  Object.keys(counts).forEach((key) => {
+    const valueElement = card.querySelector(`[data-kace-summary-value="${key}"]`);
+    if (valueElement) valueElement.textContent = Number(counts[key]).toLocaleString("id-ID");
+  });
+}
+
+function setKaceStatusSummaryUnavailable(container) {
+  const card = container.querySelector("[data-kace-status-summary]");
+  if (!card) return;
+  card.querySelectorAll("[data-kace-summary-value]").forEach((valueElement) => {
+    valueElement.textContent = "—";
+  });
+}
+
 function renderSummary(data, moduleKey, isLoading = false, session = null) {
   const isError = data && data.success === false && data.message;
   const d = data?.data || data || {};
@@ -516,6 +601,10 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     ? getManagePcKasperskyCache(session)
     : null;
   const kavTableItems = cachedKavTable && Array.isArray(cachedKavTable.items) ? cachedKavTable.items : null;
+  const cachedKaceTable = moduleKey === "manage-pc-kace" && session
+    ? getManagePcKaceCache(session)
+    : null;
+  const kaceTableItems = cachedKaceTable && Array.isArray(cachedKaceTable.items) ? cachedKaceTable.items : null;
 
   const makeStats = (statList, extraStat = "") => ({
     html: statList.map(([label, val]) => `
@@ -564,14 +653,20 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     `;
   }
 
-  // Submenu KACE: 1 kotak (KACE)
+  // Submenu KACE: kartu metrik dan rekap status endpoint.
   if (moduleKey === "manage-pc-kace") {
     const kaceOk = d.kace?.ok ?? (isLoading ? null : 0);
     const kaceNok = d.kace?.nok ?? (totalPc != null && kaceOk != null ? totalPc - kaceOk : (isLoading ? null : 0));
+    const kacePercent = d.kace?.percent ?? (
+      totalPc != null && kaceOk != null
+        ? (totalPc > 0 ? Math.round((kaceOk / totalPc) * 100) : 0)
+        : (isLoading ? null : 0)
+    );
 
     return `
       <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
-        ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]]), "Status Deployment KACE", "purple")}
+        ${renderSummaryCardItem("kace", "KACE", "Systems Deployment - deployment OS, agent & otomasi.", makeStats([["Total Device", totalPc], ["Manage", kaceOk], ["Not Manage", kaceNok]], renderPercentStat(kacePercent, isLoading)), null, "purple")}
+        ${renderKaceStatusSummary(kaceTableItems)}
       </section>
     `;
   }
@@ -831,6 +926,8 @@ function renderItamRows(items, startIndex = 0) {
 function kaceStatusTone(value) {
   const text = String(value == null ? "" : value).trim().toUpperCase();
   if (!text || /NOT\s*FOUND|TIDAK\s*(DI\s*)?TEMUKAN/.test(text)) return "empty";
+  if (/NIK\s*(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(text)) return "warn";
+  if (/USER\s*(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)|PRIVILEGE\s*NOK/.test(text)) return "danger";
   if (/NOK|ERROR|FAILED|INACTIVE|NOT\s*MANAGED/.test(text)) return "danger";
   if (/WARN|PENDING|CHECK/.test(text)) return "warn";
   if (/OK|NORMAL|ACTIVE|MANAGED/.test(text)) return "ok";
@@ -840,6 +937,12 @@ function kaceStatusTone(value) {
 function renderKaceStatus(value) {
   const text = String(value == null ? "" : value).trim();
   return `<span class="mpc-kav-status mpc-kav-status--${kaceStatusTone(value)}">${escapeHtml(text || "Tidak ditemukan")}</span>`;
+}
+
+function renderKaceLastInv(value) {
+  const text = String(value == null ? "" : value).trim();
+  const isLate = /\(\s*\d+\s*DAYS?\s*\)/i.test(text);
+  return `<td data-kav-col="lastInv"><span${isLate ? ' class="mpc-kav-last-late"' : ""}>${escapeHtml(text || "—")}</span></td>`;
 }
 
 function renderKaceRows(items, startIndex = 0) {
@@ -852,6 +955,8 @@ function renderKaceRows(items, startIndex = 0) {
       <td class="mpc-table__number" data-kav-col="no">${startIndex + index + 1}</td>
       ${KACE_TABLE_COLUMNS.slice(1).map((column) => column.key === "status"
         ? `<td data-kav-col="status" class="mpc-table__status">${renderKaceStatus(item.status)}</td>`
+        : column.key === "lastInv"
+          ? renderKaceLastInv(item.lastInv)
         : KACE_MARQUEE_KEYS.includes(column.key)
           ? renderMarqueeCell(column.key, escapeHtml(item[column.key] || "—"))
           : `<td data-kav-col="${column.key}">${escapeHtml(item[column.key] || "—")}</td>`
@@ -864,13 +969,15 @@ function renderKaceDetailRows(rows) {
   return kasperskyDetailDataRows(rows).map((row, rowIndex) => `
     <tr class="mpc-table__row">
       <td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>
-      ${KACE_PROBLEM_COLUMNS.slice(1).map((column, index) => column.key === "status"
-        ? `<td data-kav-col="status" class="mpc-table__status">${renderKaceStatus(row[index])}</td>`
+      ${KACE_PROBLEM_COLUMNS.slice(1).map((column) => column.key === "status"
+        ? `<td data-kav-col="status" class="mpc-table__status">${renderKaceStatus(row[KACE_PROBLEM_ROW_INDEX.status])}</td>`
         : column.key === "source"
-          ? `<td data-kav-col="source">${renderKasperskySource(row[index])}</td>`
+          ? `<td data-kav-col="source">${renderKasperskySource(row[KACE_PROBLEM_ROW_INDEX.source])}</td>`
+          : column.key === "lastInv"
+            ? renderKaceLastInv(row[KACE_PROBLEM_ROW_INDEX.lastInv])
           : KACE_MARQUEE_KEYS.includes(column.key)
-            ? renderMarqueeCell(column.key, escapeHtml(row[index] || "—"))
-            : `<td data-kav-col="${column.key}">${escapeHtml(row[index] || "—")}</td>`
+            ? renderMarqueeCell(column.key, escapeHtml(row[KACE_PROBLEM_ROW_INDEX[column.key]] || "—"))
+            : `<td data-kav-col="${column.key}">${escapeHtml(row[KACE_PROBLEM_ROW_INDEX[column.key]] || "—")}</td>`
       ).join("")}
     </tr>
   `).join("");
@@ -1191,6 +1298,8 @@ function bindEndpointTable(container, options) {
     columns: initialColumns,
     columnsFromData,
     renderProblemHead,
+    problemSortColumns = null,
+    problemSortIndexByKey = null,
     pageSize,
     dateSortKeys = [],
     fitPlan,
@@ -1225,16 +1334,32 @@ function bindEndpointTable(container, options) {
   let search = "";
   let sortBy = "";
   let sortDirection = "asc";
+  let problemSortBy = "";
+  let problemSortDirection = "asc";
   let totalPages = 1;
   let searchTimer = null;
 
   function renderProblem() {
     const dataRows = kasperskyDetailDataRows(detailRows);
     if (problemHeadElement && renderProblemHead) {
-      problemHeadElement.innerHTML = renderProblemHead(columns);
+      problemHeadElement.innerHTML = renderProblemHead(problemSortColumns || columns);
+    }
+    if (problemSortBy && problemSortColumns) {
+      const columnIndex = problemSortIndexByKey
+        ? problemSortIndexByKey[problemSortBy]
+        : problemSortColumns.findIndex((column) => column.key === problemSortBy) - 1;
+      if (columnIndex >= 0) {
+        dataRows.sort((left, right) => {
+          const a = String(left[columnIndex] == null ? "" : left[columnIndex]).toLowerCase();
+          const b = String(right[columnIndex] == null ? "" : right[columnIndex]).toLowerCase();
+          const order = a < b ? -1 : a > b ? 1 : 0;
+          return problemSortDirection === "desc" ? -order : order;
+        });
+      }
     }
     const html = renderDetailRows(dataRows);
     if (problemRowsElement) problemRowsElement.innerHTML = html;
+    updateProblemSortHeaders();
     if (problemCard) {
       problemCard.hidden = !html;
       const countEl = problemCard.querySelector(problemCountSelector);
@@ -1249,6 +1374,31 @@ function bindEndpointTable(container, options) {
       const header = button.closest("[data-kav-sort-header]");
       const isSorted = key === sortBy;
       const activeDirection = isSorted ? sortDirection : "";
+      const label = button.querySelector(".mpc-table__th-label").textContent;
+      header.setAttribute(
+        "aria-sort",
+        activeDirection === "asc" ? "ascending" : activeDirection === "desc" ? "descending" : "none"
+      );
+      header.classList.toggle("is-active", isSorted);
+      button.setAttribute(
+        "aria-label",
+        isSorted
+          ? `Urutkan berdasarkan ${label}, saat ini ${activeDirection === "asc" ? "naik" : "turun"}`
+          : `Urutkan berdasarkan ${label}`
+      );
+      button.querySelectorAll("[data-kav-sort-direction]").forEach((arrow) => {
+        arrow.classList.toggle("is-active", arrow.getAttribute("data-kav-sort-direction") === activeDirection);
+      });
+    });
+  }
+
+  function updateProblemSortHeaders() {
+    if (!problemHeadElement || !problemSortColumns) return;
+    problemHeadElement.querySelectorAll("[data-kav-sort-key]").forEach((button) => {
+      const key = button.getAttribute("data-kav-sort-key");
+      const header = button.closest("[data-kav-sort-header]");
+      const isSorted = key === problemSortBy;
+      const activeDirection = isSorted ? problemSortDirection : "";
       const label = button.querySelector(".mpc-table__th-label").textContent;
       header.setAttribute(
         "aria-sort",
@@ -1365,6 +1515,24 @@ function bindEndpointTable(container, options) {
     page = 1;
     renderPage();
   });
+
+  if (problemHeadElement && problemSortColumns) {
+    problemHeadElement.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-kav-sort-key]");
+      if (!button) return;
+      const key = button.getAttribute("data-kav-sort-key");
+      if (problemSortBy !== key) {
+        problemSortBy = key;
+        problemSortDirection = "asc";
+      } else if (problemSortDirection === "asc") {
+        problemSortDirection = "desc";
+      } else {
+        problemSortBy = "";
+        problemSortDirection = "asc";
+      }
+      renderProblem();
+    });
+  }
 
   paginationElement.addEventListener("click", (event) => {
     const button = event.target.closest("[data-kav-page]");
@@ -1530,11 +1698,9 @@ function bindKaceTable(container, session) {
         }))
       ];
     },
-    renderProblemHead: () => `<tr>${KACE_PROBLEM_COLUMNS.map((column) => `
-      <th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}>
-        <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
-      </th>
-    `).join("")}</tr>`,
+    renderProblemHead: (columns) => `<tr>${columns.map(renderKasperskyHeaderCell).join("")}</tr>`,
+    problemSortColumns: KACE_PROBLEM_COLUMNS,
+    problemSortIndexByKey: KACE_PROBLEM_ROW_INDEX,
     pageSize: KACE_TABLE_PAGE_SIZE,
     fitPlan: KACE_FIT_PLAN,
     marqueeCells: KACE_MARQUEE_KEYS.map((key) => `[data-kav-col="${key}"]`).join(", "),
@@ -1542,7 +1708,9 @@ function bindKaceTable(container, session) {
     renderDetailRows: renderKaceDetailRows,
     loadCached: loadManagePcKaceCached,
     getCached: (sess) => getManagePcKaceCache(sess),
-    session
+    session,
+    onLoaded: (target, loadedItems) => updateKaceStatusSummary(target, loadedItems),
+    onLoadError: (target) => setKaceStatusSummaryUnavailable(target)
   });
 }
 

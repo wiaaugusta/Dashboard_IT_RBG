@@ -1411,13 +1411,19 @@ problem rows from `AB403:AK450`. The main columns are Nama Komputer, Alamat
 IP, Workgroup, OS Name, Administrator, Group User, model komputer, total
 hardisk, last inv, and STATUS. Problem rows contain Nama Komputer, Alamat IP,
 Workgroup, OS Name, Administrator, Group User, model komputer, last inv,
-STATUS, and Source. The frontend displays 15 rows per page, sorts every data
-column except the generated row number, and caches KACE results per `role|NIK`
-session with request deduplication, matching the Kaspersky and ITAM table
-behavior. Long cell values remain on one line and use a one-way leftward
-marquee on hover. In the problem table, adaptive clipping is limited to OS
-Name, Administrator, then Group User; status and source badges use the same
-colors as Kaspersky.
+Source, and STATUS. The frontend displays 15 rows per page, sorts every data
+column except the generated row number in both tables, and caches KACE results
+per `role|NIK` session with request deduplication, matching the Kaspersky and
+ITAM table behavior. Table values stay on one line; the main table keeps Last
+Inv uncut, limits long model names, and pins STATUS at the right edge. Problem
+rows adaptively clip OS Name, Administrator, then Group User; Source is pinned
+beside the fixed STATUS column. Both Status and Source badges use the same
+colors as Kaspersky. Last Inv values containing `(x day)` are red.
+
+The KACE summary includes a Manage percentage (KACE OK / Total Device) and a
+status breakdown derived from the cached KACE table: Device Normal, Device User
+Dobel, Privilege NOK, Device tidak ditemukan, and Last Inv >4 day. The last
+category counts values whose `Last Inv` contains a day count greater than four.
 
 **Sorting (sortable column headers).** Every column except `No` sorts when
 its header is clicked, following the CCTV table's three-state cycle:
