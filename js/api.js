@@ -289,3 +289,7 @@ export async function loadManagePcKaceTable(scope = "office", options = {}) {
     refresh: options.refresh ? true : undefined
   }, options);
 }
+
+export async function insertManagePcUsers(scope = "office", options = {}) {
+  return apiRequest("insertManagePcUsers", { scope }, options);
+}

@@ -25,13 +25,14 @@ import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { NAV_ITEMS, isVisibleForRole } from "../nav-config.js";
 import { icon } from "../icons.js";
-import { initTooltips } from "../ui.js";
+import { initTooltips, showSuccess, showError } from "../ui.js";
 import {
   ensureManagePcDataset,
   getManagePcDataset,
   getManagePcSummaryCache,
   loadManagePcSummaryCached
 } from "../manage-pc-cache.js";
+import { insertManagePcUsers } from "../api.js";
 
 const MANAGE_PC_PAGE_SIZE = 15;
 /* Tab tampilan tabel "IT Asset & Device Inventory Management".
@@ -732,15 +733,20 @@ function renderManagePcTable(activeView, activeScope) {
           <span class="mpc-table-card__title-icon" aria-hidden="true">${icon("pc", { size: 18 })}</span>
           <h2 id="mpcTableTitle">IT Asset &amp; Device Inventory Management</h2>
         </div>
-        <div class="mpc-table-card__controls">
+      </header>
+      <div class="mpc-table-tabs-wrapper">
+        ${renderManagePcTableTabs(activeView, activeScope)}
+        <div class="mpc-table-tabs-controls">
+          <button type="button" class="btn btn-secondary btn-sm mpc-table-insert" data-mpc-insert>
+            ${icon("plus", { size: 15 })}<span>Insert</span>
+          </button>
           <label class="mpc-table-search">
             ${icon("search", { size: 17 })}
             <span class="visually-hidden">Cari perangkat</span>
             <input type="search" data-mpc-search placeholder="Cari perangkat..." autocomplete="off">
           </label>
         </div>
-      </header>
-      ${renderManagePcTableTabs(activeView, activeScope)}
+      </div>
       <div class="mpc-table-wrapper">
         <table class="mpc-table">
           <thead>${headers}</thead>
@@ -1141,6 +1147,28 @@ function bindManagePcTable(container, session, activeView = "inventory") {
       renderPage();
     }, 250);
   });
+
+  const insertBtn = table.querySelector("[data-mpc-insert]");
+  if (insertBtn) {
+    insertBtn.addEventListener("click", async () => {
+      insertBtn.disabled = true;
+      const originalHtml = insertBtn.innerHTML;
+      insertBtn.innerHTML = `<span class="btn-spinner"></span>`;
+      try {
+        const result = await insertManagePcUsers("office", { sessionToken: getSession().sessionToken });
+        if (result.success) {
+          showSuccess(`Daftar user berhasil dimasukkan ke .temp!B2 (${result.data.count} user).`);
+        } else {
+          showError(result.message || "Gagal memasukkan daftar user.");
+        }
+      } catch (error) {
+        showError(error.message || "Gagal memasukkan daftar user.");
+      } finally {
+        insertBtn.disabled = false;
+        insertBtn.innerHTML = originalHtml;
+      }
+    });
+  }
 
   table.querySelector("thead").addEventListener("click", (event) => {
     const button = event.target.closest("[data-sort-key]");

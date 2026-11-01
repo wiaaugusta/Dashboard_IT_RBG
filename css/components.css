@@ -689,13 +689,33 @@
 }
 
 /* ---------- Tab tampilan inventaris (Inventory / Unmanaged) ---------- */
+.mpc-table-tabs-wrapper {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #edf1f6;
+}
+
 .mpc-table-tabs {
   display: flex;
   align-items: stretch;
+  flex: 1;
   gap: var(--space-2);
   padding: 0 22px;
-  border-bottom: 1px solid #edf1f6;
+  border-bottom: none;
 }
+
+.mpc-table-tabs-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 22px;
+  border-left: 1px solid #edf1f6;
+}
+
+.mpc-table-insert {
+  height: 40px;
+}
+
 
 .mpc-table-tab {
   position: relative;
