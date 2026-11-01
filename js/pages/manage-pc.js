@@ -789,6 +789,19 @@ function renderKasperskyStatus(value) {
   return `<span class="mpc-kav-status mpc-kav-status--${kasperskyStatusTone(value)}">${escapeHtml(label)}</span>`;
 }
 
+/** Status ITAM: Privilege NOK ditampilkan merah. */
+function itamStatusTone(value) {
+  const text = String(value == null ? "" : value).trim().toUpperCase();
+  if (/PRIVILEGE\s*NOK/.test(text)) return "danger";
+  return kasperskyStatusTone(value);
+}
+
+function renderItamStatus(value) {
+  const text = String(value == null ? "" : value).trim();
+  const label = text || "Tidak ditemukan";
+  return `<span class="mpc-kav-status mpc-kav-status--${itamStatusTone(value)}">${escapeHtml(label)}</span>`;
+}
+
 /** Last connected: keterangan "(x day)" / "x day" ditampilkan merah. */
 function renderKasperskyLastConnected(value) {
   const text = String(value == null ? "" : value).trim();
@@ -948,7 +961,7 @@ function renderItamRows(items, startIndex = 0) {
       <td data-kav-col="itamVersion">${escapeHtml(item.itamVersion || "—")}</td>
       <td data-kav-col="statusPrivilege">${escapeHtml(item.statusPrivilege || "—")}</td>
       ${renderLastInventoryCell(item.lastInventory)}
-      <td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(item.status)}</td>
+      <td data-kav-col="status" class="mpc-table__status">${renderItamStatus(item.status)}</td>
     </tr>
   `).join("");
 }
@@ -1025,7 +1038,7 @@ function renderKaceDetailRows(rows) {
 function renderItamDetailCell(column, value) {
   const text = String(value == null ? "" : value).trim();
   if (column.key === "status") {
-    return `<td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(text)}</td>`;
+    return `<td data-kav-col="status" class="mpc-table__status">${renderItamStatus(text)}</td>`;
   }
   if (column.key === "source") {
     return renderMarqueeCell("source", renderKasperskySource(text));
@@ -1291,11 +1304,12 @@ function fitProblemTable(problemCard, fitPlan = KASPERSKY_FIT_PLAN) {
   const table = problemCard.querySelector(".mpc-kav-problem-table");
   if (!wrapper || !table) return;
 
-  /* Source ITAM tidak dipotong: lebar kolom mengikuti isi. Offset sticky
-     kolom STATUS disesuaikan agar tetap menempel di kiri kolom Source. */
+  /* Source tabel bermasalah tidak dipotong: lebar kolom mengikuti isi.
+     Offset sticky kolom STATUS disesuaikan agar tetap menempel di kiri
+     kolom Source. */
   const sourceCell = table.querySelector('td[data-kav-col="source"]');
   if (sourceCell) {
-    table.style.setProperty("--mpc-itam-source-width", `${Math.ceil(sourceCell.getBoundingClientRect().width)}px`);
+    table.style.setProperty("--mpc-problem-source-width", `${Math.ceil(sourceCell.getBoundingClientRect().width)}px`);
   }
 
   fitPlan.forEach((step) => {

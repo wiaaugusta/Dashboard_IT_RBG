@@ -1373,12 +1373,13 @@
   background: #f8fafd;
 }
 
+/* Sumber kolom: lebar mengikuti isi + tetap terlihat di kanan saat halaman menyempit */
 .mpc-kace-table.mpc-kav-problem-table th[data-kav-col="source"],
 .mpc-kace-table.mpc-kav-problem-table td[data-kav-col="source"] {
   right: 0;
-  width: 112px;
-  min-width: 112px;
-  max-width: 112px;
+  width: auto;
+  min-width: 84px;
+  max-width: none;
   z-index: 3;
   overflow: visible;
 }
@@ -1386,7 +1387,7 @@
 .mpc-kace-table.mpc-kav-problem-table th[data-kav-col="status"],
 .mpc-kace-table.mpc-kav-problem-table td[data-kav-col="status"] {
   position: sticky;
-  right: 112px;
+  right: var(--mpc-problem-source-width, 112px);
   width: 118px;
   min-width: 118px;
   max-width: 118px;
@@ -1433,7 +1434,7 @@
 .mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table th[data-kav-col="status"],
 .mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table td[data-kav-col="status"] {
   position: sticky;
-  right: var(--mpc-itam-source-width, 112px);
+  right: var(--mpc-problem-source-width, 112px);
   width: 118px;
   min-width: 118px;
   max-width: 118px;
