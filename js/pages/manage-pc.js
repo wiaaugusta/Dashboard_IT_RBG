@@ -238,9 +238,12 @@ const ITAM_DETAIL_COLUMNS = [
 ].map((column, index) => ({ ...column, sourceIndex: index }));
 
 const ITAM_PROBLEM_COLUMNS = [
-  { key: "no", label: "No" },
+  { key: "no", label: "No", sortable: false },
   ...ITAM_DETAIL_COLUMNS
-];
+].map((column) => ({ ...column, sortable: column.sortable !== false }));
+const ITAM_PROBLEM_ROW_INDEX = Object.fromEntries(
+  ITAM_DETAIL_COLUMNS.map((column) => [column.key, column.sourceIndex])
+);
 
 /* Kolom teks panjang ITAM: satu baris + marquee saat hover. */
 const ITAM_MARQUEE_KEYS = ["osName", "groupAdministrator", "groupUser", "lastInventory"];
@@ -249,8 +252,8 @@ const ITAM_MARQUEE_KEYS = ["osName", "groupAdministrator", "groupUser", "lastInv
    tabel meluber: OS Name, lalu Last Inventory, lalu Group Administrator. */
 const ITAM_FIT_PLAN = [
   { key: "osName", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 80 },
-  { key: "lastInventory", cls: "is-clip-last", cssVar: "--kav-problem-last-max", minWidth: 80 },
-  { key: "groupAdministrator", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 60 }
+  { key: "groupAdministrator", cls: "is-clip-itam-admin", cssVar: "--kav-problem-itam-admin-max", minWidth: 80 },
+  { key: "groupUser", cls: "is-clip-itam-user", cssVar: "--kav-problem-itam-user-max", minWidth: 60 }
 ];
 
 const KACE_TABLE_PAGE_SIZE = 15;
@@ -271,8 +274,8 @@ const KACE_PROBLEM_COLUMNS = [
   { key: "no", label: "No", sortable: false },
   ...KACE_TABLE_COLUMNS.slice(1, 8),
   { key: "lastInv", label: "last inv" },
-  { key: "source", label: "Source" },
-  { key: "status", label: "STATUS" }
+  { key: "status", label: "STATUS" },
+  { key: "source", label: "Source" }
 ].map((column) => ({ ...column, sortable: column.sortable !== false }));
 const KACE_PROBLEM_ROW_INDEX = {
   namaKomputer: 0,
@@ -520,25 +523,37 @@ function setKasperskyStatusSummaryUnavailable(container) {
   });
 }
 
-function kaceStatusCounts(items) {
+function endpointStatusCounts(items, lastInventoryKey, privilegeKey) {
   const counts = { total: 0, normal: 0, userDobel: 0, privilegeNok: 0, notFound: 0, lastInvOver4Day: 0 };
   (Array.isArray(items) ? items : []).forEach((item) => {
     counts.total += 1;
     const status = String(item?.status || "").trim().toUpperCase();
-    const lastInv = String(item?.lastInv || "").trim();
+    const privilegeStatus = String(item?.[privilegeKey] || "").trim().toUpperCase();
+    const lastInv = String(item?.[lastInventoryKey] || "").trim();
     const dayMatch = lastInv.match(/\(\s*(\d+)\s*DAYS?\s*\)/i);
 
     if (/\bNORMAL\b|^OK$/.test(status)) counts.normal += 1;
     if (/USER\s*(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(status)) counts.userDobel += 1;
-    if (/PRIVILEGE\s*NOK|NOK\s*PRIVILEGE/.test(status)) counts.privilegeNok += 1;
+    const isPrivilegeNok = privilegeKey === "status"
+      ? /PRIVILEGE\s*NOK|NOK\s*PRIVILEGE/.test(status)
+      : /\bNOK\b/.test(privilegeStatus);
+    if (isPrivilegeNok) {
+      counts.privilegeNok += 1;
+    }
     if (/NOT\s*FOUND|TIDAK\s*(DI\s*)?TEMUKAN/.test(status)) counts.notFound += 1;
     if (dayMatch && Number(dayMatch[1]) > 4) counts.lastInvOver4Day += 1;
   });
   return counts;
 }
 
-function renderKaceStatusSummary(items = null) {
-  const counts = Array.isArray(items) ? kaceStatusCounts(items) : null;
+function renderEndpointStatusSummary(items, { moduleKey, title }) {
+  const counts = items == null ? null : endpointStatusCounts(
+    items,
+    moduleKey === "itam" ? "lastInventory" : "lastInv",
+    moduleKey === "itam" ? "statusPrivilege" : "status"
+  );
+  const attribute = `${moduleKey}-summary-value`;
+  const cardAttribute = `data-${moduleKey}-status-summary`;
   const value = (key) => counts
     ? Number(counts[key]).toLocaleString("id-ID")
     : '<span class="skeleton metric-skeleton" aria-label="Memuat nilai"></span>';
@@ -546,23 +561,23 @@ function renderKaceStatusSummary(items = null) {
     <div class="gsp-card__summary-row">
       <span class="gsp-card__summary-dot gsp-card__summary-dot--${tone}" aria-hidden="true"></span>
       <span class="gsp-card__summary-label">${escapeHtml(label)}</span>
-      <span class="gsp-card__summary-value" data-kace-summary-value="${key}">${value(key)}</span>
+      <span class="gsp-card__summary-value" data-${attribute}="${key}">${value(key)}</span>
     </div>`;
 
   return `
-    <article class="gsp-card gsp-card--summary" data-kace-status-summary aria-live="polite">
+    <article class="gsp-card gsp-card--summary" ${cardAttribute} aria-live="polite">
       <div class="gsp-card__header">
         <div class="gsp-card__icon">${icon("kpi", { size: 21 })}</div>
         <div class="gsp-card__body">
-          <h4>Summary Data KACE</h4>
-          <p>Rekap status endpoint dari tabel KACE.</p>
+          <h4>Summary Data ${escapeHtml(title)}</h4>
+          <p>Rekap status endpoint dari tabel ${escapeHtml(title)}.</p>
         </div>
       </div>
       <div class="gsp-card__summary-total">
         <div class="gsp-card__summary-total-copy">
           <span class="gsp-card__summary-total-label">Total Device</span>
         </div>
-        <strong data-kace-summary-value="total">${value("total")}</strong>
+        <strong data-${attribute}="total">${value("total")}</strong>
       </div>
       <div class="gsp-card__summary-list">
         ${row("normal", "Device Normal", "ok")}
@@ -575,22 +590,49 @@ function renderKaceStatusSummary(items = null) {
   `;
 }
 
+function kaceStatusCounts(items) {
+  return endpointStatusCounts(items, "lastInv", "status");
+}
+
+function renderKaceStatusSummary(items = null) {
+  return renderEndpointStatusSummary(items, { moduleKey: "kace", title: "KACE" });
+}
+
+function renderItamStatusSummary(items = null) {
+  return renderEndpointStatusSummary(items, { moduleKey: "itam", title: "ITAM" });
+}
+
 function updateKaceStatusSummary(container, items) {
-  const card = container.querySelector("[data-kace-status-summary]");
+  updateEndpointStatusSummary(container, "kace", kaceStatusCounts(items));
+}
+
+function updateItamStatusSummary(container, items) {
+  updateEndpointStatusSummary(container, "itam", endpointStatusCounts(items, "lastInventory", "statusPrivilege"));
+}
+
+function updateEndpointStatusSummary(container, moduleKey, counts) {
+  const card = container.querySelector(`[data-${moduleKey}-status-summary]`);
   if (!card) return;
-  const counts = kaceStatusCounts(items);
   Object.keys(counts).forEach((key) => {
-    const valueElement = card.querySelector(`[data-kace-summary-value="${key}"]`);
+    const valueElement = card.querySelector(`[data-${moduleKey}-summary-value="${key}"]`);
     if (valueElement) valueElement.textContent = Number(counts[key]).toLocaleString("id-ID");
   });
 }
 
-function setKaceStatusSummaryUnavailable(container) {
-  const card = container.querySelector("[data-kace-status-summary]");
+function setEndpointStatusSummaryUnavailable(container, moduleKey) {
+  const card = container.querySelector(`[data-${moduleKey}-status-summary]`);
   if (!card) return;
-  card.querySelectorAll("[data-kace-summary-value]").forEach((valueElement) => {
+  card.querySelectorAll(`[data-${moduleKey}-summary-value]`).forEach((valueElement) => {
     valueElement.textContent = "—";
   });
+}
+
+function setKaceStatusSummaryUnavailable(container) {
+  setEndpointStatusSummaryUnavailable(container, "kace");
+}
+
+function setItamStatusSummaryUnavailable(container) {
+  setEndpointStatusSummaryUnavailable(container, "itam");
 }
 
 function renderSummary(data, moduleKey, isLoading = false, session = null) {
@@ -601,6 +643,10 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     ? getManagePcKasperskyCache(session)
     : null;
   const kavTableItems = cachedKavTable && Array.isArray(cachedKavTable.items) ? cachedKavTable.items : null;
+  const cachedItamTable = moduleKey === "manage-pc-itam" && session
+    ? getManagePcItamCache(session)
+    : null;
+  const itamTableItems = cachedItamTable && Array.isArray(cachedItamTable.items) ? cachedItamTable.items : null;
   const cachedKaceTable = moduleKey === "manage-pc-kace" && session
     ? getManagePcKaceCache(session)
     : null;
@@ -643,12 +689,19 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
     const itamNok = d.itam?.nok ?? (totalPc != null && itamOk != null ? totalPc - itamOk : (isLoading ? null : 0));
     const privOk = d.itam?.privilegeOk ?? (isLoading ? null : 0);
     const privNok = d.itam?.privilegeNok ?? (totalPc != null && privOk != null ? totalPc - privOk : (isLoading ? null : 0));
+    const itamPercent = totalPc != null && itamOk != null
+      ? (totalPc > 0 ? Math.round((itamOk / totalPc) * 100) : 0)
+      : (isLoading ? null : 0);
+    const privilegePercent = totalPc != null && privOk != null
+      ? (totalPc > 0 ? Math.round((privOk / totalPc) * 100) : 0)
+      : (isLoading ? null : 0);
 
     return `
       <section class="gsp-cards gsp-cards--kaspersky gsp-cards--kaspersky-3" data-mpc-summary aria-live="polite">
         ${isError ? `<p class="mpc-summary__error" role="alert">${escapeHtml(data.message)}</p>` : ""}
-        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]]), "Status Inventaris Aset", "teal")}
-        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]]), "Status Hak Akses ITAM", "teal")}
+        ${renderSummaryCardItem("itam", "ITAM", "IT Asset Management - inventaris & lifecycle aset.", makeStats([["Total Device", totalPc], ["Manage", itamOk], ["Not Manage", itamNok]], renderPercentStat(itamPercent, isLoading)), null, "teal")}
+        ${renderSummaryCardItem("itam", "Privilege ITAM", "Status OK dan NOK privilege ITAM pada seluruh device.", makeStats([["Total Device", totalPc], ["Privilege OK", privOk], ["Privilege NOK", privNok]], renderPercentStat(privilegePercent, isLoading)), null, "teal")}
+        ${renderItamStatusSummary(itamTableItems)}
       </section>
     `;
   }
@@ -917,10 +970,19 @@ function renderItamRows(items, startIndex = 0) {
       ${renderMarqueeCell("groupUser", escapeHtml(item.groupUser || "—"))}
       <td data-kav-col="itamVersion">${escapeHtml(item.itamVersion || "—")}</td>
       <td data-kav-col="statusPrivilege">${escapeHtml(item.statusPrivilege || "—")}</td>
-      ${renderMarqueeCell("lastInventory", escapeHtml(item.lastInventory || "—"))}
+      ${renderLastInventoryCell(item.lastInventory)}
       <td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(item.status)}</td>
     </tr>
   `).join("");
+}
+
+function renderLastInventoryCell(value) {
+  const text = String(value == null ? "" : value).trim();
+  const content = escapeHtml(text || "—");
+  const marked = /\(\s*\d+\s*DAYS?\s*\)/i.test(text)
+    ? `<span class="mpc-kav-last-late">${content}</span>`
+    : content;
+  return renderMarqueeCell("lastInventory", marked);
 }
 
 function kaceStatusTone(value) {
@@ -990,6 +1052,9 @@ function renderItamDetailCell(column, value) {
   }
   if (column.key === "source") {
     return `<td data-kav-col="source">${renderKasperskySource(text)}</td>`;
+  }
+  if (column.key === "lastInventory") {
+    return renderLastInventoryCell(text);
   }
   if (ITAM_MARQUEE_KEYS.indexOf(column.key) !== -1) {
     return renderMarqueeCell(column.key, escapeHtml(text || "—"));
@@ -1079,12 +1144,8 @@ function renderItamProblemSection() {
       <div id="itamProblemContent" class="mpc-kav-problem-content" aria-hidden="true">
         <div class="mpc-kav-problem-content__inner">
           <div class="mpc-table-wrapper">
-            <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data ITAM Bermasalah">
-              <thead>
-                <tr>
-                  ${ITAM_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
-                </tr>
-              </thead>
+            <table class="mpc-table mpc-kav-table mpc-kav-problem-table mpc-itam-problem-table" aria-label="Data ITAM Bermasalah">
+              <thead data-itam-problem-head></thead>
               <tbody data-itam-problem-rows></tbody>
             </table>
           </div>
@@ -1114,7 +1175,7 @@ function renderItamTableSection() {
         </div>
       </header>
       <div class="mpc-table-wrapper">
-        <table class="mpc-table mpc-kav-table">
+        <table class="mpc-table mpc-kav-table mpc-itam-table">
           <thead data-itam-head>${renderTableHead(ITAM_TABLE_COLUMNS)}</thead>
           <tbody data-itam-rows>${renderSkeletonRows(ITAM_TABLE_COLUMNS)}</tbody>
         </table>
@@ -1252,8 +1313,10 @@ function fitProblemTable(problemCard, fitPlan = KASPERSKY_FIT_PLAN) {
   const table = problemCard.querySelector(".mpc-kav-problem-table");
   if (!wrapper || !table) return;
 
-  table.classList.remove("is-clip-os", "is-clip-last", "is-clip-model");
-  fitPlan.forEach((step) => table.style.removeProperty(step.cssVar));
+  fitPlan.forEach((step) => {
+    table.classList.remove(step.cls);
+    table.style.removeProperty(step.cssVar);
+  });
 
   const overflow = () => wrapper.scrollWidth - wrapper.clientWidth;
   const widestText = (columnKey) => {
@@ -1651,6 +1714,7 @@ function bindItamTable(container, session) {
     countSelector: "[data-itam-count]",
     paginationSelector: "[data-itam-pagination]",
     problemCardSelector: "[data-itam-problem-card]",
+    problemHeadSelector: "[data-itam-problem-head]",
     problemRowsSelector: "[data-itam-problem-rows]",
     problemCountSelector: "[data-itam-problem-count]",
     problemToggleSelector: "[data-itam-problem-toggle]",
@@ -1659,6 +1723,8 @@ function bindItamTable(container, session) {
     loadingLabel: "ITAM",
     navLabel: "Navigasi halaman ITAM",
     columns: ITAM_TABLE_COLUMNS,
+    renderProblemHead: (columns) => `<tr>${columns.map(renderKasperskyHeaderCell).join("")}</tr>`,
+    problemSortColumns: ITAM_PROBLEM_COLUMNS,
     pageSize: ITAM_TABLE_PAGE_SIZE,
     dateSortKeys: ["lastInventory"],
     fitPlan: ITAM_FIT_PLAN,
@@ -1666,7 +1732,9 @@ function bindItamTable(container, session) {
     renderDetailRows: renderItamDetailRows,
     loadCached: loadManagePcItamCached,
     getCached: (sess) => getManagePcItamCache(sess),
-    session
+    session,
+    onLoaded: (target, loadedItems) => updateItamStatusSummary(target, loadedItems),
+    onLoadError: (target) => setItamStatusSummaryUnavailable(target)
   });
 }
 

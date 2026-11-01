@@ -1191,6 +1191,61 @@
   margin-right: auto;
 }
 
+.mpc-itam-table th[data-kav-col="status"],
+.mpc-itam-table td[data-kav-col="status"] {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
+  background: #fff;
+}
+
+.mpc-itam-table th[data-kav-col="status"] {
+  z-index: 3;
+  background: #f6f8fb;
+}
+
+.mpc-itam-table tbody tr:hover td[data-kav-col="status"] {
+  background: #f8fafd;
+}
+
+.mpc-itam-table td[data-kav-col="status"] {
+  text-align: left;
+}
+
+.mpc-itam-table td[data-kav-col="status"] .mpc-kav-status {
+  justify-content: flex-start;
+  margin-right: auto;
+}
+
+.mpc-itam-table td[data-kav-col="lastInventory"] .mpc-kav-marquee {
+  max-width: none;
+}
+
+.mpc-itam-problem-table.is-clip-itam-admin th[data-kav-col="groupAdministrator"] {
+  width: var(--kav-problem-itam-admin-max, 80px);
+  min-width: var(--kav-problem-itam-admin-max, 80px);
+}
+
+.mpc-itam-problem-table.is-clip-itam-admin td[data-kav-col="groupAdministrator"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-itam-admin-max, 80px);
+}
+
+.mpc-itam-problem-table.is-clip-itam-user th[data-kav-col="groupUser"] {
+  width: var(--kav-problem-itam-user-max, 60px);
+  min-width: var(--kav-problem-itam-user-max, 60px);
+}
+
+.mpc-itam-problem-table.is-clip-itam-user td[data-kav-col="groupUser"] .mpc-kav-marquee {
+  max-width: var(--kav-problem-itam-user-max, 60px);
+}
+
+.mpc-itam-problem-table td[data-kav-col="lastInventory"] .mpc-kav-marquee {
+  max-width: none;
+}
+
 .mpc-kav-marquee__text {
   display: inline-block;
   white-space: nowrap;
@@ -1309,21 +1364,22 @@
 
 .mpc-kace-table.mpc-kav-problem-table th[data-kav-col="source"],
 .mpc-kace-table.mpc-kav-problem-table td[data-kav-col="source"] {
-  right: 118px;
-  width: 84px;
-  min-width: 84px;
-  max-width: 84px;
-  z-index: 2;
+  right: 0;
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  z-index: 3;
+  overflow: visible;
 }
 
 .mpc-kace-table.mpc-kav-problem-table th[data-kav-col="status"],
 .mpc-kace-table.mpc-kav-problem-table td[data-kav-col="status"] {
   position: sticky;
-  right: 0;
+  right: 112px;
   width: 118px;
   min-width: 118px;
   max-width: 118px;
-  z-index: 3;
+  z-index: 2;
   background: #fff;
 }
 
@@ -1336,6 +1392,43 @@
 }
 
 .mpc-kace-table.mpc-kav-problem-table tbody tr:hover td[data-kav-col="status"] {
+  background: #f8fafd;
+}
+
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table th[data-kav-col="source"],
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table td[data-kav-col="source"] {
+  right: 0;
+  width: 112px;
+  min-width: 112px;
+  max-width: 112px;
+  z-index: 3;
+  overflow: visible;
+}
+
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table th[data-kav-col="source"] {
+  background: #f6f8fb;
+}
+
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table tbody tr:hover td[data-kav-col="source"] {
+  background: #f8fafd;
+}
+
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table th[data-kav-col="status"],
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table td[data-kav-col="status"] {
+  position: sticky;
+  right: 112px;
+  width: 118px;
+  min-width: 118px;
+  max-width: 118px;
+  z-index: 2;
+  background: #fff;
+}
+
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table th[data-kav-col="status"] {
+  background: #f6f8fb;
+}
+
+.mpc-kav-table.mpc-kav-problem-table.mpc-itam-problem-table tbody tr:hover td[data-kav-col="status"] {
   background: #f8fafd;
 }
 

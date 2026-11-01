@@ -1411,19 +1411,29 @@ problem rows from `AB403:AK450`. The main columns are Nama Komputer, Alamat
 IP, Workgroup, OS Name, Administrator, Group User, model komputer, total
 hardisk, last inv, and STATUS. Problem rows contain Nama Komputer, Alamat IP,
 Workgroup, OS Name, Administrator, Group User, model komputer, last inv,
-Source, and STATUS. The frontend displays 15 rows per page, sorts every data
+STATUS, and Source. The frontend displays 15 rows per page, sorts every data
 column except the generated row number in both tables, and caches KACE results
 per `role|NIK` session with request deduplication, matching the Kaspersky and
 ITAM table behavior. Table values stay on one line; the main table keeps Last
 Inv uncut, limits long model names, and pins STATUS at the right edge. Problem
 rows adaptively clip OS Name, Administrator, then Group User; Source is pinned
-beside the fixed STATUS column. Both Status and Source badges use the same
+at the right edge beside the fixed STATUS column. Both Status and Source badges use the same
 colors as Kaspersky. Last Inv values containing `(x day)` are red.
 
 The KACE summary includes a Manage percentage (KACE OK / Total Device) and a
 status breakdown derived from the cached KACE table: Device Normal, Device User
 Dobel, Privilege NOK, Device tidak ditemukan, and Last Inv >4 day. The last
 category counts values whose `Last Inv` contains a day count greater than four.
+
+ITAM uses the same three-card summary layout: its existing ITAM and Privilege
+ITAM cards each show a percentage (their respective OK count divided by Total
+Device), followed by Summary Data ITAM. The summary counts Device Normal and
+Device User Dobel from `status`, Privilege NOK from `statusPrivilege`, devices
+not found from `status`, and Last Inventory values containing `(x day)` where
+the day count is greater than four. Summary counts come from the cached ITAM
+table. ITAM main and problem tables keep Last Inventory uncut, mark `(x day)`
+values red, and keep Status and Source fixed at the right side of the problem
+table, with Source fully visible and rightmost. Problem headers sort except No.
 
 **Sorting (sortable column headers).** Every column except `No` sorts when
 its header is clicked, following the CCTV table's three-state cycle:
