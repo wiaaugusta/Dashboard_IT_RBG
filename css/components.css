@@ -709,11 +709,14 @@
   align-items: center;
   gap: 10px;
   padding: 8px 22px;
-  border-left: 1px solid #edf1f6;
 }
 
 .mpc-table-insert {
   height: 40px;
+}
+
+.mpc-table-insert:hover:not(:disabled) {
+  background-color: #f0f4f8;
 }
 
 
