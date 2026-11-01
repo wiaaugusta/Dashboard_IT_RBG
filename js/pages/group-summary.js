@@ -737,7 +737,7 @@ function renderManagePcTable(activeView, activeScope) {
       <div class="mpc-table-tabs-wrapper">
         ${renderManagePcTableTabs(activeView, activeScope)}
         <div class="mpc-table-tabs-controls">
-          <button type="button" class="btn btn-secondary btn-sm mpc-table-insert" data-mpc-insert data-tooltip="Masukkan daftar user">
+          <button type="button" class="btn btn-secondary btn-sm mpc-table-insert" data-mpc-insert>
             ${icon("download", { size: 15 })}
           </button>
           <label class="mpc-table-search">
