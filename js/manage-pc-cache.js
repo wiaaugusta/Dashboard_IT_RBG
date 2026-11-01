@@ -10,6 +10,7 @@
 import {
   loadManagePcKasperskyTable,
   loadManagePcItamTable,
+  loadManagePcKaceTable,
   loadManagePcList,
   loadManagePcSummary
 } from "./api.js";
@@ -31,6 +32,9 @@ const KAV_TABLE_REQUESTS = new Map();
 const ITAM_TABLE_CACHE = new Map();
 const ITAM_TABLE_REQUESTS = new Map();
 
+const KACE_TABLE_CACHE = new Map();
+const KACE_TABLE_REQUESTS = new Map();
+
 function itamTableKey(session) {
   return `${ownerKey(session)}|itamtable|office`;
 }
@@ -41,6 +45,10 @@ function ownerKey(session) {
 
 function kavTableKey(session) {
   return `${ownerKey(session)}|kavtable|office`;
+}
+
+function kaceTableKey(session) {
+  return `${ownerKey(session)}|kacetable|office`;
 }
 
 function summaryKey(scope, session) {
@@ -319,5 +327,44 @@ export async function loadManagePcItamCached(session, options = {}) {
     });
 
   ITAM_TABLE_REQUESTS.set(key, request);
+  return request;
+}
+
+/** Data tabel KACE yang sudah di-cache (sinkron), atau null. */
+export function getManagePcKaceCache(session) {
+  return KACE_TABLE_CACHE.get(kaceTableKey(session)) || null;
+}
+
+/**
+ * Cache KACE mengikuti pola submodul Kaspersky: sekali per sesi (role|NIK),
+ * dipakai ulang saat menu dibuka kembali, dan request berjalan dideduplikasi.
+ */
+export async function loadManagePcKaceCached(session, options = {}) {
+  const key = kaceTableKey(session);
+
+  if (!options.forceRefresh && KACE_TABLE_CACHE.has(key)) {
+    return { success: true, data: KACE_TABLE_CACHE.get(key) };
+  }
+
+  if (!options.forceRefresh && KACE_TABLE_REQUESTS.has(key)) {
+    return KACE_TABLE_REQUESTS.get(key);
+  }
+
+  const request = loadManagePcKaceTable("office", {
+    sessionToken: session.sessionToken
+  })
+    .then((result) => {
+      KACE_TABLE_REQUESTS.delete(key);
+      if (result && result.success && result.data) {
+        KACE_TABLE_CACHE.set(key, result.data);
+      }
+      return result;
+    })
+    .catch((error) => {
+      KACE_TABLE_REQUESTS.delete(key);
+      throw error;
+    });
+
+  KACE_TABLE_REQUESTS.set(key, request);
   return request;
 }

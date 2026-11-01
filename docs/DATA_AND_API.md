@@ -1404,6 +1404,15 @@ Manage PC overview table displays columns A–G and H, J, L (tab Inventory).
 The tab Unmanaged lists only the devices with a non-`OK` status and shows the
 status columns H–L (see the inventory tabs section below).
 
+The Kaspersky, ITAM, and KACE Office endpoint subtables are loaded through
+`getManagePcKasperskyTable`, `getManagePcItamTable`, and
+`getManagePcKaceTable`. KACE reads its main rows from `AB203:AK400` and its
+problem rows from `AB403:AK450`; when the main range starts with a header row,
+the backend returns those labels to the frontend. The frontend displays 15
+rows per page, sorts every data column except the generated row number, and
+caches KACE results per `role|NIK` session with request deduplication, matching
+the Kaspersky and ITAM table behavior.
+
 **Sorting (sortable column headers).** Every column except `No` sorts when
 its header is clicked, following the CCTV table's three-state cycle:
 

@@ -24,9 +24,11 @@ import { icon } from "../icons.js";
 import {
   getManagePcKasperskyCache,
   getManagePcItamCache,
+  getManagePcKaceCache,
   getManagePcSummaryCache,
   loadManagePcKasperskyCached,
   loadManagePcItamCached,
+  loadManagePcKaceCached,
   loadManagePcSummaryCached
 } from "../manage-pc-cache.js";
 
@@ -251,6 +253,16 @@ const ITAM_FIT_PLAN = [
   { key: "lastInventory", cls: "is-clip-last", cssVar: "--kav-problem-last-max", minWidth: 80 },
   { key: "groupAdministrator", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 60 }
 ];
+
+const KACE_TABLE_PAGE_SIZE = 15;
+const KACE_TABLE_COLUMNS = [
+  { key: "no", label: "No", sortable: false },
+  ...Array.from({ length: 9 }, (_, index) => ({
+    key: `field${index + 1}`,
+    label: `Kolom ${["AB", "AC", "AD", "AE", "AF", "AG", "AH", "AI", "AJ"][index]}`
+  })),
+  { key: "status", label: "Status" }
+].map((column) => ({ ...column, sortable: column.sortable !== false }));
 
 function escapeHtml(value) {
   return String(value)
@@ -799,6 +811,48 @@ function renderItamRows(items, startIndex = 0) {
   `).join("");
 }
 
+function kaceStatusTone(value) {
+  const text = String(value == null ? "" : value).trim().toUpperCase();
+  if (!text || /NOT\s*FOUND|TIDAK\s*(DI\s*)?TEMUKAN/.test(text)) return "empty";
+  if (/NOK|ERROR|FAILED|INACTIVE|NOT\s*MANAGED/.test(text)) return "danger";
+  if (/WARN|PENDING|CHECK/.test(text)) return "warn";
+  if (/OK|NORMAL|ACTIVE|MANAGED/.test(text)) return "ok";
+  return "other";
+}
+
+function renderKaceStatus(value) {
+  const text = String(value == null ? "" : value).trim();
+  return `<span class="mpc-kav-status mpc-kav-status--${kaceStatusTone(value)}">${escapeHtml(text || "Tidak ditemukan")}</span>`;
+}
+
+function renderKaceRows(items, startIndex = 0) {
+  if (items.length === 0) {
+    return `<tr><td colspan="${KACE_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
+  }
+
+  return items.map((item, index) => `
+    <tr class="mpc-table__row">
+      <td class="mpc-table__number" data-kav-col="no">${startIndex + index + 1}</td>
+      ${KACE_TABLE_COLUMNS.slice(1).map((column) => column.key === "status"
+        ? `<td data-kav-col="status" class="mpc-table__status">${renderKaceStatus(item.status)}</td>`
+        : `<td data-kav-col="${column.key}">${escapeHtml(item[column.key] || "—")}</td>`
+      ).join("")}
+    </tr>
+  `).join("");
+}
+
+function renderKaceDetailRows(rows) {
+  return kasperskyDetailDataRows(rows).map((row, rowIndex) => `
+    <tr class="mpc-table__row">
+      <td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>
+      ${KACE_TABLE_COLUMNS.slice(1).map((column, index) => column.key === "status"
+        ? `<td data-kav-col="status" class="mpc-table__status">${renderKaceStatus(row[index])}</td>`
+        : `<td data-kav-col="${column.key}">${escapeHtml(row[index] || "—")}</td>`
+      ).join("")}
+    </tr>
+  `).join("");
+}
+
 function renderItamDetailCell(column, value) {
   const text = String(value == null ? "" : value).trim();
   if (column.key === "status") {
@@ -1003,6 +1057,62 @@ function renderKasperskyTableSection() {
   `;
 }
 
+function renderKaceProblemSection() {
+  return `
+    <section class="mpc-table-card mpc-kav-problem-card" data-kace-problem-card aria-labelledby="mpcKaceProblemTitle" hidden>
+      <button type="button" class="mpc-kav-problem-header" data-kace-problem-toggle aria-expanded="false" aria-controls="kaceProblemContent" aria-label="Buka detail Data KACE Bermasalah">
+        <span class="mpc-table-card__title-icon mpc-table-card__title-icon--danger" aria-hidden="true">${icon("alert", { size: 18 })}</span>
+        <span class="mpc-kav-problem-title" id="mpcKaceProblemTitle">Data KACE Bermasalah</span>
+        <span class="mpc-kav-problem-count mpc-table-tab__count" data-kace-problem-count></span>
+        <span class="mpc-kav-problem-chevron" aria-hidden="true">${icon("chevron-down", { size: 16 })}</span>
+      </button>
+      <div id="kaceProblemContent" class="mpc-kav-problem-content" aria-hidden="true">
+        <div class="mpc-kav-problem-content__inner">
+          <div class="mpc-table-wrapper">
+            <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data KACE Bermasalah">
+              <thead data-kace-problem-head></thead>
+              <tbody data-kace-problem-rows></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function renderKaceTableSection() {
+  return `
+    <section class="mpc-table-card mpc-kav-card" aria-labelledby="mpcKaceTitle">
+      <header class="mpc-table-card__header">
+        <div class="mpc-table-card__title-group">
+          <span class="mpc-table-card__title-icon mpc-table-card__title-icon--purple" aria-hidden="true">${icon("kace", { size: 18 })}</span>
+          <div>
+            <h2 id="mpcKaceTitle">Data KACE Office</h2>
+            <p>Status data dashboard KACE</p>
+          </div>
+        </div>
+        <div class="mpc-table-card__controls">
+          <label class="mpc-table-search">
+            ${icon("search", { size: 17 })}
+            <span class="visually-hidden">Cari perangkat</span>
+            <input type="search" data-kace-search placeholder="Cari perangkat..." autocomplete="off">
+          </label>
+        </div>
+      </header>
+      <div class="mpc-table-wrapper">
+        <table class="mpc-table mpc-kav-table">
+          <thead data-kace-head>${renderTableHead(KACE_TABLE_COLUMNS)}</thead>
+          <tbody data-kace-rows>${renderSkeletonRows(KACE_TABLE_COLUMNS)}</tbody>
+        </table>
+      </div>
+      <footer class="mpc-table__footer">
+        <div class="mpc-table__count" data-kace-count aria-live="polite">Memuat data KACE...</div>
+        <div class="mpc-table__footer-right" data-kace-pagination></div>
+      </footer>
+    </section>
+  `;
+}
+
 /* Utamakan lebar alami. Hanya bila tabel meluber: potong kolom sesuai
    fit plan (urutan + css var per modul). Dengan begitu tidak ada data
    yang membungkus ke baris baru. */
@@ -1047,6 +1157,7 @@ function bindEndpointTable(container, options) {
     countSelector,
     paginationSelector,
     problemCardSelector,
+    problemHeadSelector,
     problemRowsSelector,
     problemCountSelector,
     problemToggleSelector,
@@ -1054,7 +1165,9 @@ function bindEndpointTable(container, options) {
     problemTitle,
     loadingLabel,
     navLabel,
-    columns,
+    columns: initialColumns,
+    columnsFromData,
+    renderProblemHead,
     pageSize,
     dateSortKeys = [],
     fitPlan,
@@ -1077,8 +1190,10 @@ function bindEndpointTable(container, options) {
   const countElement = card.querySelector(countSelector);
   const paginationElement = card.querySelector(paginationSelector);
   const problemCard = container.querySelector(problemCardSelector);
+  const problemHeadElement = problemHeadSelector ? container.querySelector(problemHeadSelector) : null;
   const problemRowsElement = container.querySelector(problemRowsSelector);
 
+  let columns = initialColumns;
   let items = [];
   let detailRows = [];
   let loadError = "";
@@ -1092,6 +1207,9 @@ function bindEndpointTable(container, options) {
 
   function renderProblem() {
     const dataRows = kasperskyDetailDataRows(detailRows);
+    if (problemHeadElement && renderProblemHead) {
+      problemHeadElement.innerHTML = renderProblemHead(columns);
+    }
     const html = renderDetailRows(dataRows);
     if (problemRowsElement) problemRowsElement.innerHTML = html;
     if (problemCard) {
@@ -1267,6 +1385,7 @@ function bindEndpointTable(container, options) {
   }
 
   function applyData(data) {
+    if (columnsFromData) columns = columnsFromData(data, initialColumns);
     items = Array.isArray(data.items) ? data.items : [];
     detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
     loaded = true;
@@ -1360,6 +1479,49 @@ function bindItamTable(container, session) {
   });
 }
 
+function bindKaceTable(container, session) {
+  bindEndpointTable(container, {
+    cardSelector: ".mpc-kav-card",
+    headSelector: "[data-kace-head]",
+    rowsSelector: "[data-kace-rows]",
+    searchSelector: "[data-kace-search]",
+    countSelector: "[data-kace-count]",
+    paginationSelector: "[data-kace-pagination]",
+    problemCardSelector: "[data-kace-problem-card]",
+    problemHeadSelector: "[data-kace-problem-head]",
+    problemRowsSelector: "[data-kace-problem-rows]",
+    problemCountSelector: "[data-kace-problem-count]",
+    problemToggleSelector: "[data-kace-problem-toggle]",
+    problemContentId: "kaceProblemContent",
+    problemTitle: "Data KACE Bermasalah",
+    loadingLabel: "KACE",
+    navLabel: "Navigasi halaman KACE",
+    columns: KACE_TABLE_COLUMNS,
+    columnsFromData: (data, fallback) => {
+      if (!Array.isArray(data.columns) || data.columns.length !== 10) return fallback;
+      return [
+        fallback[0],
+        ...data.columns.map((column, index) => ({
+          key: index === 9 ? "status" : `field${index + 1}`,
+          label: String(column.label || fallback[index + 1].label)
+        }))
+      ];
+    },
+    renderProblemHead: (columns) => `<tr>${columns.map((column) => `
+      <th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}>
+        <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
+      </th>
+    `).join("")}</tr>`,
+    pageSize: KACE_TABLE_PAGE_SIZE,
+    fitPlan: [],
+    renderRows: renderKaceRows,
+    renderDetailRows: renderKaceDetailRows,
+    loadCached: loadManagePcKaceCached,
+    getCached: (sess) => getManagePcKaceCache(sess),
+    session
+  });
+}
+
 /* Panel konten utama per (modul + scope). Saat backend modul siap,
    bagian inilah yang diganti dengan tabel/detail yang sesungguhnya. */
 function renderScopePanel(module, activeScope) {
@@ -1371,6 +1533,10 @@ function renderScopePanel(module, activeScope) {
 
   if (module.key === "manage-pc-itam" && activeScope === "office") {
     return `${renderItamProblemSection()}${renderItamTableSection()}`;
+  }
+
+  if (module.key === "manage-pc-kace" && activeScope === "office") {
+    return `${renderKaceProblemSection()}${renderKaceTableSection()}`;
   }
 
   const scopeMeta = SCOPE_META[activeScope];
@@ -1486,6 +1652,10 @@ export function renderManagePcPage(container, routeInfo) {
 
   if (module.key === "manage-pc-itam" && activeScope === "office") {
     bindItamTable(container, session);
+  }
+
+  if (module.key === "manage-pc-kace" && activeScope === "office") {
+    bindKaceTable(container, session);
   }
 
   if (activeScope !== "office" || cachedSummary) return;

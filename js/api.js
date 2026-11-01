@@ -279,3 +279,13 @@ export async function loadManagePcItamTable(scope = "office", options = {}) {
     refresh: options.refresh ? true : undefined
   }, options);
 }
+
+/**
+ * Tabel endpoint KACE dari blok AB203:AK400 dan data NOK AB403:AK450.
+ */
+export async function loadManagePcKaceTable(scope = "office", options = {}) {
+  return apiRequest("getManagePcKaceTable", {
+    scope,
+    refresh: options.refresh ? true : undefined
+  }, options);
+}
