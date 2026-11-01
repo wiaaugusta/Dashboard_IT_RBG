@@ -228,7 +228,7 @@ const ITAM_DETAIL_COLUMNS = [
   { key: "alamatIp", label: "Alamat IP" },
   { key: "workgroup", label: "Workgroup" },
   { key: "osName", label: "OS Name" },
-  { key: "groupAdministrator", label: "Group Administrator" },
+  { key: "groupAdministrator", label: "Administrator" },
   { key: "groupUser", label: "Group User" },
   { key: "itamVersion", label: "Itam Version" },
   { key: "statusPrivilege", label: "Status Privilege" },
@@ -246,7 +246,7 @@ const ITAM_PROBLEM_ROW_INDEX = Object.fromEntries(
 );
 
 /* Kolom teks panjang ITAM: satu baris + marquee saat hover. */
-const ITAM_MARQUEE_KEYS = ["osName", "groupAdministrator", "groupUser", "lastInventory"];
+const ITAM_MARQUEE_KEYS = ["osName", "groupAdministrator", "groupUser", "lastInventory", "source"];
 
 /* Urutan pemotongan kolom ITAM di kartu "Data ITAM Bermasalah" bila
    tabel meluber: OS Name, lalu Last Inventory, lalu Group Administrator. */
@@ -1051,7 +1051,7 @@ function renderItamDetailCell(column, value) {
     return `<td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(text)}</td>`;
   }
   if (column.key === "source") {
-    return `<td data-kav-col="source">${renderKasperskySource(text)}</td>`;
+    return renderMarqueeCell("source", renderKasperskySource(text));
   }
   if (column.key === "lastInventory") {
     return renderLastInventoryCell(text);
@@ -1080,8 +1080,10 @@ function renderItamDetailRows(rows) {
  * Kolom teks panjang dipotong satu baris. Saat hover, teks bergeser SATU
  * KALI ke kiri (tanpa bolak-balik) bila melebihi lebar kolom. Kecepatan
  * ~100px/detik dan durasi menyesuaikan panjang teks.
+ * `keepShift` (dipakai ITAM): setelah bergeser, teks tidak kembali ke kanan.
  */
-function bindMarquee(containerElement, marqueeCells) {
+function bindMarquee(containerElement, marqueeCells, options = {}) {
+  const { keepShift = false } = options;
   const MARQUEE_CELL = marqueeCells ||
     '[data-kav-col="model"], [data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]';
 
@@ -1101,6 +1103,7 @@ function bindMarquee(containerElement, marqueeCells) {
   });
 
   containerElement.addEventListener("mouseout", (event) => {
+    if (keepShift) return;
     const cell = event.target.closest(MARQUEE_CELL);
     if (!cell || cell.contains(event.relatedTarget)) return;
     const text = cell.querySelector(".mpc-kav-marquee__text");
@@ -1313,6 +1316,13 @@ function fitProblemTable(problemCard, fitPlan = KASPERSKY_FIT_PLAN) {
   const table = problemCard.querySelector(".mpc-kav-problem-table");
   if (!wrapper || !table) return;
 
+  /* Source ITAM tidak dipotong: lebar kolom mengikuti isi. Offset sticky
+     kolom STATUS disesuaikan agar tetap menempel di kiri kolom Source. */
+  const sourceCell = table.querySelector('td[data-kav-col="source"]');
+  if (sourceCell) {
+    table.style.setProperty("--mpc-itam-source-width", `${Math.ceil(sourceCell.getBoundingClientRect().width)}px`);
+  }
+
   fitPlan.forEach((step) => {
     table.classList.remove(step.cls);
     table.style.removeProperty(step.cssVar);
@@ -1367,6 +1377,7 @@ function bindEndpointTable(container, options) {
     dateSortKeys = [],
     fitPlan,
     marqueeCells,
+    marqueeKeepShift = false,
     renderRows,
     renderDetailRows,
     loadCached,
@@ -1607,8 +1618,8 @@ function bindEndpointTable(container, options) {
     renderPage();
   });
 
-  bindMarquee(card, marqueeCells);
-  if (problemCard) bindMarquee(problemCard, marqueeCells);
+  bindMarquee(card, marqueeCells, { keepShift: marqueeKeepShift });
+  if (problemCard) bindMarquee(problemCard, marqueeCells, { keepShift: marqueeKeepShift });
 
   const toggle = problemCard?.querySelector(problemToggleSelector);
   const content = problemCard?.querySelector(`[id='${problemContentId}']`);
@@ -1728,6 +1739,8 @@ function bindItamTable(container, session) {
     pageSize: ITAM_TABLE_PAGE_SIZE,
     dateSortKeys: ["lastInventory"],
     fitPlan: ITAM_FIT_PLAN,
+    marqueeCells: ITAM_MARQUEE_KEYS.map((key) => `[data-kav-col="${key}"]`).join(", "),
+    marqueeKeepShift: true,
     renderRows: renderItamRows,
     renderDetailRows: renderItamDetailRows,
     loadCached: loadManagePcItamCached,
