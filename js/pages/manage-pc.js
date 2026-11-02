@@ -1631,18 +1631,6 @@ function bindEndpointTable(container, options) {
     });
   }
 
-  /* Lebar kartu berubah -> hitung ulang potongan. */
-  if (problemCard && typeof ResizeObserver !== "undefined") {
-    let lastWidth = 0;
-    const observer = new ResizeObserver((entries) => {
-      const width = Math.round(entries[0].contentRect.width);
-      if (width === lastWidth) return;
-      lastWidth = width;
-      fitProblemTable(problemCard, fitPlan);
-    });
-    observer.observe(problemCard.querySelector(".mpc-table-wrapper") || problemCard);
-  }
-
   function applyData(data) {
     if (columnsFromData) columns = columnsFromData(data, initialColumns);
     items = Array.isArray(data.items) ? data.items : [];
