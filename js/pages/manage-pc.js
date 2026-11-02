@@ -846,8 +846,10 @@ function renderKasperskyDetailCell(column, value) {
       : escapeHtml(text || "—");
     return `<td data-kav-col="${column.key}"><span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${content}</span></span></td>`;
   }
-  const className = column.key === "namaKomputer" ? ' class="mpc-table__device"' : "";
-  return `<td data-kav-col="${column.key}"${className}>${escapeHtml(text || "—")}</td>`;
+  if (column.key === "namaKomputer") {
+    return `<td data-kav-col="namaKomputer" class="mpc-table__device"><span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${escapeHtml(text || "—")}</span></span></td>`;
+  }
+  return `<td data-kav-col="${column.key}">${escapeHtml(text || "—")}</td>`;
 }
 
 function kasperskyDetailDataRows(rows) {
@@ -866,6 +868,7 @@ function renderKasperskyDetailRows(rows) {
         }
         return renderKasperskyDetailCell(column, row[column.sourceIndex]);
       }).join("")}
+      <td class="mpc-kav-gap" aria-hidden="true"></td>
     </tr>
   `).join("");
 }
@@ -1198,6 +1201,7 @@ function renderKasperskyProblemSection() {
               <thead>
                 <tr>
                   ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
+                  <th class="mpc-kav-gap" aria-hidden="true"></th>
                 </tr>
               </thead>
               <tbody data-kav-problem-rows></tbody>
