@@ -195,9 +195,9 @@ const KASPERSKY_DETAIL_COLUMNS = [
    B..L. Bila ruang kurang, Sistem Operasi lebih dulu dipotong, lalu
    Last connected (lihat fitProblemTable). */
 const KASPERSKY_PROBLEM_COLUMNS = [
-  { key: "no", label: "No" },
+  { key: "no", label: "No", sortable: false },
   ...KASPERSKY_DETAIL_COLUMNS
-];
+].map((column) => ({ ...column, sortable: column.sortable !== false }));
 
 /* Urutan pemotongan kolom Kaspersky bila tabel meluber: Sistem Operasi,
    lalu Last connected, lalu Model. */
@@ -905,6 +905,10 @@ function renderTableHead(columns = KASPERSKY_TABLE_COLUMNS) {
   return `<tr>${columns.map(renderKasperskyHeaderCell).join("")}</tr>`;
 }
 
+function renderKasperskyProblemHead(columns = KASPERSKY_PROBLEM_COLUMNS) {
+  return `<tr>${columns.map(renderKasperskyHeaderCell).join("")}<th class="mpc-kav-gap" aria-hidden="true"></th></tr>`;
+}
+
 function renderSkeletonRows(columns = KASPERSKY_TABLE_COLUMNS) {
   const rows = [];
   for (let row = 0; row < 6; row++) {
@@ -1198,12 +1202,7 @@ function renderKasperskyProblemSection() {
         <div class="mpc-kav-problem-content__inner">
           <div class="mpc-table-wrapper">
             <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
-              <thead>
-                <tr>
-                  ${KASPERSKY_PROBLEM_COLUMNS.map((column) => `<th scope="col" data-kav-col="${column.key}"${column.key === "no" ? ' class="mpc-table__number"' : ""}><span class="mpc-table__th-label">${escapeHtml(column.label)}</span></th>`).join("")}
-                  <th class="mpc-kav-gap" aria-hidden="true"></th>
-                </tr>
-              </thead>
+              <thead data-kav-problem-head>${renderKasperskyProblemHead()}</thead>
               <tbody data-kav-problem-rows></tbody>
             </table>
           </div>
@@ -1690,6 +1689,7 @@ function bindKasperskyTable(container, session) {
     countSelector: "[data-kav-count]",
     paginationSelector: "[data-kav-pagination]",
     problemCardSelector: "[data-kav-problem-card]",
+    problemHeadSelector: "[data-kav-problem-head]",
     problemRowsSelector: "[data-kav-problem-rows]",
     problemCountSelector: "[data-kav-problem-count]",
     problemToggleSelector: "[data-kav-problem-toggle]",
@@ -1698,6 +1698,8 @@ function bindKasperskyTable(container, session) {
     loadingLabel: "Kaspersky",
     navLabel: "Navigasi halaman Kaspersky",
     columns: KASPERSKY_TABLE_COLUMNS,
+    renderProblemHead: (columns) => renderKasperskyProblemHead(columns),
+    problemSortColumns: KASPERSKY_PROBLEM_COLUMNS,
     pageSize: KASPERSKY_TABLE_PAGE_SIZE,
     dateSortKeys: ["lastConnected"],
     fitPlan: KASPERSKY_FIT_PLAN,

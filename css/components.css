@@ -1140,21 +1140,16 @@
   max-width: 70px;
 }
 
-/* Problem table: Nama Komputer dipotong lebih rapat agar header kanan
-   (Status & Source) bergeser ke kiri. */
+/* Problem table: Nama Komputer dipotong agar header kanan (Status &
+   Source) bergeser ke kiri, tanpa memotong terlalu banyak. */
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="namaKomputer"] {
   white-space: nowrap;
-  max-width: 96px;
+  max-width: 110px;
   overflow: hidden;
 }
 
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="namaKomputer"] .mpc-kav-marquee {
-  max-width: 96px;
-}
-
-/* Data Agent version di kedua kartu Kaspersky rata tengah. */
-.mpc-kav-table td[data-kav-col="agentVersion"] {
-  text-align: center;
+  max-width: 110px;
 }
 
 /* Problem table: Status tetap fix, tidak potong. */
