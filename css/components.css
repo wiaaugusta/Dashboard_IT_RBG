@@ -1135,6 +1135,11 @@
   max-width: 100px;
 }
 
+/* Problem table: OS dipotong lebih agresif agar Source tidak tertutup. */
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
+  max-width: 70px;
+}
+
 /* Tabel ITAM: kolom OS Name / Group User / Last Inventory dirapatkan,
    Group Administrator sedikit lebih lebar. */
 .mpc-kav-table td[data-kav-col="osName"] .mpc-kav-marquee,
@@ -1382,9 +1387,9 @@
 /* Sumber kolom: lebar tetap + tetap terlihat di kanan saat halaman menyempit */
 .mpc-kav-table.mpc-kav-problem-table th[data-kav-col="source"],
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="source"] {
-  min-width: 84px;
-  width: 84px;
-  max-width: 84px;
+  min-width: 70px;
+  width: 70px;
+  max-width: 70px;
   position: sticky;
   right: 0;
   z-index: 1;
