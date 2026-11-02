@@ -1092,6 +1092,11 @@
   text-align: left;
 }
 
+/* Header STATUS di problem table rata kiri (Kaspersky saja). */
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) th[data-kav-col="status"] .mpc-table__th-label {
+  text-align: left;
+}
+
 .mpc-kav-table.mpc-kav-problem-table .mpc-kav-status {
   max-width: 100%;
   white-space: nowrap;
@@ -1662,6 +1667,7 @@
   .mpc-kav-status--info {
     background: #e8f1fe;
     color: #1d4ed8;
+    padding: 4px 12px;
   }
   
   .mpc-kav-status--empty {
