@@ -1086,25 +1086,28 @@
   overflow: visible;
 }
 
+.mpc-kav-table.mpc-kav-problem-table .mpc-table__status--left {
+  text-align: left;
+}
+
 .mpc-kav-table.mpc-kav-problem-table .mpc-kav-status {
   max-width: none;
   white-space: nowrap;
 }
 
-/* Header STATUS rata tengah sejajar dengan data, panah sort tetap di
-   tepi kanan supaya label tidak bergeser. */
-.mpc-kav-table th.mpc-kav-th--left .mpc-table__th-sort {
+/* Header STATUS center, panah sort di kanan. */
+.mpc-kav-table th.mpc-kav-th--center .mpc-table__th-sort {
     position: relative;
     justify-content: center;
     padding: 0 24px;
     text-align: center;
   }
 
-.mpc-kav-table th.mpc-kav-th--left .mpc-table__th-label {
+.mpc-kav-table th.mpc-kav-th--center .mpc-table__th-label {
     text-align: center;
   }
 
-.mpc-kav-table th.mpc-kav-th--left .mpc-table__sort-arrows {
+.mpc-kav-table th.mpc-kav-th--center .mpc-table__sort-arrows {
     position: absolute;
     right: 8px;
   }

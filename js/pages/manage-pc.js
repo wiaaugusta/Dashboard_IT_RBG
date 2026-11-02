@@ -202,8 +202,8 @@ const KASPERSKY_PROBLEM_COLUMNS = [
 /* Urutan pemotongan kolom Kaspersky bila tabel meluber: Sistem Operasi,
    lalu Last connected, lalu Model. */
 const KASPERSKY_FIT_PLAN = [
-  { key: "sistemOperasi", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 80 },
-  { key: "model", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 60 }
+  { key: "sistemOperasi", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 60 },
+  { key: "model", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 50 }
 ];
 
 /* Tabel endpoint ITAM (MASTER REPORT OFFICE blok O203:X400). Kolom
@@ -835,7 +835,7 @@ function isKasperskyDetailHeader(row) {
 function renderKasperskyDetailCell(column, value) {
   const text = String(value == null ? "" : value).trim();
   if (column.key === "status") {
-    return `<td data-kav-col="status" class="mpc-table__status">${renderKasperskyStatus(text)}</td>`;
+    return `<td data-kav-col="status" class="mpc-table__status mpc-table__status--left">${renderKasperskyStatus(text)}</td>`;
   }
   if (column.key === "source") {
     return `<td data-kav-col="source">${renderKasperskySource(text)}</td>`;
@@ -880,7 +880,10 @@ function renderKasperskyHeaderCell(column) {
     `;
   }
 
-  const className = column.key === "status" ? ' class="mpc-kav-th--left"' : "";
+  let className = "";
+  if (column.key === "status") {
+    className = ' class="mpc-kav-th--center"';
+  }
   return `
     <th scope="col" data-kav-col="${column.key}"${className} aria-sort="none" data-kav-sort-header="${column.key}">
       <button type="button" class="mpc-table__th-sort" data-kav-sort-key="${column.key}"
