@@ -1102,6 +1102,10 @@
   white-space: nowrap;
 }
 
+.mpc-kav-table.mpc-kav-problem-table .mpc-kav-status--info {
+  padding: 4px 12px;
+}
+
 /* Header STATUS center, panah sort di kanan. */
 .mpc-kav-table th.mpc-kav-th--center .mpc-table__th-sort {
     position: relative;
