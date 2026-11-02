@@ -1079,31 +1079,41 @@
   max-width: var(--kav-problem-model-max, 96px);
 }
 
-/* Kolom STATUS lebar tetap supaya tidak bergeser/berkedip saat lebar
-   halaman berubah (mis. sidebar di-hover). */
-.mpc-kav-table.mpc-kav-problem-table .mpc-table__status {
-  width: 118px;
-  min-width: 118px;
-  max-width: 118px;
+/* Kolom STATUS Kaspersky (kedua kartu): lebar tetap agar tidak bergeser
+   saat halaman menyempit, dan cukup lebar untuk badge "User Belum Update"
+   beserta padding-nya. */
+.mpc-kav-table:not(.mpc-kace-table):not(.mpc-itam-table):not(.mpc-itam-problem-table) .mpc-table__status {
+  width: 142px;
+  min-width: 142px;
+  max-width: 142px;
   overflow: hidden;
 }
 
-.mpc-kav-table.mpc-kav-problem-table .mpc-table__status--left {
+/* Data STATUS Kaspersky Bermasalah rata kiri. */
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) td.mpc-table__status {
   text-align: left;
 }
 
-/* Header STATUS di problem table rata kiri (Kaspersky saja). */
+/* Header STATUS Kaspersky Bermasalah rata kiri (label + tombol sort). */
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) th[data-kav-col="status"] .mpc-table__th-sort {
+  justify-content: flex-start;
+  padding-left: 6px;
+  padding-right: 24px;
+  text-align: left;
+}
+
 .mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) th[data-kav-col="status"] .mpc-table__th-label {
   text-align: left;
+}
+
+/* Badge "User Belum Update" (biru) di kedua kartu Kaspersky. */
+.mpc-kav-table:not(.mpc-kace-table):not(.mpc-itam-table):not(.mpc-itam-problem-table) .mpc-kav-status--info {
+  padding: 4px 12px;
 }
 
 .mpc-kav-table.mpc-kav-problem-table .mpc-kav-status {
   max-width: 100%;
   white-space: nowrap;
-}
-
-.mpc-kav-table.mpc-kav-problem-table .mpc-kav-status--info {
-  padding: 4px 12px;
 }
 
 /* Header STATUS center, panah sort di kanan. */
@@ -1671,7 +1681,6 @@
   .mpc-kav-status--info {
     background: #e8f1fe;
     color: #1d4ed8;
-    padding: 4px 12px;
   }
   
   .mpc-kav-status--empty {
