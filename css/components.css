@@ -1140,6 +1140,36 @@
   max-width: 70px;
 }
 
+/* Problem table: Nama Komputer dipotong dengan marquee. */
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="namaKomputer"] {
+  white-space: nowrap;
+  max-width: 120px;
+  overflow: hidden;
+}
+
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="namaKomputer"] .mpc-kav-marquee {
+  max-width: 120px;
+}
+
+/* Problem table: Status tetap fix, tidak potong. */
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="status"] {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="status"] .mpc-kav-marquee {
+  display: none;
+}
+
+/* Problem table: Last connected & DNS Name dipotong dengan marquee. */
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="lastConnected"] .mpc-kav-marquee {
+  max-width: 90px;
+}
+
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="dnsName"] .mpc-kav-marquee {
+  max-width: 80px;
+}
+
 /* Tabel ITAM: kolom OS Name / Group User / Last Inventory dirapatkan,
    Group Administrator sedikit lebih lebar. */
 .mpc-kav-table td[data-kav-col="osName"] .mpc-kav-marquee,
