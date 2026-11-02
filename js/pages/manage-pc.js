@@ -1700,6 +1700,7 @@ function bindKasperskyTable(container, session) {
     columns: KASPERSKY_TABLE_COLUMNS,
     renderProblemHead: (columns) => renderKasperskyProblemHead(columns),
     problemSortColumns: KASPERSKY_PROBLEM_COLUMNS,
+    marqueeCells: '[data-kav-col="namaKomputer"], [data-kav-col="model"], [data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]',
     pageSize: KASPERSKY_TABLE_PAGE_SIZE,
     dateSortKeys: ["lastConnected"],
     fitPlan: KASPERSKY_FIT_PLAN,
