@@ -1387,9 +1387,9 @@
 /* Sumber kolom: lebar tetap + tetap terlihat di kanan saat halaman menyempit */
 .mpc-kav-table.mpc-kav-problem-table th[data-kav-col="source"],
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="source"] {
-  min-width: 70px;
-  width: 70px;
-  max-width: 70px;
+  min-width: 84px;
+  width: 84px;
+  max-width: 84px;
   position: sticky;
   right: 0;
   z-index: 1;
