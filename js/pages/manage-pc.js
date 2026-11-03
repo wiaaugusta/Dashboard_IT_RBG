@@ -783,6 +783,34 @@ function kasperskyStatusTone(value) {
   return "other";
 }
 
+/* Versi numerik: bandingkan per segmen supaya 12.9 < 12.12. */
+function versionSegments(value) {
+  const match = String(value == null ? "" : value).trim().match(/\d+(?:\.\d+)*/);
+  if (!match) return null;
+  return match[0].split(".").map((part) => Number(part));
+}
+
+function isVersionLower(value, baseline) {
+  const current = versionSegments(value);
+  const target = versionSegments(baseline);
+  if (!current || !target) return false;
+  const length = Math.max(current.length, target.length);
+  for (let index = 0; index < length; index += 1) {
+    const left = current[index] || 0;
+    const right = target[index] || 0;
+    if (left < right) return true;
+    if (left > right) return false;
+  }
+  return false;
+}
+
+/** Sel Version KES / Agent version: merah bila di bawah versi referensi SOURCE. */
+function renderKasperskyVersionCell(key, value, reference) {
+  const text = String(value == null ? "" : value).trim();
+  const outdated = isVersionLower(text, reference ? reference[key] : "");
+  return `<td data-kav-col="${key}"><span class="mpc-kav-version${outdated ? " mpc-kav-version--outdated" : ""}">${escapeHtml(text || "—")}</span></td>`;
+}
+
 function renderKasperskyStatus(value) {
   const text = String(value == null ? "" : value).trim();
   const label = text || "Tidak ditemukan";
@@ -832,8 +860,11 @@ function isKasperskyDetailHeader(row) {
   return first === "NAMA KOMPUTER" || first === "COMPUTER NAME";
 }
 
-function renderKasperskyDetailCell(column, value) {
+function renderKasperskyDetailCell(column, value, reference) {
   const text = String(value == null ? "" : value).trim();
+  if (column.key === "versionKes" || column.key === "agentVersion") {
+    return renderKasperskyVersionCell(column.key, text, reference);
+  }
   if (column.key === "status") {
     return `<td data-kav-col="status" class="mpc-table__status mpc-table__status--left">${renderKasperskyStatus(text)}</td>`;
   }
@@ -859,14 +890,15 @@ function kasperskyDetailDataRows(rows) {
   return list;
 }
 
-function renderKasperskyDetailRows(rows) {
+function renderKasperskyDetailRows(rows, data = {}) {
+  const reference = data && data.reference;
   return kasperskyDetailDataRows(rows).map((row, rowIndex) => `
     <tr class="mpc-table__row">
       ${KASPERSKY_PROBLEM_COLUMNS.map((column) => {
         if (column.key === "no") {
           return `<td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>`;
         }
-        return renderKasperskyDetailCell(column, row[column.sourceIndex]);
+        return renderKasperskyDetailCell(column, row[column.sourceIndex], reference);
       }).join("")}
       <td class="mpc-kav-gap" aria-hidden="true"></td>
     </tr>
@@ -921,19 +953,20 @@ function renderSkeletonRows(columns = KASPERSKY_TABLE_COLUMNS) {
   return rows.join("");
 }
 
-function renderKasperskyRows(items, startIndex = 0) {
+function renderKasperskyRows(items, startIndex = 0, data = {}) {
   if (items.length === 0) {
     return `<tr><td colspan="${KASPERSKY_TABLE_COLUMNS.length}" class="mpc-table__state">Tidak ada perangkat yang cocok.</td></tr>`;
   }
 
+  const reference = data && data.reference;
   return items.map((item, index) => `
     <tr class="mpc-table__row">
       <td class="mpc-table__number" data-kav-col="no">${startIndex + index + 1}</td>
-      <td data-kav-col="namaKomputer" class="mpc-table__device">${escapeHtml(item.namaKomputer || "—")}</td>
+      <td data-kav-col="namaKomputer" class="mpc-table__device"><span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${escapeHtml(item.namaKomputer || "—")}</span></span></td>
       <td data-kav-col="alamatIp">${escapeHtml(item.alamatIp || "—")}</td>
       <td data-kav-col="workgroup">${escapeHtml(item.workgroup || "—")}</td>
-      <td data-kav-col="versionKes">${escapeHtml(item.versionKes || "—")}</td>
-      <td data-kav-col="agentVersion">${escapeHtml(item.agentVersion || "—")}</td>
+      ${renderKasperskyVersionCell("versionKes", item.versionKes, reference)}
+      ${renderKasperskyVersionCell("agentVersion", item.agentVersion, reference)}
       <td data-kav-col="model">
         <span class="mpc-kav-marquee"><span class="mpc-kav-marquee__text">${escapeHtml(item.model || "—")}</span></span>
       </td>
@@ -1232,7 +1265,7 @@ function renderKasperskyTableSection() {
         </div>
       </header>
       <div class="mpc-table-wrapper">
-        <table class="mpc-table mpc-kav-table">
+        <table class="mpc-table mpc-kav-table mpc-kav-main-table">
           <thead data-kav-head>${renderTableHead()}</thead>
           <tbody data-kav-rows>${renderSkeletonRows()}</tbody>
         </table>
@@ -1396,6 +1429,7 @@ function bindEndpointTable(container, options) {
   let columns = initialColumns;
   let items = [];
   let detailRows = [];
+  let responseData = {};
   let loadError = "";
   let loaded = false;
   let page = 1;
@@ -1425,7 +1459,7 @@ function bindEndpointTable(container, options) {
         });
       }
     }
-    const html = renderDetailRows(dataRows);
+    const html = renderDetailRows(dataRows, responseData);
     if (problemRowsElement) problemRowsElement.innerHTML = html;
     updateProblemSortHeaders();
     if (problemCard) {
@@ -1550,7 +1584,7 @@ function bindEndpointTable(container, options) {
     const startIndex = (page - 1) * pageSize;
 
     rowsElement.innerHTML = renderRows(
-      filtered.slice(startIndex, startIndex + pageSize), startIndex);
+      filtered.slice(startIndex, startIndex + pageSize), startIndex, responseData);
     if (headElement) headElement.innerHTML = renderTableHead(columns);
     updatePagination(total);
     updateSortHeaders();
@@ -1632,6 +1666,7 @@ function bindEndpointTable(container, options) {
   }
 
   function applyData(data) {
+    responseData = data || {};
     if (columnsFromData) columns = columnsFromData(data, initialColumns);
     items = Array.isArray(data.items) ? data.items : [];
     detailRows = Array.isArray(data.detail?.rows) ? data.detail.rows : [];
@@ -1662,6 +1697,7 @@ function bindEndpointTable(container, options) {
       loaded = true;
       loadError = error.message || `Data ${loadingLabel} gagal dimuat.`;
       detailRows = [];
+      responseData = {};
       renderProblem();
       if (onLoadError) onLoadError(container);
       renderPage();

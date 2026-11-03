@@ -1156,6 +1156,16 @@
   max-width: 100px;
 }
 
+/* Tabel utama Kaspersky: nama komputer panjang dipotong ringan. */
+.mpc-kav-table.mpc-kav-main-table td[data-kav-col="namaKomputer"] {
+  max-width: 150px;
+  overflow: hidden;
+}
+
+.mpc-kav-table.mpc-kav-main-table td[data-kav-col="namaKomputer"] .mpc-kav-marquee {
+  max-width: 150px;
+}
+
 /* Problem table: OS dipotong lebih agresif agar Source tidak tertutup. */
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="sistemOperasi"] .mpc-kav-marquee {
   max-width: 70px;
@@ -1363,6 +1373,12 @@
 
 /* Last connected dengan keterangan (x day) -> merah. */
 .mpc-kav-last-late {
+  color: #c63f38;
+  font-weight: 650;
+}
+
+/* Version KES / Agent version di bawah versi referensi SOURCE -> merah. */
+.mpc-kav-version--outdated {
   color: #c63f38;
   font-weight: 650;
 }

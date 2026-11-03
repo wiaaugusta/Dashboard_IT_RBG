@@ -1420,6 +1420,13 @@ rows adaptively clip OS Name, Administrator, then Group User; Source is pinned
 at the right edge beside the fixed STATUS column. Both Status and Source badges use the same
 colors as Kaspersky. Last Inv values containing `(x day)` are red.
 
+The Kaspersky Office main table clips long computer names to 150px and reveals
+the full value with the one-way hover marquee. The main and problem tables
+compare each row's Version KES and Agent version against the reference cells
+`S1` and `R1` of the `SOURCE PC OFFICE` tab (falling back to the configured
+SOURCE tab). Values below the reference are shown in red using numeric segment
+comparison, so `12.9` is treated as lower than `12.12`.
+
 The KACE summary includes a Manage percentage (KACE OK / Total Device) and a
 status breakdown derived from the cached KACE table: Device Normal, Device User
 Dobel, Privilege NOK, Device tidak ditemukan, and Last Inv >4 day. The last
