@@ -1374,6 +1374,29 @@ function fitProblemTable(problemCard, fitPlan = KASPERSKY_FIT_PLAN) {
   }
 }
 
+/* Tahan wheel di dalam kartu bermasalah selama kursor berada di kartu,
+   lalu teruskan scroll ke daftar record. */
+function bindProblemScrollTrap(problemCard) {
+  if (!problemCard || problemCard.dataset.mpcScrollTrap === "true") return;
+  const wrapper = problemCard.querySelector(".mpc-table-wrapper");
+  const content = problemCard.querySelector(".mpc-kav-problem-content");
+  if (!wrapper || !content) return;
+
+  problemCard.dataset.mpcScrollTrap = "true";
+  problemCard.addEventListener("wheel", (event) => {
+    if (event.ctrlKey) return;
+    if (!content.classList.contains("is-open")) return;
+    const maxScroll = wrapper.scrollHeight - wrapper.clientHeight;
+    if (maxScroll <= 1) return;
+    if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+
+    event.preventDefault();
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? wrapper.clientHeight : 1;
+    const nextScroll = wrapper.scrollTop + (event.deltaY * unit);
+    wrapper.scrollTop = Math.max(0, Math.min(maxScroll, nextScroll));
+  }, { passive: false });
+}
+
 /**
  * Binding tabel endpoint generik (dipakai Kaspersky & ITAM):
  * search, sort per kolom, pagination client-side, marquee, kartu
@@ -1647,7 +1670,10 @@ function bindEndpointTable(container, options) {
   });
 
   bindMarquee(card, marqueeCells);
-  if (problemCard) bindMarquee(problemCard, marqueeCells);
+  if (problemCard) {
+    bindMarquee(problemCard, marqueeCells);
+    bindProblemScrollTrap(problemCard);
+  }
 
   const toggle = problemCard?.querySelector(problemToggleSelector);
   const content = problemCard?.querySelector(`[id='${problemContentId}']`);
