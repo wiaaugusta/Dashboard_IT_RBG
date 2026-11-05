@@ -4431,6 +4431,12 @@
   background: #eef2f7;
 }
 
+/* Total Device Kaspersky sejajar dengan kotak statistik kartu sebelah. */
+.gsp-cards--kaspersky-3:not(.gsp-cards--itam):not(.gsp-cards--kace)
+  .gsp-card--summary .gsp-card__summary-total {
+  margin-top: 10px;
+}
+
 .gsp-card__summary-total > div {
   display: flex;
   flex-direction: column;
@@ -4468,7 +4474,7 @@
 .gsp-card__summary-list--split {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
-  gap: 0 16px;
+  gap: 0 20px;
   margin-top: 0;
 }
 
@@ -4479,7 +4485,7 @@
 }
 
 .gsp-card__summary-list--split .gsp-card__summary-row {
-  min-height: 36px;
+  min-height: 34px;
   font-size: 12px;
 }
 
@@ -4556,6 +4562,7 @@
 
 .gsp-cards--kaspersky-3 .gsp-card__info {
   padding: 5px 10px;
+  margin-top: auto;
   margin-bottom: 0;
 }
 
