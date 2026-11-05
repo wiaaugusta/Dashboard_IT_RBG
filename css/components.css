@@ -1739,6 +1739,12 @@
   color: #8a97a8;
 }
 
+/* Badge sama dengan "tidak ditemukan", tetapi teks .temp berwarna merah. */
+[data-kav-problem-card] .mpc-kav-status--temp-missing {
+  background: #f1f4f7;
+  color: #dc2626;
+}
+
 .mpc-kav-status--other {
   background: #f1f5f9;
   color: #526277;
@@ -4398,6 +4404,7 @@
 
 /* Kartu summary Kaspersky: gaya info, bukan kartu statistik utama. */
 .gsp-card--summary {
+  gap: 8px;
   background: linear-gradient(180deg, #f8fafc 0%, #ffffff 55%);
   border-color: #e2e8f0;
 }
@@ -4462,6 +4469,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
   gap: 0 16px;
+  margin-top: 0;
 }
 
 .gsp-card__summary-column {
@@ -4471,8 +4479,8 @@
 }
 
 .gsp-card__summary-list--split .gsp-card__summary-row {
-  min-height: 26px;
-  font-size: 11px;
+  min-height: 36px;
+  font-size: 12px;
 }
 
 .gsp-card__summary-row {
@@ -4526,11 +4534,10 @@
   height: 100%;
 }
 
-/* Kotak statistik menempel di bawah header agar tidak ada ruang kosong
-   ketika tinggi kartu disamakan dengan kartu summary. */
+/* Kotak statistik diturunkan sedikit agar tidak terlalu mepet header. */
 .gsp-cards--kaspersky-3 .gsp-card__stats {
   gap: 4px;
-  margin-top: 0;
+  margin-top: 6px;
 }
 
 .gsp-cards--kaspersky-3 .gsp-card__stats .gsp-card__stat {
@@ -4548,13 +4555,13 @@
 }
 
 .gsp-cards--kaspersky-3 .gsp-card__info {
-  padding: 7px 10px;
+  padding: 5px 10px;
   margin-bottom: 0;
 }
 
 .gsp-cards--kaspersky-3 .gsp-card__info-row {
-  padding: 8px 0;
-  font-size: var(--font-size-small);
+  padding: 6px 0;
+  font-size: 11px;
 }
 
 /* Kartu ITAM: baris statistik (Total Device..Persen) turun sedikit agar

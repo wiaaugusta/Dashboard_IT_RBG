@@ -828,7 +828,9 @@ function renderKasperskyVersionCell(key, value, reference) {
 function renderKasperskyStatus(value) {
   const text = String(value == null ? "" : value).trim();
   const label = text || "Tidak ditemukan";
-  return `<span class="mpc-kav-status mpc-kav-status--${kasperskyStatusTone(value)}">${escapeHtml(label)}</span>`;
+  const tempMissing = /TIDAK\s+ADA\s+DI\s*\.?\s*TEMP/i.test(text);
+  const modifier = tempMissing ? " mpc-kav-status--temp-missing" : "";
+  return `<span class="mpc-kav-status mpc-kav-status--${kasperskyStatusTone(value)}${modifier}">${escapeHtml(label)}</span>`;
 }
 
 /** Status ITAM: Privilege NOK ditampilkan merah. */
