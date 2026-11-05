@@ -191,18 +191,16 @@ const KASPERSKY_DETAIL_COLUMNS = [
   { key: "source", label: "Source" }
 ].map((column, index) => ({ ...column, sourceIndex: index }));
 
-/* Tampilan kartu "Data Kaspersky Bermasalah": No urut + seluruh kolom
-   B..L. Bila ruang kurang, Sistem Operasi lebih dulu dipotong, lalu
-   Last connected (lihat fitProblemTable). */
+/* Tampilan kartu "Data Kaspersky Bermasalah": No urut + kolom B..L
+   tanpa Sistem Operasi. Bila ruang kurang, Model dipotong lebih dulu
+   (lihat fitProblemTable). */
 const KASPERSKY_PROBLEM_COLUMNS = [
   { key: "no", label: "No", sortable: false },
-  ...KASPERSKY_DETAIL_COLUMNS
+  ...KASPERSKY_DETAIL_COLUMNS.filter((column) => column.key !== "sistemOperasi")
 ].map((column) => ({ ...column, sortable: column.sortable !== false }));
 
-/* Urutan pemotongan kolom Kaspersky bila tabel meluber: Sistem Operasi,
-   lalu Last connected, lalu Model. */
+/* Urutan pemotongan kolom Kaspersky bila tabel meluber: Model. */
 const KASPERSKY_FIT_PLAN = [
-  { key: "sistemOperasi", cls: "is-clip-os", cssVar: "--kav-problem-os-max", minWidth: 60 },
   { key: "model", cls: "is-clip-model", cssVar: "--kav-problem-model-max", minWidth: 50 }
 ];
 
@@ -450,14 +448,21 @@ function renderPercentStat(value, isLoading) {
 }
 
 function kasperskyStatusCounts(items) {
-  const counts = { total: 0, normal: 0, nik: 0, userDobel: 0, userUpdate: 0, notfound: 0, inactive: 0, other: 0 };
+  const counts = {
+    total: 0, normal: 0, nik: 0, userDobel: 0, userUpdate: 0,
+    versiNok: 0, notfound: 0, inactive: 0, other: 0
+  };
   (Array.isArray(items) ? items : []).forEach((item) => {
-    const tone = kasperskyStatusTone(item && item.status);
+    const status = String(item?.status || "").trim().toUpperCase();
+    const tone = kasperskyStatusTone(status);
     const lastConnected = String(item?.lastConnected || "").trim().toUpperCase();
     const isInactive = /\(\s*\d+\s*DAYS?\s*\)|\b\d+\s*DAYS?\b/i.test(lastConnected);
+    const isVersionNok = /VERSI\s*NOK/.test(status);
 
     if (tone === "empty") {
       counts.notfound += 1;
+    } else if (isVersionNok) {
+      counts.versiNok += 1;
     } else if (isInactive) {
       counts.inactive += 1;
     } else if (tone === "ok") {
@@ -472,9 +477,10 @@ function kasperskyStatusCounts(items) {
       counts.other += 1;
     }
   });
-  
-  // Total Device = normal + nik + userDobel + userUpdate + inactive
-  counts.total = counts.normal + counts.nik + counts.userDobel + counts.userUpdate + counts.inactive;
+
+  // Total Device = normal + nik + userDobel + userUpdate + inactive + versiNok
+  counts.total = counts.normal + counts.nik + counts.userDobel + counts.userUpdate
+    + counts.inactive + counts.versiNok;
   return counts;
 }
 
@@ -510,8 +516,9 @@ function renderKasperskyStatusSummary(items = null) {
         ${row("nik", "Device NIK Dobel", "warn")}
         ${row("userDobel", "Device User Dobel", "danger")}
         ${row("userUpdate", "Device Beda User", "info")}
+        ${row("versiNok", "Device Versi NOK", "danger")}
         ${row("notfound", "Device tidak ditemukan", "empty")}
-        ${row("inactive", "Inactive Connection", "late")}
+        ${row("inactive", "Last Inv >4 day", "late")}
       </div>
     </article>
   `;
@@ -776,6 +783,7 @@ function renderSummary(data, moduleKey, isLoading = false, session = null) {
 function kasperskyStatusTone(value) {
   const text = String(value == null ? "" : value).trim().toUpperCase();
   if (!text || /TIDAK\s*(DI\s*)?TEMUKAN/.test(text) || /NOT\s*FOUND/.test(text)) return "empty";
+  if (/VERSI\s*NOK/.test(text)) return "danger";
   if (/NIK/.test(text) && /(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(text)) return "warn";
   if (/USER/.test(text) && /(DOBEL|DOUBLE|DUPLIKAT|DUPLICATE)/.test(text)) return "danger";
   if (/USER/.test(text) && /BELUM\s*UPDATE/.test(text)) return "info";

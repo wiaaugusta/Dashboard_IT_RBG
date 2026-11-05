@@ -4496,10 +4496,12 @@
 .gsp-cards--kaspersky-3 {
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: stretch;
+  grid-auto-rows: 1fr;
 }
 
 .gsp-cards--kaspersky-3 .gsp-card {
   min-height: 240px;
+  height: 100%;
 }
 
 /* Kotak statistik & kotak versi lebih besar agar ruang di atasnya tertutup.
@@ -4525,7 +4527,7 @@
 
 .gsp-cards--kaspersky-3 .gsp-card__info {
   padding: 7px 10px;
-  margin-bottom: auto;
+  margin-bottom: 0;
 }
 
 .gsp-cards--kaspersky-3 .gsp-card__info-row {
