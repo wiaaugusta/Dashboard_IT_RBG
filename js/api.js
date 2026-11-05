@@ -293,3 +293,11 @@ export async function loadManagePcKaceTable(scope = "office", options = {}) {
 export async function insertManagePcUsers(scope = "office", options = {}) {
   return apiRequest("insertManagePcUsers", { scope }, options);
 }
+
+export async function updateManagePcTemp(operation, namaKomputer, scope = "office", options = {}) {
+  return apiRequest("updateManagePcTemp", {
+    scope,
+    operation,
+    namaKomputer
+  }, options);
+}

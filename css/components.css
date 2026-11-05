@@ -1496,9 +1496,77 @@
   width: 84px;
   max-width: 84px;
   position: sticky;
-  right: 24px;
+  right: 80px;
   z-index: 1;
   background: #fff;
+}
+
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="action"],
+.mpc-kav-table.mpc-kav-problem-table td[data-kav-col="action"] {
+  width: 56px;
+  min-width: 56px;
+  max-width: 56px;
+  position: sticky;
+  right: 24px;
+  z-index: 2;
+  background: #fff;
+  padding: 0 6px;
+  text-align: center;
+}
+
+.mpc-kav-table.mpc-kav-problem-table th[data-kav-col="action"] {
+  background: #f6f8fb;
+}
+
+.mpc-kav-table.mpc-kav-problem-table tbody tr:hover td[data-kav-col="action"] {
+  background: #f8fafd;
+}
+
+.mpc-kav-th--action .mpc-table__th-label {
+  text-align: center;
+}
+
+.mpc-kav-action-cell {
+  text-align: center;
+}
+
+.mpc-kav-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #dbe3ee;
+  border-radius: 7px;
+  background: #fff;
+  color: #2563eb;
+  cursor: pointer;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+.mpc-kav-action:hover:not(:disabled) {
+  border-color: #bfd3f5;
+  background: #eff6ff;
+}
+
+.mpc-kav-action--remove {
+  color: #dc2626;
+}
+
+.mpc-kav-action--remove:hover:not(:disabled) {
+  border-color: #f3c3c3;
+  background: #fef2f2;
+}
+
+.mpc-kav-action:focus-visible {
+  outline: 2px solid var(--color-primary, #2563eb);
+  outline-offset: 1px;
+}
+
+.mpc-kav-action:disabled {
+  opacity: .55;
+  cursor: wait;
 }
 
 .mpc-kav-table.mpc-kav-problem-table th[data-kav-col="source"] {
@@ -1614,8 +1682,12 @@
   z-index: 7;
 }
 
-.mpc-kav-problem-card .mpc-table-wrapper .mpc-kav-problem-table thead th.mpc-kav-gap {
+.mpc-kav-problem-card .mpc-table-wrapper .mpc-kav-problem-table thead th[data-kav-col="action"] {
   z-index: 8;
+}
+
+.mpc-kav-problem-card .mpc-table-wrapper .mpc-kav-problem-table thead th.mpc-kav-gap {
+  z-index: 9;
 }
 
 /* Header kartu Data kaspersky bermasalah: seluruh header bisa diklik */
@@ -2502,6 +2574,89 @@
   .modal {
     width: calc(100vw - var(--space-6));
   }
+}
+
+/* ---------- ACTION CONFIRM DIALOG ---------- */
+.modal-confirm {
+  width: min(420px, calc(100vw - var(--space-8)));
+}
+
+.modal-confirm [hidden] {
+  display: none !important;
+}
+
+.modal-confirm__header {
+  padding: var(--space-5) var(--space-6) var(--space-3);
+}
+
+.modal-confirm__header h3 {
+  margin: 2px 0 0;
+  font-size: 18px;
+  line-height: 1.35;
+  color: var(--color-text-primary);
+}
+
+.modal-confirm__body {
+  padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.modal-confirm__message {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  line-height: 1.6;
+}
+
+.modal-confirm__detail {
+  margin: var(--space-3) 0 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f8fafc;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.modal-confirm__state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: var(--space-4);
+  padding: 11px 12px;
+  border-radius: var(--radius-md);
+  background: #f1f5f9;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.modal-confirm__state--success {
+  background: #eaf7ef;
+  color: #18804a;
+}
+
+.modal-confirm__state--error {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.modal-confirm__state .btn-spinner {
+  border-color: rgba(37, 99, 235, .22);
+  border-top-color: var(--color-primary, #2563eb);
+}
+
+.modal-confirm__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+}
+
+.modal-confirm__actions {
+  margin-top: var(--space-5);
 }
 
 /* ---------- TOAST ---------- */

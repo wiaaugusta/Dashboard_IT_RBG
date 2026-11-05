@@ -270,7 +270,8 @@ export async function loadManagePcKasperskyCached(session, options = {}) {
   }
 
   const request = loadManagePcKasperskyTable("office", {
-    sessionToken: session.sessionToken
+    sessionToken: session.sessionToken,
+    refresh: options.forceRefresh ? true : undefined
   })
     .then((result) => {
       KAV_TABLE_REQUESTS.delete(key);

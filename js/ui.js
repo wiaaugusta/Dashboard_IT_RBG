@@ -10,7 +10,20 @@
  * dsb ditambahkan saat komponen tersebut pertama kali dibutuhkan.
  */
 
+import { icon } from "./icons.js";
+
 const TOAST_DURATION_MS = 3500;
+
+let activeActionDialog = null;
+
+function escapeDialogHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 /**
  * @param {string} message
@@ -41,6 +54,135 @@ export function showSuccess(message) {
 
 export function showError(message) {
   showToast(message, "danger");
+}
+
+export function showActionDialog(options = {}) {
+  const {
+    title = "Konfirmasi",
+    message = "",
+    detail = "",
+    confirmLabel = "Yes",
+    cancelLabel = "No",
+    confirmTone = "danger",
+    loadingText = "Memproses...",
+    successText = "Berhasil.",
+    errorText = "Gagal memproses.",
+    action
+  } = options;
+
+  if (typeof action !== "function") return Promise.resolve(false);
+  if (activeActionDialog) activeActionDialog.close(false);
+
+  return new Promise((resolve) => {
+    const titleId = `actionDialogTitle-${Date.now()}`;
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay is-visible";
+
+    const dialog = document.createElement("div");
+    dialog.className = "modal modal-confirm is-visible";
+    dialog.setAttribute("role", "dialog");
+    dialog.setAttribute("aria-modal", "true");
+    dialog.setAttribute("aria-labelledby", titleId);
+    dialog.innerHTML = `
+      <div class="modal__header modal-confirm__header">
+        <p class="modal__eyebrow">Konfirmasi</p>
+        <h3 id="${titleId}" data-dialog-title></h3>
+      </div>
+      <div class="modal__body modal-confirm__body">
+        <p class="modal-confirm__message" data-dialog-message></p>
+        <p class="modal-confirm__detail" data-dialog-detail hidden></p>
+        <div class="modal-confirm__state" data-dialog-state hidden aria-live="polite"></div>
+        <div class="modal__actions modal-confirm__actions" data-dialog-actions>
+          <button type="button" class="btn btn-secondary" data-dialog-cancel>${escapeDialogHtml(cancelLabel)}</button>
+          <button type="button" class="btn btn-${confirmTone === "primary" ? "primary" : "danger"}" data-dialog-confirm>${escapeDialogHtml(confirmLabel)}</button>
+        </div>
+      </div>
+    `;
+
+    const titleEl = dialog.querySelector("[data-dialog-title]");
+    const messageEl = dialog.querySelector("[data-dialog-message]");
+    const detailEl = dialog.querySelector("[data-dialog-detail]");
+    const stateEl = dialog.querySelector("[data-dialog-state]");
+    const actionsEl = dialog.querySelector("[data-dialog-actions]");
+    const cancelBtn = dialog.querySelector("[data-dialog-cancel]");
+    const confirmBtn = dialog.querySelector("[data-dialog-confirm]");
+    const previousFocus = document.activeElement;
+
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    if (detail) {
+      detailEl.textContent = detail;
+      detailEl.hidden = false;
+    }
+
+    let closed = false;
+    let busy = false;
+    let successTimer = null;
+
+    function close(result) {
+      if (closed) return;
+      closed = true;
+      clearTimeout(successTimer);
+      document.removeEventListener("keydown", onKeyDown);
+      overlay.remove();
+      dialog.remove();
+      activeActionDialog = null;
+      if (previousFocus && typeof previousFocus.focus === "function") {
+        previousFocus.focus();
+      }
+      resolve(result);
+    }
+
+    function onKeyDown(event) {
+      if (event.key === "Escape" && !busy) close(false);
+    }
+
+    function showState(type, text) {
+      stateEl.hidden = false;
+      stateEl.className = `modal-confirm__state modal-confirm__state--${type}`;
+      const iconName = type === "success" ? "check" : type === "error" ? "alert" : "";
+      stateEl.innerHTML = `
+        ${iconName ? `<span class="modal-confirm__icon" aria-hidden="true">${icon(iconName, { size: 18 })}</span>` : '<span class="btn-spinner" aria-hidden="true"></span>'}
+        <span>${escapeDialogHtml(text)}</span>
+      `;
+    }
+
+    async function runAction() {
+      if (busy) return;
+      busy = true;
+      cancelBtn.disabled = true;
+      confirmBtn.disabled = true;
+      showState("loading", loadingText);
+
+      try {
+        await action();
+        busy = false;
+        cancelBtn.disabled = false;
+        confirmBtn.disabled = true;
+        actionsEl.hidden = true;
+        showState("success", successText);
+        successTimer = setTimeout(() => close(true), 1500);
+      } catch (error) {
+        busy = false;
+        showState("error", error && error.message ? error.message : errorText);
+        cancelBtn.disabled = false;
+        cancelBtn.textContent = "Tutup";
+        confirmBtn.hidden = true;
+        actionsEl.hidden = false;
+      }
+    }
+
+    activeActionDialog = { close };
+    cancelBtn.addEventListener("click", () => close(false));
+    confirmBtn.addEventListener("click", runAction);
+    overlay.addEventListener("click", () => {
+      if (!busy) close(false);
+    });
+    document.addEventListener("keydown", onKeyDown);
+    document.body.appendChild(overlay);
+    document.body.appendChild(dialog);
+    confirmBtn.focus();
+  });
 }
 
 /* =========================================================

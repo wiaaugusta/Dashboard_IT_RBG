@@ -21,6 +21,8 @@ import { renderShell } from "../shell.js";
 import { getSession } from "../auth.js";
 import { getQueryParam } from "../router.js";
 import { icon } from "../icons.js";
+import { updateManagePcTemp } from "../api.js";
+import { showActionDialog, showError } from "../ui.js";
 import {
   getManagePcKasperskyCache,
   getManagePcItamCache,
@@ -196,7 +198,8 @@ const KASPERSKY_DETAIL_COLUMNS = [
    (lihat fitProblemTable). */
 const KASPERSKY_PROBLEM_COLUMNS = [
   { key: "no", label: "No", sortable: false },
-  ...KASPERSKY_DETAIL_COLUMNS.filter((column) => column.key !== "sistemOperasi")
+  ...KASPERSKY_DETAIL_COLUMNS.filter((column) => column.key !== "sistemOperasi"),
+  { key: "action", label: "Action", sortable: false }
 ].map((column) => ({ ...column, sortable: column.sortable !== false }));
 
 /* Urutan pemotongan kolom Kaspersky bila tabel meluber: Model. */
@@ -877,6 +880,34 @@ function isKasperskyDetailHeader(row) {
   return first === "NAMA KOMPUTER" || first === "COMPUTER NAME";
 }
 
+function kasperskyTempAction(row) {
+  const source = String(row && row[10] != null ? row[10] : "").trim().toUpperCase();
+  const status = String(row && row[9] != null ? row[9] : "").trim();
+  if (source === ".TEMP") {
+    return { operation: "remove", label: "Hapus dari .temp", icon: "trash-2" };
+  }
+  if (/TIDAK\s+ADA\s+DI\s*\.?\s*TEMP/i.test(status)) {
+    return { operation: "add", label: "Tambah ke .temp", icon: "plus" };
+  }
+  return null;
+}
+
+function renderKasperskyTempActionCell(row) {
+  const action = kasperskyTempAction(row);
+  if (!action) return '<td data-kav-col="action" class="mpc-kav-action-cell"></td>';
+  const name = String(row && row[0] != null ? row[0] : "").trim();
+  const label = `${action.label}: ${name}`;
+  return `
+    <td data-kav-col="action" class="mpc-kav-action-cell">
+      <button type="button" class="mpc-kav-action mpc-kav-action--${action.operation}"
+        data-kav-temp-action="${action.operation}" data-kav-temp-name="${escapeHtml(name)}"
+        aria-label="${escapeHtml(label)}" title="${escapeHtml(action.label)}">
+        ${icon(action.icon, { size: 15 })}
+      </button>
+    </td>
+  `;
+}
+
 function renderKasperskyDetailCell(column, value, reference) {
   const text = String(value == null ? "" : value).trim();
   if (column.key === "versionKes" || column.key === "agentVersion") {
@@ -915,6 +946,7 @@ function renderKasperskyDetailRows(rows, data = {}) {
         if (column.key === "no") {
           return `<td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>`;
         }
+        if (column.key === "action") return renderKasperskyTempActionCell(row);
         return renderKasperskyDetailCell(column, row[column.sourceIndex], reference);
       }).join("")}
       <td class="mpc-kav-gap" aria-hidden="true"></td>
@@ -924,7 +956,11 @@ function renderKasperskyDetailRows(rows, data = {}) {
 
 function renderKasperskyHeaderCell(column) {
   if (column.sortable === false) {
-    const className = column.key === "no" ? ' class="mpc-table__number"' : "";
+    const className = column.key === "no"
+      ? ' class="mpc-table__number"'
+      : column.key === "action"
+        ? ' class="mpc-kav-th--action"'
+        : "";
     return `
       <th scope="col" data-kav-col="${column.key}"${className}>
         <span class="mpc-table__th-label">${escapeHtml(column.label)}</span>
@@ -1720,6 +1756,13 @@ function bindEndpointTable(container, options) {
     renderPage();
   }
 
+  async function refreshFromServer() {
+    const result = await loadCached(session, { forceRefresh: true });
+    if (!card.isConnected) return;
+    if (!result.success) throw new Error(result.message || `Data ${loadingLabel} gagal dimuat.`);
+    applyData(result.data || {});
+  }
+
   /* Cache-first: sesi yang sama cukup load SEKALI (pola tabel Manage PC/CCTV). */
   const cached = getCached(session);
   if (cached) {
@@ -1745,10 +1788,58 @@ function bindEndpointTable(container, options) {
       if (onLoadError) onLoadError(container);
       renderPage();
     });
+
+  return { refresh: refreshFromServer };
+}
+
+function bindKasperskyTempActions(container, session, refresh) {
+  const rowsElement = container.querySelector("[data-kav-problem-rows]");
+  if (!rowsElement || rowsElement.dataset.mpcTempActions === "true") return;
+  rowsElement.dataset.mpcTempActions = "true";
+
+  rowsElement.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-kav-temp-action]");
+    if (!button || button.disabled) return;
+
+    const operation = button.getAttribute("data-kav-temp-action");
+    const name = button.getAttribute("data-kav-temp-name") || "";
+    if (!name || (operation !== "add" && operation !== "remove")) return;
+
+    const isAdd = operation === "add";
+    let succeeded = false;
+
+    await showActionDialog({
+      title: isAdd ? "Tambah ke .temp?" : "Hapus dari .temp?",
+      message: isAdd
+        ? "Tambahkan komputer ini ke sheet .temp?"
+        : "Hapus komputer ini dari sheet .temp?",
+      detail: name,
+      confirmTone: isAdd ? "primary" : "danger",
+      loadingText: isAdd ? "Menambahkan..." : "Menghapus...",
+      successText: isAdd
+        ? `${name} berhasil ditambahkan ke .temp.`
+        : `${name} berhasil dihapus dari .temp.`,
+      action: async () => {
+        const result = await updateManagePcTemp(operation, name, "office", {
+          sessionToken: session?.sessionToken
+        });
+        if (!result.success) throw new Error(result.message || "Gagal memperbarui sheet .temp.");
+        succeeded = true;
+        return result;
+      }
+    });
+
+    if (!succeeded) return;
+    try {
+      await refresh?.();
+    } catch (error) {
+      showError("Perubahan tersimpan, tetapi data Kaspersky gagal dimuat ulang.");
+    }
+  });
 }
 
 function bindKasperskyTable(container, session) {
-  bindEndpointTable(container, {
+  const tableApi = bindEndpointTable(container, {
     cardSelector: ".mpc-kav-card",
     headSelector: "[data-kav-head]",
     rowsSelector: "[data-kav-rows]",
@@ -1779,6 +1870,8 @@ function bindKasperskyTable(container, session) {
     onLoaded: (target, loadedItems) => updateKasperskyStatusSummary(target, loadedItems),
     onLoadError: (target) => setKasperskyStatusSummaryUnavailable(target)
   });
+
+  bindKasperskyTempActions(container, session, tableApi?.refresh);
 }
 
 function bindItamTable(container, session) {
