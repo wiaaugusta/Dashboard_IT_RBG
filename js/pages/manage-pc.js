@@ -495,6 +495,17 @@ function renderKasperskyStatusSummary(items = null) {
       <span class="gsp-card__summary-label">${escapeHtml(label)}</span>
       <span class="gsp-card__summary-value" data-kav-summary-value="${key}">${value(key)}</span>
     </div>`;
+  const leftRows = [
+    row("normal", "Device Normal", "ok"),
+    row("nik", "Device NIK Dobel", "warn"),
+    row("userDobel", "Device User Dobel", "danger"),
+    row("userUpdate", "Device Beda User", "info")
+  ].join("");
+  const rightRows = [
+    row("versiNok", "Device Versi NOK", "danger"),
+    row("notfound", "Device tidak ditemukan", "empty"),
+    row("inactive", "Last Inv >4 day", "late")
+  ].join("");
 
   return `
     <article class="gsp-card gsp-card--summary" data-kav-status-summary aria-live="polite">
@@ -511,14 +522,9 @@ function renderKasperskyStatusSummary(items = null) {
         </div>
         <strong data-kav-summary-value="total">${value("total")}</strong>
       </div>
-      <div class="gsp-card__summary-list">
-        ${row("normal", "Device Normal", "ok")}
-        ${row("nik", "Device NIK Dobel", "warn")}
-        ${row("userDobel", "Device User Dobel", "danger")}
-        ${row("userUpdate", "Device Beda User", "info")}
-        ${row("versiNok", "Device Versi NOK", "danger")}
-        ${row("notfound", "Device tidak ditemukan", "empty")}
-        ${row("inactive", "Last Inv >4 day", "late")}
+      <div class="gsp-card__summary-list gsp-card__summary-list--split">
+        <div class="gsp-card__summary-column">${leftRows}</div>
+        <div class="gsp-card__summary-column">${rightRows}</div>
       </div>
     </article>
   `;
@@ -848,12 +854,13 @@ function renderKasperskyLastConnected(value) {
   return escapeHtml(text);
 }
 
-/** Source (kolom L): Kaspersky merah, KACE oranye, ITAM hitam. */
+/** Source (kolom L): Kaspersky merah, KACE oranye, ITAM hitam, .temp abu. */
 function kasperskySourceTone(value) {
   const text = String(value == null ? "" : value).trim().toUpperCase();
   if (text.indexOf("KASPERSKY") !== -1) return "kaspersky";
   if (text.indexOf("KACE") !== -1) return "kace";
   if (text.indexOf("ITAM") !== -1) return "itam";
+  if (text.indexOf(".TEMP") !== -1) return "temp";
   return "other";
 }
 

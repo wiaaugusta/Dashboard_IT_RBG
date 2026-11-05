@@ -1479,6 +1479,11 @@
   color: #526277;
 }
 
+.mpc-kav-source--temp {
+  background: #e2e8f0;
+  color: #dc2626;
+}
+
 /* Data Source tidak menempel ke tepi kanan kartu. */
 .mpc-kav-table.mpc-kav-problem-table td[data-kav-col="source"] {
   padding-right: 14px;
@@ -4453,6 +4458,23 @@
   margin-top: auto;
 }
 
+.gsp-card__summary-list--split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 0 16px;
+}
+
+.gsp-card__summary-column {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gsp-card__summary-list--split .gsp-card__summary-row {
+  min-height: 26px;
+  font-size: 11px;
+}
+
 .gsp-card__summary-row {
   display: flex;
   align-items: center;
@@ -4504,11 +4526,11 @@
   height: 100%;
 }
 
-/* Kotak statistik & kotak versi lebih besar agar ruang di atasnya tertutup.
-   Ruang sisa kartu dibagi dua (auto margin): di atas kotak stat dan di bawah
-   kotak info, agar jarak header -> kotak stat tidak terlalu lebar. */
+/* Kotak statistik menempel di bawah header agar tidak ada ruang kosong
+   ketika tinggi kartu disamakan dengan kartu summary. */
 .gsp-cards--kaspersky-3 .gsp-card__stats {
   gap: 4px;
+  margin-top: 0;
 }
 
 .gsp-cards--kaspersky-3 .gsp-card__stats .gsp-card__stat {
