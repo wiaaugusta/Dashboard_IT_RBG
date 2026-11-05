@@ -1496,9 +1496,14 @@
   width: 84px;
   max-width: 84px;
   position: sticky;
-  right: 80px;
+  right: 24px;
   z-index: 1;
   background: #fff;
+}
+
+.mpc-kav-table.mpc-kav-problem-table:has([data-kav-col="action"]) th[data-kav-col="source"],
+.mpc-kav-table.mpc-kav-problem-table:has([data-kav-col="action"]) td[data-kav-col="source"] {
+  right: 80px;
 }
 
 .mpc-kav-table.mpc-kav-problem-table th[data-kav-col="action"],
@@ -4688,6 +4693,18 @@
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   align-items: stretch;
   grid-auto-rows: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .gsp-cards--kaspersky-3:not(.gsp-cards--itam):not(.gsp-cards--kace) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1023.98px) {
+  .gsp-cards--kaspersky-3:not(.gsp-cards--itam):not(.gsp-cards--kace) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .gsp-cards--kaspersky-3 .gsp-card {

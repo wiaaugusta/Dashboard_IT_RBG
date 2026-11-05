@@ -938,11 +938,19 @@ function kasperskyDetailDataRows(rows) {
   return list;
 }
 
+function kasperskyProblemColumnsForRows(rows, columns = KASPERSKY_PROBLEM_COLUMNS) {
+  const hasAction = (Array.isArray(rows) ? rows : []).some((row) => !!kasperskyTempAction(row));
+  if (hasAction) return columns;
+  return columns.filter((column) => column.key !== "action");
+}
+
 function renderKasperskyDetailRows(rows, data = {}) {
   const reference = data && data.reference;
-  return kasperskyDetailDataRows(rows).map((row, rowIndex) => `
+  const dataRows = kasperskyDetailDataRows(rows);
+  const columns = kasperskyProblemColumnsForRows(dataRows);
+  return dataRows.map((row, rowIndex) => `
     <tr class="mpc-table__row">
-      ${KASPERSKY_PROBLEM_COLUMNS.map((column) => {
+      ${columns.map((column) => {
         if (column.key === "no") {
           return `<td class="mpc-table__number" data-kav-col="no">${rowIndex + 1}</td>`;
         }
@@ -990,8 +998,11 @@ function renderTableHead(columns = KASPERSKY_TABLE_COLUMNS) {
   return `<tr>${columns.map(renderKasperskyHeaderCell).join("")}</tr>`;
 }
 
-function renderKasperskyProblemHead(columns = KASPERSKY_PROBLEM_COLUMNS) {
-  return `<tr>${columns.map(renderKasperskyHeaderCell).join("")}<th class="mpc-kav-gap" aria-hidden="true"></th></tr>`;
+function renderKasperskyProblemHead(columns = KASPERSKY_PROBLEM_COLUMNS, rows = null) {
+  const visibleColumns = Array.isArray(rows)
+    ? kasperskyProblemColumnsForRows(rows, columns)
+    : columns;
+  return `<tr>${visibleColumns.map(renderKasperskyHeaderCell).join("")}<th class="mpc-kav-gap" aria-hidden="true"></th></tr>`;
 }
 
 function renderSkeletonRows(columns = KASPERSKY_TABLE_COLUMNS) {
@@ -1288,7 +1299,7 @@ function renderKasperskyProblemSection() {
         <div class="mpc-kav-problem-content__inner">
           <div class="mpc-table-wrapper">
             <table class="mpc-table mpc-kav-table mpc-kav-problem-table" aria-label="Data Kaspersky Bermasalah">
-              <thead data-kav-problem-head>${renderKasperskyProblemHead()}</thead>
+              <thead data-kav-problem-head>${renderKasperskyProblemHead(KASPERSKY_PROBLEM_COLUMNS, [])}</thead>
               <tbody data-kav-problem-rows></tbody>
             </table>
           </div>
@@ -1520,7 +1531,7 @@ function bindEndpointTable(container, options) {
   function renderProblem() {
     const dataRows = kasperskyDetailDataRows(detailRows);
     if (problemHeadElement && renderProblemHead) {
-      problemHeadElement.innerHTML = renderProblemHead(problemSortColumns || columns);
+      problemHeadElement.innerHTML = renderProblemHead(problemSortColumns || columns, dataRows);
     }
     if (problemSortBy && problemSortColumns) {
       const columnIndex = problemSortIndexByKey
@@ -1856,7 +1867,7 @@ function bindKasperskyTable(container, session) {
     loadingLabel: "Kaspersky",
     navLabel: "Navigasi halaman Kaspersky",
     columns: KASPERSKY_TABLE_COLUMNS,
-    renderProblemHead: (columns) => renderKasperskyProblemHead(columns),
+    renderProblemHead: (columns, rows) => renderKasperskyProblemHead(columns, rows),
     problemSortColumns: KASPERSKY_PROBLEM_COLUMNS,
     marqueeCells: '[data-kav-col="namaKomputer"], [data-kav-col="model"], [data-kav-col="sistemOperasi"], [data-kav-col="lastConnected"]',
     pageSize: KASPERSKY_TABLE_PAGE_SIZE,
