@@ -851,13 +851,11 @@ function renderManagePcSummaryPanel(data) {
   return `
     <section class="mpc-summary-card" aria-label="Summary Kaspersky dan Summary ITAM">
       <div class="mpc-summary-snap" tabindex="0" aria-label="Summary Kaspersky dan Summary ITAM">
-        <section class="mpc-summary-group" aria-labelledby="mpc-summary-kaspersky-title">
-          <h3 id="mpc-summary-kaspersky-title">Summary Kaspersky</h3>
+        <section class="mpc-summary-group" aria-label="Data Kaspersky">
           ${renderManagePcRangeTable("MANAGE KAV", ranges.manageKav)}
           ${renderManagePcRangeTable("VERSI KAV", ranges.versiKav)}
         </section>
-        <section class="mpc-summary-group" aria-labelledby="mpc-summary-itam-title">
-          <h3 id="mpc-summary-itam-title">Summary ITAM</h3>
+        <section class="mpc-summary-group" aria-label="Data ITAM">
           ${renderManagePcRangeTable("MANAGE ITAM", ranges.manageItam)}
           ${renderManagePcRangeTable("PRIVILEGE ITAM", ranges.privilegeItam)}
         </section>
@@ -926,7 +924,10 @@ function renderManagePcRangeTable(label, rangeData) {
         ${columns.map((column) => {
           const value = headerRow.cells[column] || managePcExcelColumnLabel(startColumnNumber + column);
           const classes = [];
-          if (column < freezeColumns) classes.push(`mpc-summary-table__frozen-${column}`);
+          if (column < freezeColumns) {
+            classes.push(`mpc-summary-table__frozen-${column}`, "mpc-summary-table__pinned-header");
+          }
+          if (column === 0) classes.push("mpc-summary-table__workgroup");
           if (managePcIsPercentColumn(value)) classes.push("mpc-summary-table__percent");
           if (!theme && /\bKAV\b|KASPERSKY/i.test(value)) classes.push("mpc-summary-table__master-kav");
           else if (!theme && /\bITAM\b/i.test(value)) classes.push("mpc-summary-table__master-itam");
@@ -945,6 +946,7 @@ function renderManagePcRangeTable(label, rangeData) {
           const isPercent = managePcIsPercentColumn(headerLabel);
           const classes = [];
           if (column < freezeColumns) classes.push(`mpc-summary-table__frozen-${column}`);
+          if (column === 0) classes.push("mpc-summary-table__workgroup");
           if (isPercent) classes.push("mpc-summary-table__percent");
           const value = isPercent ? formatManagePcPercent(row.cells[column]) : row.cells[column] || "";
           return `<td class="${classes.join(" ")}">${escapeHtml(value)}</td>`;

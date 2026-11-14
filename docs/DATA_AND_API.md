@@ -1507,10 +1507,13 @@ are grouped into two compact scroll-snapped sections, with both KAV tables
 together before both ITAM tables. Percentage columns are formatted as
 percentages, Grand Total rows use a neutral gray background, and columns AJ:AN
 remain frozen while scrolling the KAV/ITAM tables horizontally. MASTER PC is
-rendered separately below with compact rows and no internal vertical scroll.
+rendered separately below in a single card with compact rows and no internal
+vertical scroll. Table titles sit above the table frame; the Workgroup values
+are left-aligned, while the AJ:AN header cells share a deep-blue treatment.
+The remaining headers retain their KAV, ITAM, or KACE category colors.
 The VERSI KAV range contains a redundant title-only first row; the frontend
 omits that row and retains the actual column header and data. KAV, ITAM, and
-KACE header labels use restrained category colors in the Summary tables.
+KACE headers in MASTER PC use restrained category colors in the Summary table.
 
 **Status management columns (H–L).** Sheet columns H–L map to the device
 management status and drive the `unmanaged` filter:
