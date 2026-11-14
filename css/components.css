@@ -865,8 +865,48 @@
 }
 
 .mpc-summary-table th.mpc-summary-table__master-kace {
-  background: #c2410c;
+  background: #cc4b00;
   color: #fff;
+}
+
+.mpc-summary-skeleton-bar {
+  display: inline-block;
+  height: 8px;
+  vertical-align: middle;
+}
+
+.mpc-summary-loading__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mpc-summary-skeleton-table {
+  table-layout: fixed;
+}
+
+.mpc-summary-skeleton-table th {
+  background: #edf2f8;
+}
+
+.mpc-summary-skeleton-table th[class*="__frozen-"] {
+  background: #29487e;
+}
+
+.mpc-summary-skeleton-table td[class*="__frozen-"] {
+  background: #fff;
+}
+
+.mpc-summary-master-card .mpc-summary-skeleton-table th,
+.mpc-summary-master-card .mpc-summary-skeleton-table td {
+  padding-top: 3px;
+  padding-bottom: 3px;
 }
 
 .mpc-summary-table--freeze th[class*="__frozen-"],
@@ -884,6 +924,10 @@
 .mpc-summary-table--freeze th.mpc-summary-table__pinned-header {
   background: #29487e;
   color: #fff;
+}
+
+.mpc-summary-table--freeze.mpc-summary-skeleton-table thead th[class*="__frozen-"] {
+  background: #29487e;
 }
 
 .mpc-summary-table--freeze th.mpc-summary-table__frozen-0,

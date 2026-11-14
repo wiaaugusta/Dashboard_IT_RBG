@@ -1516,7 +1516,9 @@ use blue headers, AO:AP use deep red for KAV, AQ:AR use black for ITAM, and AS
 uses deep orange for KACE; all category headers have white text.
 The VERSI KAV range contains a redundant title-only first row; the frontend
 omits that row and retains the actual column header and data. KAV, ITAM, and
-KACE colors in MASTER PC are assigned by spreadsheet column position.
+KACE colors in MASTER PC are assigned by spreadsheet column position. The
+KACE header uses a brighter orange. While Summary data is loading, table-shaped
+placeholders use the shared shimmer skeleton style for all five ranges.
 
 **Status management columns (H–L).** Sheet columns H–L map to the device
 management status and drive the `unmanaged` filter:

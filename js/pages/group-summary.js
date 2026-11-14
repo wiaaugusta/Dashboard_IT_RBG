@@ -840,12 +840,7 @@ function renderManagePcTable(activePanel, activeView, activeScope) {
 function renderManagePcSummaryPanel(data) {
   const ranges = data && data.ranges;
   if (!ranges) {
-    return `
-      <div class="mpc-summary-state" role="status">
-        <span class="btn-spinner" aria-hidden="true"></span>
-        <span>Memuat Summary Kaspersky, Summary ITAM, dan MASTER PC...</span>
-      </div>
-    `;
+    return renderManagePcSummarySkeleton();
   }
 
   return `
@@ -863,6 +858,72 @@ function renderManagePcSummaryPanel(data) {
     </section>
     <section class="mpc-summary-master-card" aria-label="MASTER PC">
       ${renderManagePcRangeTable("MASTER PC", ranges.masterPc)}
+    </section>
+  `;
+}
+
+function renderManagePcSummarySkeleton() {
+  return `
+    <div class="mpc-summary-loading" role="status" aria-label="Memuat data Summary">
+      <span class="mpc-summary-loading__sr-only">Memuat tabel Summary Kaspersky, ITAM, dan MASTER PC...</span>
+      <section class="mpc-summary-card" aria-hidden="true">
+        <div class="mpc-summary-snap">
+          <section class="mpc-summary-group">
+            ${renderManagePcRangeSkeleton("MANAGE KAV", 30, true)}
+            ${renderManagePcRangeSkeleton("VERSI KAV", 30, true)}
+          </section>
+          <section class="mpc-summary-group">
+            ${renderManagePcRangeSkeleton("MANAGE ITAM", 30, true)}
+            ${renderManagePcRangeSkeleton("PRIVILEGE ITAM", 30, true)}
+          </section>
+        </div>
+      </section>
+      <section class="mpc-summary-master-card" aria-hidden="true">
+        ${renderManagePcRangeSkeleton("MASTER PC", 10, false)}
+      </section>
+    </div>
+  `;
+}
+
+function renderManagePcRangeSkeleton(title, columnCount, freezeColumns) {
+  const tableClasses = ["mpc-summary-table", "mpc-summary-skeleton-table"];
+  if (freezeColumns) tableClasses.push("mpc-summary-table--freeze");
+  const columns = Array.from({ length: columnCount }, (_, column) => {
+    const frozenClass = freezeColumns && column < 5
+      ? ` mpc-summary-table__frozen-${column}`
+      : "";
+    const width = column === 0 ? 62 : column < 5 ? 46 : 54 + (column % 3) * 8;
+    return `<th scope="col" class="${frozenClass.trim()}"><span class="skeleton mpc-summary-skeleton-bar" style="width:${width}%"></span></th>`;
+  }).join("");
+  const columnWidths = Array.from({ length: columnCount }, (_, column) => {
+    if (freezeColumns && column < 5) return "<col>";
+    return `<col style="width:${column === 0 ? 160 : 112}px">`;
+  }).join("");
+  const rows = Array.from({ length: 6 }, (_, row) => `
+    <tr>
+      ${Array.from({ length: columnCount }, (_, column) => {
+        const frozenClass = freezeColumns && column < 5
+          ? ` class="mpc-summary-table__frozen-${column}"`
+          : "";
+        const width = column === 0 ? 70 : 42 + ((row + column) % 3) * 14;
+        return `<td${frozenClass}><span class="skeleton mpc-summary-skeleton-bar" style="width:${width}%"></span></td>`;
+      }).join("")}
+    </tr>
+  `).join("");
+
+  return `
+    <section class="mpc-summary-range mpc-summary-range--skeleton" aria-label="${escapeHtml(title)}">
+      <div class="mpc-summary-range__heading">
+        <span class="mpc-summary-range__icon" aria-hidden="true">${icon(title === "MASTER PC" ? "pc" : title.includes("KAV") ? "kaspersky" : "itam", { size: 16 })}</span>
+        <h4 class="mpc-summary-range__title">${escapeHtml(title)}</h4>
+      </div>
+      <div class="mpc-summary-range__scroll">
+        <table class="${tableClasses.join(" ")}">
+          <colgroup>${columnWidths}</colgroup>
+          <thead><tr>${columns}</tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </section>
   `;
 }
