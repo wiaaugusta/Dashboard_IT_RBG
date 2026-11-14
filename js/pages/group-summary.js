@@ -863,14 +863,30 @@ function renderManagePcSummaryPanel(data) {
         </section>
       </div>
     </section>
-    <section class="mpc-summary-master-card" aria-labelledby="mpc-summary-master-title">
-      <h3 id="mpc-summary-master-title">MASTER PC</h3>
+    <section class="mpc-summary-master-card" aria-label="MASTER PC">
       ${renderManagePcRangeTable("MASTER PC", ranges.masterPc)}
     </section>
   `;
 }
 
 function renderManagePcRangeTable(label, rangeData) {
+  const title = String(rangeData?.title || label).trim();
+  const normalizedTitle = title.toUpperCase();
+  const theme = /\bKAV\b|KASPERSKY/.test(normalizedTitle)
+    ? "kav"
+    : /\bITAM\b/.test(normalizedTitle)
+      ? "itam"
+      : /\bKACE\b/.test(normalizedTitle)
+        ? "kace"
+        : "";
+  const titleIcon = theme === "kav"
+    ? "kaspersky"
+    : theme === "itam"
+      ? "itam"
+      : theme === "kace"
+        ? "kace"
+        : "pc";
+  const titleHeading = normalizedTitle === "MASTER PC" ? "h3" : "h4";
   const sourceRows = Array.isArray(rangeData?.rows) ? rangeData.rows : [];
   const rows = sourceRows
     .map((row) => ({
@@ -878,22 +894,32 @@ function renderManagePcRangeTable(label, rangeData) {
       cells: Array.isArray(row.cells) ? row.cells.map((cell) => String(cell ?? "")) : []
     }))
     .filter((row) => row.cells.some((cell) => cell.trim() !== ""));
-  if (!rows.length) {
+  const leadingCells = rows[0]?.cells.filter((cell) => cell.trim() !== "") || [];
+  const tableRows = leadingCells.length === 1 && leadingCells[0].trim().toUpperCase() === normalizedTitle
+    ? rows.slice(1)
+    : rows;
+  if (!tableRows.length) {
     return `
-      <section class="mpc-summary-range" aria-label="${escapeHtml(label)}">
+      <section class="mpc-summary-range${theme ? ` mpc-summary-range--${theme}` : ""}" aria-label="${escapeHtml(title)}">
+        <div class="mpc-summary-range__heading">
+          <span class="mpc-summary-range__icon" aria-hidden="true">${icon(titleIcon, { size: 16 })}</span>
+          <${titleHeading} class="mpc-summary-range__title">${escapeHtml(title)}</${titleHeading}>
+        </div>
         <p class="mpc-summary-empty">Tidak ada data pada range ini.</p>
       </section>
     `;
   }
 
-  const headerRow = rows[0];
-  const bodyRows = rows.slice(1);
-  const columnCount = Math.max(0, ...rows.map((row) => row.cells.length));
+  const headerRow = tableRows[0];
+  const bodyRows = tableRows.slice(1);
+  const columnCount = Math.max(0, ...tableRows.map((row) => row.cells.length));
   const columns = Array.from({ length: columnCount }, (_, index) => index)
-    .filter((index) => rows.some((row) => (row.cells[index] || "").trim() !== ""));
+    .filter((index) => tableRows.some((row) => (row.cells[index] || "").trim() !== ""));
   const startColumnNumber = 36; // AJ
   const freezeColumns = rangeData.totalColumns === 30 ? 5 : 0;
-  const tableClass = freezeColumns ? "mpc-summary-table mpc-summary-table--freeze" : "mpc-summary-table";
+  const tableClasses = ["mpc-summary-table"];
+  if (freezeColumns) tableClasses.push("mpc-summary-table--freeze");
+  if (theme) tableClasses.push(`mpc-summary-table--${theme}`);
   const header = `
     <thead>
       <tr>
@@ -902,6 +928,9 @@ function renderManagePcRangeTable(label, rangeData) {
           const classes = [];
           if (column < freezeColumns) classes.push(`mpc-summary-table__frozen-${column}`);
           if (managePcIsPercentColumn(value)) classes.push("mpc-summary-table__percent");
+          if (!theme && /\bKAV\b|KASPERSKY/i.test(value)) classes.push("mpc-summary-table__master-kav");
+          else if (!theme && /\bITAM\b/i.test(value)) classes.push("mpc-summary-table__master-itam");
+          else if (!theme && /\bKACE\b/i.test(value)) classes.push("mpc-summary-table__master-kace");
           return `<th scope="col" class="${classes.join(" ")}">${escapeHtml(value)}</th>`;
         }).join("")}
       </tr>
@@ -925,10 +954,13 @@ function renderManagePcRangeTable(label, rangeData) {
   }).join("");
 
   return `
-    <section class="mpc-summary-range" aria-label="${escapeHtml(label)}">
-      <h4 class="mpc-summary-range__title">${escapeHtml(rangeData.title || label)}</h4>
-      <div class="mpc-summary-range__scroll" role="region" tabindex="0" aria-label="Tabel ${escapeHtml(label)}${rangeData?.range ? `, range ${escapeHtml(rangeData.range)}` : ""}">
-        <table class="${tableClass}">
+    <section class="mpc-summary-range${theme ? ` mpc-summary-range--${theme}` : ""}" aria-label="${escapeHtml(title)}">
+      <div class="mpc-summary-range__heading">
+        <span class="mpc-summary-range__icon" aria-hidden="true">${icon(titleIcon, { size: 16 })}</span>
+        <${titleHeading} class="mpc-summary-range__title">${escapeHtml(title)}</${titleHeading}>
+      </div>
+      <div class="mpc-summary-range__scroll" role="region" tabindex="0" aria-label="Tabel ${escapeHtml(title)}${rangeData?.range ? `, range ${escapeHtml(rangeData.range)}` : ""}">
+        <table class="${tableClasses.join(" ")}">
           ${header}
           <tbody>
             ${dataRows
