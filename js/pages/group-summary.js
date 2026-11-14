@@ -752,7 +752,6 @@ function renderManagePcPrimaryTabs(activePanel, activeView, activeScope) {
             aria-controls="mpc-${tab.key}-panel"
             ${isActive ? 'aria-current="page"' : ""}
           >
-            <span class="mpc-primary-tab__lamp" aria-hidden="true"></span>
             <span>${escapeHtml(tab.label)}</span>
           </a>
         `;
@@ -882,46 +881,58 @@ function renderManagePcRangeTable(label, rangeData) {
   if (!rows.length) {
     return `
       <section class="mpc-summary-range" aria-label="${escapeHtml(label)}">
-        <h4>${escapeHtml(label)}</h4>
         <p class="mpc-summary-empty">Tidak ada data pada range ini.</p>
       </section>
     `;
   }
 
-  const titleRow = rows[0].cells.filter((cell) => cell.trim() !== "").length === 1
-    ? rows[0]
-    : null;
-  const tableRows = titleRow ? rows.slice(1) : rows;
-  const headerRow = tableRows[0] || rows[0];
-  const bodyRows = tableRows.length > 1 ? tableRows.slice(1) : [];
+  const headerRow = rows[0];
+  const bodyRows = rows.slice(1);
   const columnCount = Math.max(0, ...rows.map((row) => row.cells.length));
   const columns = Array.from({ length: columnCount }, (_, index) => index)
     .filter((index) => rows.some((row) => (row.cells[index] || "").trim() !== ""));
   const startColumnNumber = 36; // AJ
+  const freezeColumns = rangeData.totalColumns === 30 ? 5 : 0;
+  const tableClass = freezeColumns ? "mpc-summary-table mpc-summary-table--freeze" : "mpc-summary-table";
   const header = `
     <thead>
       <tr>
         ${columns.map((column) => {
           const value = headerRow.cells[column] || managePcExcelColumnLabel(startColumnNumber + column);
-          return `<th scope="col">${escapeHtml(value)}</th>`;
+          const classes = [];
+          if (column < freezeColumns) classes.push(`mpc-summary-table__frozen-${column}`);
+          if (managePcIsPercentColumn(value)) classes.push("mpc-summary-table__percent");
+          return `<th scope="col" class="${classes.join(" ")}">${escapeHtml(value)}</th>`;
         }).join("")}
       </tr>
     </thead>
   `;
+  const dataRows = bodyRows.map((row) => {
+    const isGrandTotal = String(row.cells[0] || "").trim().toUpperCase() === "GRAND TOTAL";
+    return `
+      <tr${isGrandTotal ? ' class="mpc-summary-table__grand-total"' : ""}>
+        ${columns.map((column) => {
+          const headerLabel = headerRow.cells[column] || managePcExcelColumnLabel(startColumnNumber + column);
+          const isPercent = managePcIsPercentColumn(headerLabel);
+          const classes = [];
+          if (column < freezeColumns) classes.push(`mpc-summary-table__frozen-${column}`);
+          if (isPercent) classes.push("mpc-summary-table__percent");
+          const value = isPercent ? formatManagePcPercent(row.cells[column]) : row.cells[column] || "";
+          return `<td class="${classes.join(" ")}">${escapeHtml(value)}</td>`;
+        }).join("")}
+      </tr>
+    `;
+  }).join("");
 
   return `
     <section class="mpc-summary-range" aria-label="${escapeHtml(label)}">
-      ${titleRow ? `<h4>${escapeHtml(titleRow.cells.find((cell) => cell.trim() !== ""))}</h4>` : `<h4>${escapeHtml(label)}</h4>`}
+      <h4 class="mpc-summary-range__title">${escapeHtml(rangeData.title || label)}</h4>
       <div class="mpc-summary-range__scroll" role="region" tabindex="0" aria-label="Tabel ${escapeHtml(label)}${rangeData?.range ? `, range ${escapeHtml(rangeData.range)}` : ""}">
-        <table class="mpc-summary-table">
+        <table class="${tableClass}">
           ${header}
           <tbody>
-            ${bodyRows.length
-              ? bodyRows.map((row) => `
-                <tr>
-                  ${columns.map((column) => `<td>${escapeHtml(row.cells[column] || "")}</td>`).join("")}
-                </tr>
-              `).join("")
+            ${dataRows
+              ? dataRows
               : `<tr><td class="mpc-summary-empty" colspan="${Math.max(columns.length, 1)}">Tidak ada baris data.</td></tr>`
             }
           </tbody>
@@ -929,6 +940,22 @@ function renderManagePcRangeTable(label, rangeData) {
       </div>
     </section>
   `;
+}
+
+function managePcIsPercentColumn(label) {
+  const normalized = String(label || "").trim().toUpperCase();
+  return normalized === "PERSEN" || normalized.charAt(0) === "%" || /^AVG(?:\s|$)/.test(normalized);
+}
+
+function formatManagePcPercent(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!text) return "";
+  if (text.indexOf("%") !== -1) return text;
+
+  const numeric = Number(text.replace(",", "."));
+  if (!Number.isFinite(numeric)) return text;
+  const percent = Math.abs(numeric) <= 1 ? numeric * 100 : numeric;
+  return `${percent.toFixed(2)}%`;
 }
 
 function managePcExcelColumnLabel(columnNumber) {

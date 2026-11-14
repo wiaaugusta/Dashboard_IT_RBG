@@ -1500,10 +1500,14 @@ in the Unmanaged tab.
 legacy compact `rows` field and adds a `ranges` object for the MANAGE KAV
 (`AJ2:BM13`), VERSI KAV (`AJ15:BM27`), MANAGE ITAM (`AJ30:BM41`),
 PRIVILEGE ITAM (`AJ44:BM55`), and MASTER PC (`AJ72:AS83`) blocks. Each range
-contains its original start row, range address, column count, and rows with
-explicit spreadsheet row numbers; blank rows are preserved so table headers
-and data never shift. The four Kaspersky/ITAM blocks are grouped into two
-scroll-snapped sections, while MASTER PC is rendered separately below.
+contains its source title and title row, original start row, range address,
+column count, and rows with explicit spreadsheet row numbers; blank rows are
+preserved so table headers and data never shift. The four Kaspersky/ITAM blocks
+are grouped into two compact scroll-snapped sections, with both KAV tables
+together before both ITAM tables. Percentage columns are formatted as
+percentages, Grand Total rows use a neutral gray background, and columns AJ:AN
+remain frozen while scrolling the KAV/ITAM tables horizontally. MASTER PC is
+rendered separately below with compact rows and no internal vertical scroll.
 
 **Status management columns (H–L).** Sheet columns H–L map to the device
 management status and drive the `unmanaged` filter:
