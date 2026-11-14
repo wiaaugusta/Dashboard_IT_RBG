@@ -1510,10 +1510,13 @@ remain frozen while scrolling the KAV/ITAM tables horizontally. MASTER PC is
 rendered separately below in a single card with compact rows and no internal
 vertical scroll. Table titles sit above the table frame; the Workgroup values
 are left-aligned, while the AJ:AN header cells share a deep-blue treatment.
-The remaining headers retain their KAV, ITAM, or KACE category colors.
+KAV headers from AO:BM use a deep red background with white text, while the
+frozen AJ:AN headers retain their original blue styling. In MASTER PC, AJ:AN
+use blue headers, AO:AP use deep red for KAV, AQ:AR use black for ITAM, and AS
+uses deep orange for KACE; all category headers have white text.
 The VERSI KAV range contains a redundant title-only first row; the frontend
 omits that row and retains the actual column header and data. KAV, ITAM, and
-KACE headers in MASTER PC use restrained category colors in the Summary table.
+KACE colors in MASTER PC are assigned by spreadsheet column position.
 
 **Status management columns (H–L).** Sheet columns H–L map to the device
 management status and drive the `unmanaged` filter:

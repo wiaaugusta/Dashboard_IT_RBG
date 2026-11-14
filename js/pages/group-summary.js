@@ -929,9 +929,12 @@ function renderManagePcRangeTable(label, rangeData) {
           }
           if (column === 0) classes.push("mpc-summary-table__workgroup");
           if (managePcIsPercentColumn(value)) classes.push("mpc-summary-table__percent");
-          if (!theme && /\bKAV\b|KASPERSKY/i.test(value)) classes.push("mpc-summary-table__master-kav");
-          else if (!theme && /\bITAM\b/i.test(value)) classes.push("mpc-summary-table__master-itam");
-          else if (!theme && /\bKACE\b/i.test(value)) classes.push("mpc-summary-table__master-kace");
+          if (!theme) {
+            if (column < 5) classes.push("mpc-summary-table__master-base");
+            else if (column < 7) classes.push("mpc-summary-table__master-kav");
+            else if (column < 9) classes.push("mpc-summary-table__master-itam");
+            else classes.push("mpc-summary-table__master-kace");
+          }
           return `<th scope="col" class="${classes.join(" ")}">${escapeHtml(value)}</th>`;
         }).join("")}
       </tr>

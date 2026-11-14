@@ -834,9 +834,9 @@
   text-align: left;
 }
 
-.mpc-summary-table--kav th {
-  background: #f9eded;
-  color: #843d47;
+.mpc-summary-table--kav th:not([class*="__frozen-"]) {
+  background: #991b1b;
+  color: #fff;
 }
 
 .mpc-summary-table--itam th {
@@ -849,19 +849,24 @@
   color: #8b4a12;
 }
 
+.mpc-summary-table th.mpc-summary-table__master-base {
+  background: #29487e;
+  color: #fff;
+}
+
 .mpc-summary-table th.mpc-summary-table__master-kav {
-  background: #f9eded;
-  color: #843d47;
+  background: #991b1b;
+  color: #fff;
 }
 
 .mpc-summary-table th.mpc-summary-table__master-itam {
-  background: #363b43;
-  color: #f8fafc;
+  background: #202124;
+  color: #fff;
 }
 
 .mpc-summary-table th.mpc-summary-table__master-kace {
-  background: #fff0df;
-  color: #8b4a12;
+  background: #c2410c;
+  color: #fff;
 }
 
 .mpc-summary-table--freeze th[class*="__frozen-"],
