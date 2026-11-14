@@ -30,7 +30,9 @@ import {
   ensureManagePcDataset,
   getManagePcDataset,
   getManagePcSummaryCache,
-  loadManagePcSummaryCached
+  loadManagePcSummaryCached,
+  getManagePcAjBmCache,
+  loadManagePcAjBmCached
 } from "../manage-pc-cache.js";
 import { insertManagePcUsers } from "../api.js";
 
@@ -45,6 +47,10 @@ const MANAGE_PC_PAGE_SIZE = 15;
 const MANAGE_PC_TABLE_TABS = [
   { key: "inventory", label: "Inventory", icon: "itam" },
   { key: "unmanaged", label: "Unmanaged", icon: "alert" }
+];
+const MANAGE_PC_PRIMARY_TABS = [
+  { key: "inventory", label: "Inventory" },
+  { key: "summary", label: "Summary" }
 ];
 /* Kolom dasar (identitas perangkat) - selalu tampil di kedua tab.
    Kolom "No" (penomoran baris) TIDAK punya fitur sort -
@@ -586,6 +592,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
     ? (getQueryParam("scope") === "store" ? "store" : "office")
     : (session.role === "IT_STORE" ? "store" : "office");
   const activeView = getManagePcActiveView();
+  const activePanel = getManagePcActivePanel();
   const cachedSummary = isManagePc && activeScope === "office"
     ? getManagePcSummaryCache("office", session)
     : null;
@@ -607,7 +614,7 @@ export function renderGroupSummaryPage(container, routeInfo) {
       </section>
 
       ${isManagePc && activeScope === "office" ? '<p class="mpc-table__summary-error" data-manage-pc-summary-error role="alert" hidden></p>' : ""}
-      ${isManagePc && activeScope === "office" ? renderManagePcTable(activeView, activeScope) : ""}
+      ${isManagePc && activeScope === "office" ? renderManagePcTable(activePanel, activeView, activeScope) : ""}
       ${!isManagePc ? `
         <div class="mpc-note" aria-live="polite">
           ${icon("info", { size: 16 })}
@@ -623,8 +630,14 @@ export function renderGroupSummaryPage(container, routeInfo) {
     contentHtml
   });
 
-  if (isManagePc && activeScope === "office") {
+  if (isManagePc && activeScope === "office" && activePanel === "inventory") {
     bindManagePcTable(container, session, activeView);
+  }
+  if (isManagePc && activeScope === "office" && activePanel === "summary") {
+    bindManagePcSummary(container, session);
+  }
+  if (isManagePc && activeScope === "office") {
+    bindManagePcPrimaryTabs(container);
   }
 
   /* Tooltip kustom (data-tooltip) untuk ikon status. */
@@ -668,6 +681,10 @@ function getManagePcActiveView() {
     : MANAGE_PC_TABLE_TABS[0].key;
 }
 
+function getManagePcActivePanel() {
+  return getQueryParam("panel") === "summary" ? "summary" : "inventory";
+}
+
 /**
  * Isi angka jumlah perangkat pada badge tiap tab (Inventory / Unmanaged).
  * Inventory = total device, Unmanaged = perangkat dengan status H-L
@@ -700,7 +717,7 @@ function renderManagePcTableTabs(activeView, activeScope) {
         const isActive = tab.key === activeView;
         return `
           <a
-            href="#/manage-pc?scope=${encodeURIComponent(activeScope)}&view=${encodeURIComponent(tab.key)}"
+            href="#/manage-pc?scope=${encodeURIComponent(activeScope)}&panel=inventory&view=${encodeURIComponent(tab.key)}"
             class="mpc-table-tab${isActive ? " is-active" : ""}"
             role="tab"
             aria-selected="${isActive}"
@@ -717,12 +734,62 @@ function renderManagePcTableTabs(activeView, activeScope) {
   `;
 }
 
+function renderManagePcPrimaryTabs(activePanel, activeView, activeScope) {
+  return `
+    <nav class="mpc-primary-tabs" role="tablist" aria-label="Bagian Manage PC">
+      ${MANAGE_PC_PRIMARY_TABS.map((tab) => {
+        const isActive = tab.key === activePanel;
+        const viewQuery = tab.key === "inventory"
+          ? `&view=${encodeURIComponent(activeView)}`
+          : "";
+        return `
+          <a
+            href="#/manage-pc?scope=${encodeURIComponent(activeScope)}&panel=${encodeURIComponent(tab.key)}${viewQuery}"
+            class="mpc-primary-tab${isActive ? " is-active" : ""}"
+            id="mpc-${tab.key}-tab"
+            role="tab"
+            aria-selected="${isActive}"
+            aria-controls="mpc-${tab.key}-panel"
+            ${isActive ? 'aria-current="page"' : ""}
+          >
+            <span class="mpc-primary-tab__lamp" aria-hidden="true"></span>
+            <span>${escapeHtml(tab.label)}</span>
+          </a>
+        `;
+      }).join("")}
+    </nav>
+  `;
+}
+
+function bindManagePcPrimaryTabs(container) {
+  const tabList = container.querySelector(".mpc-primary-tabs");
+  if (!tabList) return;
+
+  tabList.addEventListener("keydown", (event) => {
+    const activeTab = event.target.closest(".mpc-primary-tab");
+    if (!activeTab) return;
+    const tabs = Array.from(tabList.querySelectorAll(".mpc-primary-tab"));
+    const index = tabs.indexOf(activeTab);
+    let nextIndex = index;
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+    else if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
+    else if (event.key === "Home") nextIndex = 0;
+    else if (event.key === "End") nextIndex = tabs.length - 1;
+    else return;
+
+    event.preventDefault();
+    tabs[nextIndex].focus();
+    tabs[nextIndex].click();
+  });
+}
+
 /**
  * Card tabel "IT Asset & Device Inventory Management".
+ * @param {string} activePanel - tab utama (inventory | summary)
  * @param {string} activeView - tab aktif (inventory | unmanaged)
  * @param {string} activeScope - scope aktif (office | store)
  */
-function renderManagePcTable(activeView, activeScope) {
+function renderManagePcTable(activePanel, activeView, activeScope) {
   const statusColumns = managePcInitialStatusColumns(activeView);
   const headers = renderManagePcTableHead(activeView, statusColumns);
 
@@ -734,33 +801,192 @@ function renderManagePcTable(activeView, activeScope) {
           <h2 id="mpcTableTitle">IT Asset &amp; Device Inventory Management</h2>
         </div>
       </header>
-      <div class="mpc-table-tabs-wrapper">
-        ${renderManagePcTableTabs(activeView, activeScope)}
-        <div class="mpc-table-tabs-controls">
-          <button type="button" class="btn btn-secondary btn-sm mpc-table-insert" data-mpc-insert>
-            ${icon("download", { size: 15 })}
-          </button>
-          <label class="mpc-table-search">
-            ${icon("search", { size: 17 })}
-            <span class="visually-hidden">Cari perangkat</span>
-            <input type="search" data-mpc-search placeholder="Cari perangkat..." autocomplete="off">
-          </label>
-        </div>
+      <div class="mpc-primary-tabs-row">
+        ${renderManagePcPrimaryTabs(activePanel, activeView, activeScope)}
       </div>
-      <div class="mpc-table-wrapper">
-        <table class="mpc-table">
-          <thead>${headers}</thead>
-          <tbody data-mpc-rows>
-            ${renderManagePcSkeletonRows(MANAGE_PC_BASE_COLUMNS.length + statusColumns.length)}
+      <div id="mpc-inventory-panel" role="tabpanel" aria-labelledby="mpc-inventory-tab" ${activePanel !== "inventory" ? "hidden" : ""}>
+        <div class="mpc-table-tabs-wrapper">
+          ${renderManagePcTableTabs(activeView, activeScope)}
+          <div class="mpc-table-tabs-controls">
+            <button type="button" class="btn btn-secondary btn-sm mpc-table-insert" data-mpc-insert>
+              ${icon("download", { size: 15 })}
+            </button>
+            <label class="mpc-table-search">
+              ${icon("search", { size: 17 })}
+              <span class="visually-hidden">Cari perangkat</span>
+              <input type="search" data-mpc-search placeholder="Cari perangkat..." autocomplete="off">
+            </label>
+          </div>
+        </div>
+        <div class="mpc-table-wrapper">
+          <table class="mpc-table">
+            <thead>${headers}</thead>
+            <tbody data-mpc-rows>
+              ${renderManagePcSkeletonRows(MANAGE_PC_BASE_COLUMNS.length + statusColumns.length)}
+            </tbody>
+          </table>
+        </div>
+        <footer class="mpc-table__footer">
+          <div class="mpc-table__count" data-mpc-count aria-live="polite"></div>
+          <div class="mpc-table__footer-right" data-mpc-pagination></div>
+        </footer>
+      </div>
+      <div id="mpc-summary-panel" role="tabpanel" aria-labelledby="mpc-summary-tab" data-mpc-summary-content ${activePanel !== "summary" ? "hidden" : ""}>
+        ${renderManagePcSummaryPanel(getManagePcAjBmCache(getSession()))}
+      </div>
+    </section>
+  `;
+}
+
+function renderManagePcSummaryPanel(data) {
+  const ranges = data && data.ranges;
+  if (!ranges) {
+    return `
+      <div class="mpc-summary-state" role="status">
+        <span class="btn-spinner" aria-hidden="true"></span>
+        <span>Memuat Summary Kaspersky, Summary ITAM, dan MASTER PC...</span>
+      </div>
+    `;
+  }
+
+  return `
+    <section class="mpc-summary-card" aria-label="Summary Kaspersky dan Summary ITAM">
+      <div class="mpc-summary-snap" tabindex="0" aria-label="Summary Kaspersky dan Summary ITAM">
+        <section class="mpc-summary-group" aria-labelledby="mpc-summary-kaspersky-title">
+          <h3 id="mpc-summary-kaspersky-title">Summary Kaspersky</h3>
+          ${renderManagePcRangeTable("MANAGE KAV", ranges.manageKav)}
+          ${renderManagePcRangeTable("VERSI KAV", ranges.versiKav)}
+        </section>
+        <section class="mpc-summary-group" aria-labelledby="mpc-summary-itam-title">
+          <h3 id="mpc-summary-itam-title">Summary ITAM</h3>
+          ${renderManagePcRangeTable("MANAGE ITAM", ranges.manageItam)}
+          ${renderManagePcRangeTable("PRIVILEGE ITAM", ranges.privilegeItam)}
+        </section>
+      </div>
+    </section>
+    <section class="mpc-summary-master-card" aria-labelledby="mpc-summary-master-title">
+      <h3 id="mpc-summary-master-title">MASTER PC</h3>
+      ${renderManagePcRangeTable("MASTER PC", ranges.masterPc)}
+    </section>
+  `;
+}
+
+function renderManagePcRangeTable(label, rangeData) {
+  const sourceRows = Array.isArray(rangeData?.rows) ? rangeData.rows : [];
+  const rows = sourceRows
+    .map((row) => ({
+      rowNumber: row.rowNumber,
+      cells: Array.isArray(row.cells) ? row.cells.map((cell) => String(cell ?? "")) : []
+    }))
+    .filter((row) => row.cells.some((cell) => cell.trim() !== ""));
+  if (!rows.length) {
+    return `
+      <section class="mpc-summary-range" aria-label="${escapeHtml(label)}">
+        <h4>${escapeHtml(label)}</h4>
+        <p class="mpc-summary-empty">Tidak ada data pada range ini.</p>
+      </section>
+    `;
+  }
+
+  const titleRow = rows[0].cells.filter((cell) => cell.trim() !== "").length === 1
+    ? rows[0]
+    : null;
+  const tableRows = titleRow ? rows.slice(1) : rows;
+  const headerRow = tableRows[0] || rows[0];
+  const bodyRows = tableRows.length > 1 ? tableRows.slice(1) : [];
+  const columnCount = Math.max(0, ...rows.map((row) => row.cells.length));
+  const columns = Array.from({ length: columnCount }, (_, index) => index)
+    .filter((index) => rows.some((row) => (row.cells[index] || "").trim() !== ""));
+  const startColumnNumber = 36; // AJ
+  const header = `
+    <thead>
+      <tr>
+        ${columns.map((column) => {
+          const value = headerRow.cells[column] || managePcExcelColumnLabel(startColumnNumber + column);
+          return `<th scope="col">${escapeHtml(value)}</th>`;
+        }).join("")}
+      </tr>
+    </thead>
+  `;
+
+  return `
+    <section class="mpc-summary-range" aria-label="${escapeHtml(label)}">
+      ${titleRow ? `<h4>${escapeHtml(titleRow.cells.find((cell) => cell.trim() !== ""))}</h4>` : `<h4>${escapeHtml(label)}</h4>`}
+      <div class="mpc-summary-range__scroll" role="region" tabindex="0" aria-label="Tabel ${escapeHtml(label)}${rangeData?.range ? `, range ${escapeHtml(rangeData.range)}` : ""}">
+        <table class="mpc-summary-table">
+          ${header}
+          <tbody>
+            ${bodyRows.length
+              ? bodyRows.map((row) => `
+                <tr>
+                  ${columns.map((column) => `<td>${escapeHtml(row.cells[column] || "")}</td>`).join("")}
+                </tr>
+              `).join("")
+              : `<tr><td class="mpc-summary-empty" colspan="${Math.max(columns.length, 1)}">Tidak ada baris data.</td></tr>`
+            }
           </tbody>
         </table>
       </div>
-      <footer class="mpc-table__footer">
-        <div class="mpc-table__count" data-mpc-count aria-live="polite"></div>
-        <div class="mpc-table__footer-right" data-mpc-pagination></div>
-      </footer>
     </section>
   `;
+}
+
+function managePcExcelColumnLabel(columnNumber) {
+  let number = columnNumber;
+  let label = "";
+  while (number > 0) {
+    const remainder = (number - 1) % 26;
+    label = String.fromCharCode(65 + remainder) + label;
+    number = Math.floor((number - 1) / 26);
+  }
+  return label;
+}
+
+function renderManagePcSummaryError(message) {
+  return `
+    <div class="mpc-summary-state mpc-summary-state--error" role="alert">
+      <span>${escapeHtml(message || "Data Summary Manage PC gagal dimuat.")}</span>
+      <button type="button" class="btn btn-secondary btn-sm" data-mpc-summary-retry>
+        Coba lagi
+      </button>
+    </div>
+  `;
+}
+
+function bindManagePcSummary(container, session) {
+  const content = container.querySelector("[data-mpc-summary-content]");
+  if (!content) return;
+
+  const cached = getManagePcAjBmCache(session);
+  if (cached?.ranges) return;
+
+  async function loadSummary(forceRefresh = false) {
+    content.innerHTML = renderManagePcSummaryPanel(null);
+    try {
+      const result = await loadManagePcAjBmCached(session, { forceRefresh });
+      if (!content.isConnected) return;
+      if (!result.success || !result.data?.ranges) {
+        content.innerHTML = renderManagePcSummaryError(
+          result.message || "Respons data Summary tidak memiliki range yang diperlukan."
+        );
+        return;
+      }
+      content.innerHTML = renderManagePcSummaryPanel(result.data);
+    } catch (error) {
+      if (!content.isConnected) return;
+      console.error("[group-summary.js] Data AJ:BM gagal dimuat:", error);
+      content.innerHTML = renderManagePcSummaryError(error.message);
+    }
+  }
+
+  content.addEventListener("click", (event) => {
+    const retryButton = event.target.closest("[data-mpc-summary-retry]");
+    if (!retryButton) return;
+    retryButton.disabled = true;
+    loadSummary(true);
+  });
+
+  loadSummary(Boolean(cached));
 }
 
 /**

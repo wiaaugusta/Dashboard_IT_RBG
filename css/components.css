@@ -574,6 +574,244 @@
   padding: 20px 22px 14px;
 }
 
+.mpc-primary-tabs-row {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 22px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.mpc-primary-tabs {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.mpc-primary-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  color: #718096;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color .18s ease;
+}
+
+.mpc-primary-tab:hover {
+  color: #34445a;
+}
+
+.mpc-primary-tab.is-active {
+  color: #1d4ed8;
+}
+
+.mpc-primary-tab__lamp {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  transition: background-color .18s ease, box-shadow .18s ease;
+}
+
+.mpc-primary-tab.is-active .mpc-primary-tab__lamp {
+  background: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, .12), 0 0 10px rgba(37, 99, 235, .62);
+  animation: mpc-tab-lamp 1.8s ease-in-out infinite alternate;
+}
+
+.mpc-primary-tab:focus-visible {
+  outline: 2px solid #6093d5;
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+.mpc-primary-tabs-row + [role="tabpanel"]:not([hidden]) {
+  display: block;
+}
+
+.mpc-summary-card,
+.mpc-summary-master-card {
+  margin: 18px 22px;
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.mpc-summary-card {
+  padding: 0 16px;
+}
+
+.mpc-summary-snap {
+  height: clamp(420px, 72vh, 720px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+.mpc-summary-snap::-webkit-scrollbar {
+  display: none;
+}
+
+.mpc-summary-group {
+  min-height: 100%;
+  padding: 18px 0 22px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.mpc-summary-group + .mpc-summary-group {
+  border-top: 1px solid #e8edf4;
+}
+
+.mpc-summary-group > h3,
+.mpc-summary-master-card > h3 {
+  margin: 0 0 14px;
+  color: #172b4d;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mpc-summary-range {
+  min-width: 0;
+  margin-top: 12px;
+}
+
+.mpc-summary-range > h4 {
+  margin: 0 0 8px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mpc-summary-range__scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid #e6ebf2;
+  border-radius: 8px;
+}
+
+.mpc-summary-range__scroll:focus-visible,
+.mpc-summary-snap:focus-visible {
+  outline: 2px solid #6093d5;
+  outline-offset: 2px;
+}
+
+.mpc-summary-table {
+  width: 100%;
+  min-width: max-content;
+  border-collapse: separate;
+  border-spacing: 0;
+  color: #34445a;
+  font-size: 12px;
+}
+
+.mpc-summary-table th,
+.mpc-summary-table td {
+  max-width: 280px;
+  padding: 8px 10px;
+  border-right: 1px solid #edf1f6;
+  border-bottom: 1px solid #edf1f6;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.mpc-summary-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #f5f8fc;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mpc-summary-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.mpc-summary-table th:last-child,
+.mpc-summary-table td:last-child {
+  border-right: 0;
+}
+
+.mpc-summary-empty {
+  padding: 12px;
+  color: #718096;
+  font-size: 12px;
+}
+
+.mpc-summary-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 220px;
+  padding: 20px;
+  color: #64748b;
+  font-size: 13px;
+  text-align: center;
+}
+
+.mpc-summary-state--error {
+  flex-direction: column;
+  color: #b42318;
+}
+
+.mpc-summary-master-card {
+  padding: 16px;
+}
+
+@keyframes mpc-tab-lamp {
+  from {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, .10), 0 0 6px rgba(37, 99, 235, .42);
+  }
+  to {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .16), 0 0 11px rgba(37, 99, 235, .7);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mpc-primary-tab,
+  .mpc-primary-tab__lamp {
+    transition: none;
+  }
+
+  .mpc-primary-tab.is-active .mpc-primary-tab__lamp {
+    animation: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .mpc-primary-tabs-row {
+    padding: 0 16px;
+  }
+
+  .mpc-primary-tabs {
+    gap: 16px;
+  }
+
+  .mpc-summary-card,
+  .mpc-summary-master-card {
+    margin: 14px 12px;
+  }
+
+  .mpc-summary-card {
+    padding: 0 12px;
+  }
+
+  .mpc-summary-snap {
+    height: 70vh;
+    min-height: 360px;
+  }
+}
+
 .mpc-table-card__header h2 {
   color: #172b4d;
   font-size: 16px;

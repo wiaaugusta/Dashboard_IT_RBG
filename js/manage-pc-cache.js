@@ -11,6 +11,7 @@ import {
   loadManagePcKasperskyTable,
   loadManagePcItamTable,
   loadManagePcKaceTable,
+  loadManagePcAjBmData,
   loadManagePcList,
   loadManagePcSummary
 } from "./api.js";
@@ -35,6 +36,9 @@ const ITAM_TABLE_REQUESTS = new Map();
 const KACE_TABLE_CACHE = new Map();
 const KACE_TABLE_REQUESTS = new Map();
 
+const AJ_BM_CACHE = new Map();
+const AJ_BM_REQUESTS = new Map();
+
 function itamTableKey(session) {
   return `${ownerKey(session)}|itamtable|office`;
 }
@@ -49,6 +53,10 @@ function kavTableKey(session) {
 
 function kaceTableKey(session) {
   return `${ownerKey(session)}|kacetable|office`;
+}
+
+function ajBmKey(session) {
+  return `${ownerKey(session)}|ajbm|office`;
 }
 
 function summaryKey(scope, session) {
@@ -367,5 +375,45 @@ export async function loadManagePcKaceCached(session, options = {}) {
     });
 
   KACE_TABLE_REQUESTS.set(key, request);
+  return request;
+}
+
+/** Range summary data already loaded for this session owner, or null. */
+export function getManagePcAjBmCache(session) {
+  return AJ_BM_CACHE.get(ajBmKey(session)) || null;
+}
+
+/**
+ * Load AJ:BM ranges once per session owner and reuse them across navigation.
+ * Concurrent requests are deduplicated like the other Manage PC tables.
+ */
+export async function loadManagePcAjBmCached(session, options = {}) {
+  const key = ajBmKey(session);
+
+  if (!options.forceRefresh && AJ_BM_CACHE.has(key)) {
+    return { success: true, data: AJ_BM_CACHE.get(key) };
+  }
+
+  if (!options.forceRefresh && AJ_BM_REQUESTS.has(key)) {
+    return AJ_BM_REQUESTS.get(key);
+  }
+
+  const request = loadManagePcAjBmData("office", {
+    sessionToken: session.sessionToken,
+    refresh: options.forceRefresh ? true : undefined
+  })
+    .then((result) => {
+      AJ_BM_REQUESTS.delete(key);
+      if (result && result.success && result.data) {
+        AJ_BM_CACHE.set(key, result.data);
+      }
+      return result;
+    })
+    .catch((error) => {
+      AJ_BM_REQUESTS.delete(key);
+      throw error;
+    });
+
+  AJ_BM_REQUESTS.set(key, request);
   return request;
 }

@@ -290,6 +290,16 @@ export async function loadManagePcKaceTable(scope = "office", options = {}) {
   }, options);
 }
 
+/**
+ * Ringkasan range bulanan dan MASTER PC dari AJ:BM sheet MASTER REPORT OFFICE.
+ */
+export async function loadManagePcAjBmData(scope = "office", options = {}) {
+  return apiRequest("getManagePcAjBmData", {
+    scope,
+    refresh: options.refresh ? true : undefined
+  }, options);
+}
+
 export async function insertManagePcUsers(scope = "office", options = {}) {
   return apiRequest("insertManagePcUsers", { scope }, options);
 }

@@ -1404,6 +1404,13 @@ Manage PC overview table displays columns A–G and H, J, L (tab Inventory).
 The tab Unmanaged lists only the devices with a non-`OK` status and shows the
 status columns H–L (see the inventory tabs section below).
 
+The `IT Asset & Device Inventory Management` card also has top-level
+`Inventory` (default) and `Summary` tabs. Summary lazily requests
+`getManagePcAjBmData` on first selection and caches the result per `role|NIK`
+with in-flight request deduplication, so returning to the menu does not reload
+the ranges. Its Kaspersky and ITAM sections use the source-position-preserving
+range payload; MASTER PC is displayed in a separate card below them.
+
 The Kaspersky, ITAM, and KACE Office endpoint subtables are loaded through
 `getManagePcKasperskyTable`, `getManagePcItamTable`, and
 `getManagePcKaceTable`. KACE reads its main rows from `AB203:AK400` and its
@@ -1474,8 +1481,8 @@ frontend:
 This is presentation-layer normalization only; the spreadsheet and the API
 payload are not modified.
 
-**Inventory tabs (`view` parameter).** The `IT Asset & Device Inventory
-Management` table on the Manage PC overview page is split into two tabs:
+**Inventory tabs (`view` parameter).** Inside the top-level Inventory tab, the
+`IT Asset & Device Inventory Management` table retains its two view tabs:
 
 | Tab | `view` | Isi |
 | --- | --- | --- |
@@ -1488,6 +1495,15 @@ before search, sort, and pagination. `getManagePcSummary` returns the recap
 in `inventory: { total, unmanaged }`, where `total` is the device count
 (badge of the Inventory tab) and `unmanaged` is the number of devices shown
 in the Unmanaged tab.
+
+**Summary range data (`panel=summary`).** `getManagePcAjBmData` keeps its
+legacy compact `rows` field and adds a `ranges` object for the MANAGE KAV
+(`AJ2:BM13`), VERSI KAV (`AJ15:BM27`), MANAGE ITAM (`AJ30:BM41`),
+PRIVILEGE ITAM (`AJ44:BM55`), and MASTER PC (`AJ72:AS83`) blocks. Each range
+contains its original start row, range address, column count, and rows with
+explicit spreadsheet row numbers; blank rows are preserved so table headers
+and data never shift. The four Kaspersky/ITAM blocks are grouped into two
+scroll-snapped sections, while MASTER PC is rendered separately below.
 
 **Status management columns (H–L).** Sheet columns H–L map to the device
 management status and drive the `unmanaged` filter:
