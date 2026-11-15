@@ -2227,6 +2227,33 @@
   background: #f8fafd;
 }
 
+/* STATUS Kaspersky bermasalah: menempel di kiri Source (sama seperti
+   Source) supaya tidak tenggelam saat halaman menyempit. Offset = gap
+   24px + lebar Source aktual, ditambah lebar Action 56px bila tampil. */
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) th[data-kav-col="status"],
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) td[data-kav-col="status"] {
+  position: sticky;
+  right: calc(24px + var(--mpc-problem-source-width, 84px));
+  background: #fff;
+}
+
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) th[data-kav-col="status"] {
+  background: #f6f8fb;
+}
+
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) td[data-kav-col="status"] {
+  z-index: 1;
+}
+
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table) tbody tr:hover td[data-kav-col="status"] {
+  background: #f8fafd;
+}
+
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table):has([data-kav-col="action"]) th[data-kav-col="status"],
+.mpc-kav-table.mpc-kav-problem-table:not(.mpc-kace-table):not(.mpc-itam-problem-table):has([data-kav-col="action"]) td[data-kav-col="status"] {
+  right: calc(24px + 56px + var(--mpc-problem-source-width, 84px));
+}
+
 /* Model header bisa mengecil bila ruang terbatas saja */
 .mpc-kav-table.mpc-kav-problem-table.is-clip-model th[data-kav-col="model"] {
   width: var(--kav-problem-model-max, 60px);
