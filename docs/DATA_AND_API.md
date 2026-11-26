@@ -1604,4 +1604,61 @@ deep-linkable and survives a refresh or the browser back button.
 
 ---
 
+# SLA AHO STORE (MASTER SLA STORE)
+
+The Store menu reads the `MASTER SLA STORE` tab through two actions:
+
+| Action | Range | Isi |
+| --- | --- | --- |
+| `getSlaStoreAhoStore` | `B2:N500` | SLA AHO STORE (13 kolom) |
+| `getSlaStoreAhoAll` | `R2:AG10000` | SLA AHO ALL (16 kolom) |
+
+Both actions require a valid session and the `ADMIN` or `IT_STORE` role.
+Request body: `{ action, sessionToken, refresh? }`. `refresh: true` skips the
+server cache and re-reads the sheet.
+
+Response shape (`api: "sla-store-v1"`, `module: "sla-store"`):
+
+```json
+{
+  "success": true,
+  "message": "SLA AHO STORE berhasil diambil.",
+  "data": {
+    "api": "sla-store-v1",
+    "module": "sla-store",
+    "sheet": "MASTER SLA STORE",
+    "table": {
+      "table": "ahoStore",
+      "label": "SLA AHO STORE",
+      "range": "B2:N500",
+      "readRange": "B1:N500",
+      "headerRow": 2,
+      "totalColumns": 13,
+      "headers": ["..."],
+      "headerKeys": ["..."],
+      "items": [{ "no": "1", "ticket": "...", "__row": 3 }],
+      "total": 1
+    }
+  }
+}
+```
+
+The header row is detected as the first-10-rows row with the most filled
+cells, so a header placed in row 1 or row 2 both work. Data rows start after
+the detected header; fully empty rows are skipped. `headerKeys` are camelCase
+keys derived from the header labels (duplicates get `_2`, `_3`, …; empty
+labels fall back to `colN`). `__row` is the spreadsheet row number.
+
+Configuration (Script Properties):
+
+- `SPREADSHEET_SLA_STORE_ID` — optional; falls back to
+  `SPREADSHEET_MANAGE_PC_ID` when the tab lives in the Manage PC spreadsheet.
+- `SLA_STORE_SHEET_NAME` — optional; defaults to `MASTER SLA STORE`.
+
+Server results are cached for 10 minutes per table (chunked in
+`CacheService`). The frontend is not implemented yet; this section documents
+the backend contract only.
+
+---
+
 # END OF DATA AND API

@@ -298,6 +298,10 @@ AHO memiliki dua sub-modul utama:
 
 ## 9.1 SLA AHO STORE
 
+Status backend:
+DONE (baca data `MASTER SLA STORE` B2:N500 & R2:AG10000, auth ADMIN/IT_STORE,
+cache server 10 menit) — lihat `docs/modules/SLA_STORE.md`.
+
 Task:
 
 - [ ] Overview

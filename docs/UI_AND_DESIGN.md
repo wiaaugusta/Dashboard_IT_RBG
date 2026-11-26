@@ -1,903 +1,526 @@
-# UI AND DESIGN SYSTEM
+# UI AND DESIGN GUIDELINES
 ## Dashboard_IT_RBG
 
-Dokumen ini adalah pedoman resmi UI/UX untuk Dashboard_IT_RBG.
-
-Tujuan utama:
-Membuat aplikasi terlihat seperti software/dashboard SaaS profesional yang modern, premium, polished, responsive, dan nyaman digunakan, tanpa mengorbankan functionality, architecture, security, dan maintainability.
-
-Dokumen ini berlaku untuk seluruh frontend dan seluruh module yang akan dibuat di masa depan.
+> **Status dokumen:** Pedoman aktif yang dapat berkembang.
+>
+> Dokumen ini membantu agent mengambil keputusan UI/UX yang berkualitas. Dokumen ini bukan batas kreativitas, katalog komponen wajib, atau larangan terhadap pendekatan desain tertentu.
 
 ---
 
-# 1. CORE PRINCIPLE
-
-Dashboard_IT_RBG bukan sekadar aplikasi yang "berfungsi".
-
-Target UI adalah:
-
-FUNCTIONAL
-+
-CONSISTENT
-+
-MODERN
-+
-PROFESSIONAL
-+
-POLISHED
-+
-RESPONSIVE
-+
-EASY TO USE
-
-UI harus terasa seperti aplikasi internal enterprise/SaaS yang matang, bukan prototype atau template HTML sederhana.
-
-Prioritas:
-
-1. Functionality existing tidak boleh rusak.
-2. UX harus jelas.
-3. Visual hierarchy harus kuat.
-4. Design harus konsisten.
-5. Responsive harus dipikirkan sejak awal.
-6. UI harus tetap ringan dan performant.
+# 1. TUJUAN DAN RUANG LINGKUP
 
-UI improvement tidak boleh menjadi alasan untuk mengubah backend, API contract, authentication, routing, atau business logic yang sudah berjalan.
+Tujuan utama adalah membangun Dashboard_IT_RBG sebagai produk internal yang profesional, mudah digunakan, konsisten, accessible, responsive, aman, dan dapat dikembangkan.
 
----
+Pedoman ini berlaku untuk seluruh frontend dan modul yang sudah ada maupun yang akan dikembangkan.
 
-# 2. DESIGN DIRECTION
+Prinsip utama:
 
-Visual direction:
+- Kualitas pengalaman pengguna lebih penting daripada mengikuti tampilan lama secara membuta.
+- Desain yang sekarang ada bukan berarti desain final atau desain terbaik.
+- Agent boleh mengevaluasi, mengusulkan, dan menerapkan pendekatan visual/UX yang lebih baik sesuai aturan persetujuan pada dokumen ini.
+- Tidak ada warna, layout, komponen, icon, library, animasi, chart, pola navigasi, atau gaya visual yang dilarang secara mutlak oleh dokumen ini.
+- Pilihan desain harus memiliki alasan yang relevan dengan pengguna, konteks modul, data, dan tujuan produk.
+- Perubahan UI/UX tidak boleh merusak fungsi, data, keamanan, integrasi, atau stabilitas sistem.
 
-- Modern
-- Premium
-- Professional
-- Corporate
-- Clean
-- Elegant
-- Polished
-- Slightly dimensional
-- Tidak terlalu datar
-- Tidak terlalu ramai
-- Tidak berlebihan menggunakan gradient
+# 2. HIERARKI KEPUTUSAN
 
-Gunakan:
+Jika beberapa pedoman atau referensi bertentangan, gunakan urutan prioritas berikut:
 
-- white / off-white
-- light gray
-- dark navy / charcoal
-- controlled accent color
-- subtle border
-- subtle shadow
-- modern radius
-- consistent icons
-- clear status badges
+1. Keamanan, privasi, integritas data, dan kebutuhan bisnis yang telah dikonfirmasi.
+2. Kebutuhan pengguna dan keputusan eksplisit pemilik proyek.
+3. Arsitektur, kontrak API, dan batasan teknis proyek yang benar-benar berlaku.
+4. Pedoman proyek terbaru yang telah disepakati.
+5. Rekomendasi skill UI/UX, MCP, dokumentasi teknis, dan referensi desain.
+6. Implementasi atau tampilan lama.
 
-Hindari:
+Jangan menganggap implementasi lama otomatis benar hanya karena sudah ada. Namun, jangan pula mengganti sesuatu yang masih berfungsi tanpa memahami dampak dan manfaatnya.
 
-- terlalu banyak warna
-- gradient berlebihan
-- shadow terlalu berat
-- border terlalu tebal
-- icon yang tidak konsisten
-- emoji sebagai icon UI utama
-- layout yang terasa seperti template gratis
+Jika menemukan konflik atau informasi yang belum jelas:
+- Jelaskan konflik dan dampaknya.
+- Cari bukti dari kode, data, dokumentasi, atau perilaku aplikasi.
+- Ajukan solusi yang paling masuk akal.
+- Minta persetujuan jika keputusan berisiko tinggi, mengubah kebutuhan bisnis, atau berdampak besar pada fungsi/arsitektur.
 
-Target visual:
+# 3. KEBEBASAN DAN EVALUASI DESAIN
 
-"Premium enterprise dashboard"
+Agent memiliki keleluasaan untuk mengevaluasi seluruh aspek desain, termasuk namun tidak terbatas pada:
 
----
+- Warna, tema, kontras, dan penggunaan gradient.
+- Layout, grid, whitespace, density, dan komposisi.
+- Sidebar, topbar, navigation, tabs, breadcrumbs, dan menu.
+- Typography, icon, ilustrasi, visualisasi data, dan chart.
+- Cards, tables, forms, dialogs, drawers, popovers, dan komponen interaktif.
+- Animasi, transisi, hover, feedback, dan micro-interaction.
+- Responsive behavior untuk desktop, tablet, dan mobile.
+- Design tokens, component system, dan struktur styling.
 
-# 3. DESIGN SYSTEM
+Tidak ada keharusan untuk mempertahankan desain yang sekarang jika ada alternatif yang lebih baik.
 
-Gunakan CSS variables/design tokens untuk seluruh UI.
+Agent diharapkan:
+1. Menilai kondisi desain saat ini secara objektif.
+2. Menemukan masalah usability, visual hierarchy, accessibility, konsistensi, dan responsiveness.
+3. Mencari pendekatan alternatif yang relevan.
+4. Membandingkan manfaat, trade-off, kompleksitas, dan risiko.
+5. Merekomendasikan desain terbaik, bukan sekadar desain yang paling mudah dibuat.
+6. Menjelaskan perubahan penting dengan bahasa yang mudah dipahami.
 
-Minimal:
+**Standar penilaian:** desain harus terasa disengaja, matang, profesional, mudah dipahami, dan sesuai kebutuhan. Jangan mempertahankan pola hanya karena pola tersebut umum dipakai template dashboard.
 
-- background
-- surface
-- surface elevated
-- text primary
-- text secondary
-- text muted
-- border
-- primary
-- primary hover
-- success
-- warning
-- danger
-- info
-- shadow
-- radius
-- spacing
+# 4. PENGGUNAAN UI UX PRO MAX DAN FIGCRAFT MCP
 
-Jangan menyebarkan hard-coded color ke banyak file jika dapat menggunakan design token.
+Untuk pekerjaan UI/UX yang relevan, agent wajib memanfaatkan skill dan MCP yang telah disediakan apabila tersedia pada lingkungan kerja.
 
-Tujuannya agar perubahan visual dapat dilakukan secara global dan konsisten.
+## 4.1 UI UX Pro Max
 
----
+Gunakan skill `ui-ux-pro-max` sebagai referensi utama untuk membantu:
 
-# 4. TYPOGRAPHY
+- Menentukan arah visual dan design system.
+- Mengevaluasi layout, hierarchy, spacing, typography, dan color.
+- Memilih pola UX yang sesuai konteks.
+- Menilai responsive design dan accessibility.
+- Memilih komponen, chart, dan pola interaksi.
+- Mengidentifikasi praktik desain yang kurang baik.
+- Menghasilkan alternatif desain yang lebih profesional.
 
-Typography harus memiliki hierarchy yang jelas.
+Gunakan sub-skill yang relevan dengan pekerjaan, misalnya design, design-system, ui-styling, brand, banner-design, atau slides. Tidak semua sub-skill harus dipanggil untuk setiap tugas.
 
-Gunakan level yang konsisten untuk:
+Jangan hanya menyebut bahwa skill telah digunakan. Gunakan rekomendasi atau data yang relevan dalam proses analisis dan keputusan desain.
 
-- page title
-- section title
-- card title
-- body
-- label
-- caption
-- table text
-- button
+## 4.2 FigCraft MCP
 
-Jangan menggunakan terlalu banyak ukuran font.
+Gunakan FigCraft MCP untuk pekerjaan visual yang memang mendapat manfaat dari prototype atau pemeriksaan desain, misalnya:
 
-Prioritaskan readability dan visual hierarchy.
+- Membuat atau mengeksplorasi prototype.
+- Menguji alternatif layout dan komposisi.
+- Membuat atau meninjau komponen visual.
+- Memeriksa konsistensi dan hierarchy.
+- Menggunakan frame, component, variable, atau fitur lain yang tersedia.
+- Membandingkan rancangan sebelum implementasi.
+- Memvalidasi hasil visual jika kemampuan MCP mendukungnya.
 
----
+Gunakan tool FigCraft yang benar-benar tersedia pada koneksi saat itu. Jangan mengarang nama tool atau mengklaim tindakan yang tidak dilakukan.
 
-# 5. LOGIN PAGE
+FigCraft bukan pengganti implementasi dan pengujian aplikasi. Hasil prototype harus diterjemahkan secara tepat ke teknologi proyek, lalu diverifikasi pada aplikasi yang berjalan.
 
-Login harus terlihat modern dan profesional.
+## 4.3 Jika skill atau MCP tidak tersedia
 
-Jangan menggunakan layout yang terlalu polos atau memenuhi seluruh desktop dengan warna solid tanpa depth.
+- Jangan mengklaim telah menggunakannya.
+- Lanjutkan dengan kemampuan dan referensi yang tersedia jika pekerjaan masih dapat dilakukan.
+- Beri tahu pengguna jika keterbatasan tersebut berdampak pada hasil.
+- Jangan mengubah konfigurasi global, instalasi skill, atau koneksi MCP tanpa kebutuhan dan izin yang sesuai.
 
-Gunakan konsep:
+# 5. DESIGN SYSTEM
 
-- subtle background
-- soft pattern/decorative element
-- subtle blur jika sesuai
-- elevated login card
-- shadow halus
-- typography hierarchy
-- branding yang proporsional
+Design system digunakan untuk menjaga konsistensi, bukan untuk membatasi eksplorasi.
 
-Login card menjadi focal point.
+Gunakan design tokens atau mekanisme sejenis jika sesuai dengan stack proyek. Token dapat mencakup:
 
-Desktop:
-- layout seimbang
-- tidak terasa kosong
-- tidak terlalu banyak decorative element
+- Color dan semantic color.
+- Typography.
+- Spacing dan sizing.
+- Radius dan border.
+- Elevation, shadow, dan layering.
+- Breakpoints dan responsive behavior.
+- Motion dan transition.
+- Component state.
 
-Mobile:
-- fokus pada form
-- tidak ada elemen yang mengganggu
-- nyaman disentuh
-- responsive
+Daftar tersebut adalah panduan, bukan daftar wajib yang harus selalu dibuat seluruhnya.
 
----
+Ketentuan:
+- Hindari nilai visual yang tersebar dan sulit dikelola jika dapat disatukan dengan cara yang lebih baik.
+- Jangan memaksakan tokenisasi berlebihan pada elemen yang memang lebih tepat memiliki nilai lokal.
+- Perubahan design system harus mempertimbangkan dampaknya pada seluruh modul.
+- Jangan mengubah identitas visual global hanya untuk menyelesaikan satu masalah lokal jika solusi lokal lebih tepat.
+- Jika identitas visual baru lebih baik untuk produk, agent boleh mengusulkannya beserta dampaknya.
 
-# 6. APPLICATION HEADER
+# 6. TYPOGRAPHY DAN HIERARCHY
 
-Setelah login, tampilkan nama user sebenarnya dari session.
+Typography harus mendukung keterbacaan, pemindaian informasi, dan karakter produk.
 
-Jangan menggunakan label generik seperti:
+Agent bebas mengevaluasi font, ukuran, weight, line-height, letter spacing, dan kombinasi typography yang sesuai.
 
-"IT STORE"
-"OFFICE"
+Perhatikan perbedaan hierarchy antara:
+- Page title dan deskripsi halaman.
+- Section heading.
+- KPI atau angka penting.
+- Label dan helper text.
+- Isi tabel dan data padat.
+- Form, tombol, status, serta pesan sistem.
 
-jika nama user tersedia.
+Jangan membatasi jumlah ukuran font secara kaku. Hindari variasi yang tidak memiliki tujuan dan membuat tampilan tidak konsisten.
 
-Contoh:
+# 7. NAVIGATION DAN APPLICATION SHELL
 
-"Welcome back, Jalil"
+Pilih pola navigasi berdasarkan jumlah modul, kedalaman informasi, frekuensi penggunaan, perangkat, dan kebutuhan pengguna.
 
-atau:
+Alternatif yang dapat dipertimbangkan antara lain sidebar, collapsible navigation, top navigation, tabs, bottom navigation, breadcrumbs, command menu, atau pola lain yang lebih sesuai.
 
-"Good morning, Jalil"
+Tidak ada pola yang wajib untuk semua halaman atau semua ukuran layar.
 
-Nama harus berasal dari data/session yang valid, bukan dummy data.
+Ketentuan:
+- Pengguna harus memahami lokasi mereka dan cara berpindah halaman.
+- Active state dan hierarchy menu harus jelas.
+- Navigasi tidak boleh mengambil ruang berlebihan.
+- Pola desktop dan mobile boleh berbeda jika meningkatkan usability.
+- Jangan menambahkan menu atau shortcut yang tidak memiliki fungsi nyata.
+- Pastikan navigasi keyboard dan screen reader tetap dapat digunakan jika relevan.
 
-Header dapat memiliki:
+# 8. ROLE-BASED UI DAN ATURAN MENU PROYEK
 
-- page title
-- breadcrumb jika diperlukan
-- notification
-- user avatar
-- user name
-- role indicator jika relevan
+Aturan bisnis berikut merupakan catatan kondisi proyek yang perlu dipertahankan selama masih sesuai dengan implementasi dan keputusan terbaru:
 
----
+- Role yang tercatat: IT Store dan Office/Admin.
+- Menu CCTV tidak ditampilkan untuk Office/Admin sesuai aturan proyek yang tercatat.
+- Menu CCTV tersedia untuk IT Store.
+- Untuk login Office/Store (IT_OFFICE / IT_STORE), menu Manage PC menggunakan lingkup data sesuai login. ADMIN tetap memperoleh pemilihan tab Office/Store di halaman.
+- Menu Checklist langsung membuka checklist sesuai jabatan untuk IT_OFFICE / IT_STORE. Halaman parent `/checklist` khusus ADMIN.
+- Menu utama yang memiliki submenu (AHO, Manage PC, Checklist) dapat berfungsi sebagai parent link menuju halaman rangkuman, sedangkan chevron mengatur buka/tutup submenu.
 
-# 7. NAVIGATION
+**Penting:** catatan di atas bukan pengganti pemeriksaan kode dan kebutuhan terbaru. Sebelum mengubah role, menu, route, atau akses, periksa implementasi aktual dan dokumentasi terkait. Jika aturan bisnis sudah berubah, minta konfirmasi atau gunakan keputusan terbaru yang telah disetujui.
 
-## Desktop
+Menyembunyikan menu hanya merupakan perilaku UI. Authorization harus tetap divalidasi di backend.
 
-Gunakan sidebar modern.
+# 9. DASHBOARD DAN DATA VISUALIZATION
 
-Sidebar memiliki:
+Dashboard harus membantu pengguna memahami kondisi dan menentukan tindakan, bukan sekadar membuat layar terlihat penuh.
 
-- icon
-- label
-- active state
-- hover state
-- section grouping jika diperlukan
-- user profile area
-- logout
+Gunakan visualisasi yang paling tepat untuk jenis data dan pertanyaan pengguna. Pilihannya dapat berupa KPI, chart, table, trend, timeline, activity feed, map, progress, comparison, atau bentuk lain.
 
-Sidebar tidak boleh terlalu lebar.
+Ketentuan:
+- Gunakan data nyata dari sistem.
+- Jangan membuat dummy metrics atau trend untuk mempercantik tampilan.
+- Jangan menambahkan chart jika tabel atau angka ringkas lebih efektif.
+- Pilih chart berdasarkan karakter data dan tujuan analisis.
+- Beri label, satuan, periode, legenda, dan konteks yang diperlukan.
+- Perhatikan readability, skala, perbandingan, dan aksesibilitas.
+- Sediakan loading, error, empty, dan partial-data state yang sesuai.
+- Jangan menyembunyikan informasi penting demi estetika.
 
-## Mobile
+# 10. TABLE DAN DATA-DENSE INTERFACE
 
-Gunakan bottom navigation seperti aplikasi mobile modern.
+Pilih format penyajian berdasarkan kebutuhan pengguna dan volume data. Table tidak selalu harus menjadi pilihan, tetapi tetap tepat untuk banyak data operasional.
 
-Contoh:
+Pertimbangkan:
+- Search dan filtering.
+- Sorting.
+- Pagination atau virtual scrolling.
+- Column visibility dan resizing.
+- Row selection dan bulk action.
+- Detail view atau expandable row.
+- Sticky header atau column bila bermanfaat.
+- Export jika memang dibutuhkan.
+- Responsive table, horizontal scroll, atau transformasi ke card/list.
 
-Home | CCTV | Project | More
+Jangan memaksakan seluruh fitur tersebut jika tidak diperlukan.
 
-Menu harus disesuaikan dengan module yang benar-benar tersedia.
+## Catatan CCTV
 
-Bottom navigation:
+Untuk modul CCTV, kebutuhan yang tercatat meliputi:
+- Nomor urut.
+- Kode toko dan nama toko jika tersedia.
+- URL.
+- Username dan informasi password yang relevan.
+- Status.
+- Last update.
+- Action.
 
-- fixed
-- touch friendly
-- active state jelas
-- icon konsisten
-- label pendek
-- tidak terlalu tinggi
-- memperhatikan safe-area
-- tidak menutupi content
+Nomor urut harus mengikuti posisi data secara keseluruhan, bukan kembali ke 1 di setiap halaman. Informasi total record perlu tetap jelas ketika pagination digunakan.
 
-Desktop dan mobile boleh memiliki navigation pattern berbeda.
+Contoh informasi: "Menampilkan 1–15 dari 175 perangkat". Posisi ringkasan dan kontrol pagination boleh dievaluasi ulang jika tata letak alternatif lebih mudah digunakan.
 
----
+Untuk dataset besar, evaluasi pagination, filtering, lazy loading, virtual scrolling, atau server-side processing berdasarkan kemampuan backend dan kebutuhan aktual. Jangan menganggap satu teknik wajib jika ada pendekatan yang lebih tepat.
 
-# 8. ROLE BASED UI
+# 11. CCTV PERFORMANCE DAN DATA LOADING
 
-Role yang saat ini digunakan:
+Catatan proyek: dataset CCTV Admin dapat jauh lebih besar dibanding dataset user IT Store dan pernah menimbulkan masalah loading.
 
-- IT Store
-- Office/Admin
+Saat mengerjakan modul ini:
+- Periksa ukuran data, request, response, cache, dan proses rendering.
+- Jangan mengambil atau merender seluruh dataset jika tidak dibutuhkan.
+- Hindari request duplikat dan pekerjaan berat di main thread.
+- Tampilkan feedback saat data sedang dimuat.
+- Usahakan konten yang sudah tersedia dapat digunakan tanpa menunggu proses yang tidak relevan.
+- Gunakan pagination, filtering, caching, atau pemrosesan server jika sesuai arsitektur.
+- Tampilkan total data secara akurat jika informasi tersebut tersedia.
 
-Untuk user Office/Admin:
+Jangan mengubah backend atau API hanya untuk mempercantik tampilan. Namun, jika masalah UX bersumber dari desain API atau pola pengambilan data, agent boleh menganalisis dan mengusulkan perbaikan teknis secara terpisah.
 
-- menu CCTV tidak ditampilkan sementara waktu
+# 12. LOADING, FEEDBACK, DAN SYSTEM STATES
 
-Untuk user IT Store:
+Setiap proses asynchronous perlu memberikan feedback yang sesuai konteks.
 
-- menu CCTV tersedia
+State yang perlu dipertimbangkan:
+- Initial loading.
+- Refresh atau background loading.
+- Partial loading.
+- Success.
+- Error.
+- Empty.
+- No results.
+- Disabled atau unavailable.
+- Offline atau connection issue jika relevan.
 
-Untuk login Office/Store (IT_OFFICE / IT_STORE):
+Bentuk feedback bebas dipilih sesuai konteks, misalnya skeleton, spinner, progress, inline message, toast, banner, overlay, atau button state.
 
-- menu Manage PC tetap tersedia, TANPA pembagian Office/Store - login
-  sudah menentukan lingkup datanya (IT Store → Store, IT Office →
-  Office); ADMIN tetap mendapat pemilihan tab Office/Store di dalam
-  halaman
-- menu Checklist langsung membuka checklist sesuai jabatan (tanpa
-  submenu Office/Store); halaman parent `/checklist` khusus ADMIN
+Jangan menggunakan satu pola loading untuk semua kondisi. Jangan membuat seluruh halaman blank jika bagian lain tetap dapat ditampilkan.
 
-Menu utama yang memiliki submenu (AHO, Manage PC, Checklist) adalah
-parent link / clickable dropdown: label parent membuka halaman parent
-berisi rangkuman data submenu, chevron membuka/menutup submenu.
+Pesan error harus mudah dimengerti dan memberi langkah berikutnya jika memungkinkan. Jangan menampilkan stack trace, token, credential, atau detail internal sensitif kepada pengguna.
 
-Jangan hanya menyembunyikan menu secara visual jika authorization/security membutuhkan validasi backend.
+# 13. BUTTON, FORM, DAN INTERACTION
 
-UI restriction bukan pengganti backend authorization.
+Gunakan komponen dan pola interaksi yang paling sesuai dengan fungsi dan tingkat risiko tindakan.
 
----
+Pertimbangkan:
+- Primary, secondary, tertiary, ghost, danger, dan icon action.
+- Hover, focus, active, disabled, dan loading state.
+- Label yang jelas dan tidak ambigu.
+- Validasi yang dekat dengan field terkait.
+- Helper text jika membantu.
+- Konfirmasi untuk tindakan yang berisiko atau sulit dibatalkan.
+- Pencegahan double submit.
+- Keyboard interaction dan focus management.
 
-# 9. DASHBOARD
+Jangan menambahkan konfirmasi berlebihan pada tindakan rutin berisiko rendah. Jangan mengandalkan placeholder sebagai satu-satunya label form.
 
-Dashboard harus memiliki visual hierarchy yang jelas.
+# 14. CATATAN KHUSUS CCTV: PASSWORD GENERATION
 
-Gunakan:
+Bagian ini adalah catatan kebutuhan sistem yang tercatat, bukan sekadar preferensi tampilan. Periksa implementasi dan dokumen keamanan sebelum mengubahnya.
 
-- summary cards
-- section
-- icon
-- status indicator
-- quick action jika relevan
-- activity/information section jika memang tersedia
+Format yang tercatat:
+- DVR BARU: 8 karakter, kombinasi huruf, angka, dan simbol.
+- DVR LAMA: 6 digit angka.
 
-Jangan menambahkan dummy data hanya untuk membuat dashboard terlihat ramai.
-
-Gunakan data nyata dari sistem.
-
-Card harus memiliki:
-
-- proper spacing
-- subtle border/shadow
-- clear title
-- value emphasis
-- optional icon
-- optional status/trend
-
----
-
-# 10. CCTV MODULE
-
-CCTV adalah salah satu module utama.
-
-Functionality CCTV existing harus dipertahankan.
-
-Namun UI/UX harus diperbaiki.
-
-Karena jumlah CCTV dapat besar:
-
-WAJIB menggunakan pagination.
-
-Jangan load seluruh dataset CCTV sekaligus ke browser jika tidak diperlukan.
-
-Prioritas:
-
-- load page pertama terlebih dahulu
-- pagination
-- search/filter
-- server-side filtering jika memungkinkan
-- server-side pagination jika memungkinkan
-- lazy loading untuk data tambahan
-
-Tujuan:
-
-Admin dengan data CCTV banyak tetap mendapatkan halaman yang cepat.
-
----
-
-# 11. CCTV TABLE
-
-Table harus memiliki:
-
-- nomor urut
-- kode toko
-- nama toko jika tersedia
-- URL
-- username
-- password/status yang relevan
-- status
-- last update
-- action
-
-Nomor urut harus mengikuti posisi pagination.
-
-Contoh:
-
-Page 1:
-1 - 10
-
-Page 2:
-11 - 20
-
-Page 3:
-21 - 30
-
-Jangan reset nomor menjadi 1 setiap page. dan menampilkan total record secara keseluruhan, agar user tetap tau walaupun pagination, namun total record secara keseluruhan jelas.
-
-Ringkasan jumlah data (mis. "Menampilkan 1-15 dari 175 perangkat") diletakkan di KIRI bawah tabel, sementara kontrol navigasi halaman di kanan bawah.
-
-Table harus memiliki:
-
-- clear header
-- proper row spacing
-- subtle divider
-- hover state
-- status badge
-- action button
-- responsive behavior
-
----
-
-# 12. CCTV PERFORMANCE
-
-Masalah khusus yang harus diperhatikan:
-
-Login sebagai Admin dapat memiliki dataset CCTV jauh lebih besar dibanding login user IT Store.
-
-Karena itu:
-
-JANGAN:
-
-- mengambil seluruh CCTV dataset jika tidak diperlukan
-- melakukan rendering ratusan/ribuan row sekaligus
-- melakukan request berulang untuk data yang sama
-- membuat browser menunggu seluruh dataset sebelum menampilkan UI
-
-PREFER:
-
-1. tampilkan UI terlebih dahulu
-2. tampilkan loading state
-3. ambil data yang diperlukan untuk page pertama
-4. render page pertama
-5. pagination untuk data berikutnya
-6. search/filter dilakukan seefisien mungkin
-7. gunakan server-side pagination/filtering jika backend mendukung
-
-Jika membutuhkan total data:
-
-gunakan count/metadata terpisah jika memungkinkan. karena saat ini, ketika login menggunakan admin, load data sangat lama, dan tidak menampilkan data, bisa jadi karena data pasti lebih banyak, dibandingkan login menggunakan user.
-
----
-
-# 13. LOADING EXPERIENCE
-
-Setiap proses asynchronous harus memiliki loading state yang jelas.
-
-JANGAN hanya menggunakan:
-
-"Memproses data..."
-"Loading..."
-"Please wait..."
-
-secara polos.
-
-Gunakan visual feedback seperti:
-
-- spinner
-- skeleton loading
-- progress indicator
-- animated placeholder
-- button loading state
-- overlay ringan untuk proses tertentu
-
-Jenis loading harus sesuai konteks.
-
-## Page Loading
-
-Gunakan skeleton atau loading indicator yang terlihat profesional.
-
-## Table Loading
-
-Tampilkan skeleton row atau loading state di area table.
-
-Jangan membuat seluruh halaman blank.
-
-## Button Loading
-
-Saat submit/update:
-
-- disable button sementara
-- tampilkan spinner
-- ubah label menjadi "Menyimpan..." / "Memproses..."
-- cegah double submit
-
-## Data Fetching
-
-User harus dapat memahami:
-
-"aplikasi sedang melakukan sesuatu"
-
-bukan mengira aplikasi hang.
-
----
-
-# 14. SUCCESS / ERROR / EMPTY STATE
-
-Semua asynchronous operation harus memiliki state yang jelas:
-
-Loading
-Success
-Error
-Empty
-
-Error message harus:
-
-- mudah dimengerti
-- tidak menampilkan technical stack trace
-- memberi tindakan jika memungkinkan
-
-Empty state harus menjelaskan bahwa data memang kosong, bukan aplikasi gagal load.
-
----
-
-# 15. BUTTON SYSTEM
-
-Minimal:
-
-- Primary
-- Secondary
-- Ghost
-- Danger
-- Icon button
-
-Setiap button memiliki:
-
-- normal
-- hover
-- active
-- disabled
-- loading
-
-Button harus memiliki visual hierarchy.
-
-Action penting harus paling terlihat.
-
----
-
-# 16. FORM UX
-
-Form harus:
-
-- memiliki label jelas
-- spacing konsisten
-- error state jelas
-- focus state jelas
-- disabled state jelas
-- loading state jelas
-
-Jangan hanya mengandalkan placeholder sebagai label.
-
----
-
-# 17. CCTV PASSWORD GENERATION
-
-Untuk penggantian password CCTV, sistem akan menggunakan format password yang konsisten dan deterministic berdasarkan:
-
-- kode toko
-- tujuan password
-- secret/salt internal sistem
-
-Secret/salt TIDAK boleh ditampilkan kepada user.
-
-Password harus dapat dihasilkan secara konsisten berdasarkan data toko tetapi tetap sulit ditebak oleh orang yang hanya mengetahui kode toko.
-
-## DVR BARU
-
-Format:
-
-- 8 karakter
-- kombinasi huruf
-- angka
-- symbol
-
-Contoh format:
-
-A7#k29!Q
-
-Contoh tersebut hanya ilustrasi.
-
-Password sebenarnya harus dihasilkan oleh algoritma.
-
-## DVR LAMA
-
-Format:
-
-- 6 digit
-- angka saja
-
-Contoh:
-
-583214
-
-Contoh tersebut hanya ilustrasi.
-
-Password sebenarnya harus dihasilkan oleh algoritma.
-
-## Prinsip generation
-
-Jangan menggunakan:
-
-- random sederhana di frontend
-- timestamp
-- increment biasa
-- kode toko langsung sebagai password
-- pola yang mudah ditebak
-
-Gunakan deterministic cryptographic derivation berdasarkan konsep:
-
-HMAC / cryptographic hash
-+
-store code
-+
-password purpose
-+
-internal secret
+Konsep generation yang tercatat menggunakan derivasi cryptographic/deterministic berdasarkan kode toko, tujuan password, dan secret internal. Secret tidak boleh ditampilkan kepada pengguna.
 
 Contoh konsep:
+`HMAC(secret, storeCode + purpose)`
 
-HMAC(secret, storeCode + purpose)
+Jangan memindahkan secret atau proses sensitif ke frontend. Jangan mengganti algoritma, format, atau perilaku password hanya karena perubahan UI.
 
-Kemudian hasilnya dipetakan ke character set sesuai format password.
+Catatan uniqueness:
+- Password harus divalidasi terhadap collision sesuai kebutuhan sistem.
+- Ruang kemungkinan DVR LAMA terbatas sehingga uniqueness tidak boleh diasumsikan secara matematis.
+- Penanganan collision harus menjadi tanggung jawab implementasi sistem yang aman.
 
-Tujuan:
+Jika kebutuhan atau implementasi aktual berbeda dari catatan ini, jangan menebak. Periksa sumber kebenaran dan konfirmasikan perubahan yang berdampak pada sistem.
 
-Kode toko yang berbeda menghasilkan password berbeda.
+# 15. CATATAN KHUSUS CCTV: EDIT PASSWORD UX
 
-Password DVR BARU dan DVR LAMA juga harus berbeda walaupun kode tokonya sama.
+Kebutuhan UX yang tercatat:
+- Generated password dapat ditampilkan kepada pengguna.
+- Password hasil generate bersifat read-only.
+- Pengguna dapat memilih/menggunakan password baru melalui action yang jelas.
+- Setelah dipilih, tampilkan feedback bahwa password baru telah digunakan/dipilih.
+- Jangan membuat pengguna perlu mengetik ulang password hasil generate jika alur sistem tidak memerlukannya.
 
----
+Agent boleh memperbaiki layout, label, visual feedback, dan interaksi selama perilaku bisnis dan keamanan tetap terjaga.
 
-# 18. PASSWORD UNIQUENESS
+# 16. CATATAN KHUSUS CCTV: URL INPUT
 
-Target sistem:
+Kebutuhan yang tercatat adalah membantu pengguna memilih URL CCTV yang sering digunakan tanpa mengetik berulang kali.
 
-Tidak boleh ada password yang sama antar kode toko.
+Preset URL yang tercatat:
+- `http://10.234.234.8/doc/page/login.asp`
+- `http://10.234.234.8/`
+- `http://10.234.234.8:8899/`
+- `http://10.234.234.8:9090/doc/page/login.asp`
+- `http://10.234.234.8:9090/`
 
-Namun uniqueness harus dianggap sebagai constraint sistem, bukan asumsi matematis.
+Pola UI bebas dipilih, misalnya autocomplete, suggestion, combobox, popover, atau pendekatan lain. Pastikan pengguna memahami nilai yang dipilih dan dapat mengoreksinya jika aturan sistem mengizinkan.
 
-Karena DVR LAMA hanya memiliki 6 digit, ruang kemungkinan hanya 1.000.000 kombinasi.
+Jangan mengubah daftar preset atau perilaku penyimpanan tanpa memeriksa kebutuhan dan implementasi aktual.
 
-Karena itu sistem harus melakukan uniqueness validation terhadap password yang sudah tersimpan.
+# 17. RESPONSIVE DESIGN
 
-Jika terjadi collision:
+Responsive bukan sekadar mengecilkan layout desktop.
 
-- generate variant menggunakan counter/nonce internal
-- validasi ulang
-- simpan hasil yang unik
+Pilih perilaku berdasarkan konteks dan prioritas pengguna pada setiap ukuran layar:
+- Perubahan komposisi dan urutan konten.
+- Navigation pattern yang berbeda.
+- Adaptasi table atau data-dense interface.
+- Ukuran target sentuh.
+- Form dan dialog.
+- Density informasi.
+- Overflow dan scroll behavior.
+- Safe area pada perangkat mobile.
 
-Jangan menampilkan proses teknis tersebut kepada user.
+Tidak ada kewajiban memakai bottom navigation, sidebar, atau pola tertentu pada semua perangkat.
 
-DVR BARU dengan 8 karakter memiliki ruang kombinasi jauh lebih besar, tetapi uniqueness validation tetap disarankan.
+Pastikan tidak ada overflow yang tidak disengaja, kontrol tetap dapat digunakan, dan informasi penting tidak hilang.
 
----
+# 18. ICON, ILLUSTRATION, DAN VISUAL ASSETS
 
-# 19. CCTV EDIT FORM - PASSWORD
+Tidak ada larangan mutlak terhadap jenis icon atau visual asset.
 
-Pada form edit CCTV:
+Agent bebas merekomendasikan icon library, inline SVG, icon font, emoji, ilustrasi, atau kombinasi yang tepat jika hasilnya lebih baik dan sesuai konteks.
 
-Password baru harus dapat ditampilkan sebagai generated password.
+Pertimbangkan:
+- Konsistensi visual.
+- Keterbacaan pada ukuran kecil.
+- Makna yang mudah dipahami.
+- Accessibility dan label untuk icon-only action.
+- Lisensi, ukuran bundle, performa, dan kompatibilitas stack.
+- Kesesuaian dengan karakter produk.
 
-Konsep UX:
+Hindari inkonsistensi yang tidak disengaja, bukan variasi yang memang memiliki tujuan desain.
 
-Password Baru
-[A7#k29!Q] [Gunakan]
+Emoji dapat digunakan jika sesuai konteks dan menghasilkan UX yang lebih baik. Namun, untuk action kritis atau navigasi utama, pastikan maknanya tetap jelas dan tidak bergantung pada interpretasi yang ambigu.
 
-Ketika user memilih/mengklik password baru:
+# 19. MOTION DAN ANIMATION
 
-- password baru otomatis menggantikan password lama
-- password baru tidak dapat diedit manual
-- user tidak perlu mengetik password
-- field harus memiliki visual berbeda dari input biasa
-- berikan feedback bahwa password telah dipilih
+Animasi tidak dilarang. Gunakan jika membantu menjelaskan perubahan state, hubungan antar elemen, orientasi pengguna, atau memberikan feedback.
 
-Contoh:
-
-Password Lama:
-********
-
-Password Baru:
-A7#k29!Q
-[Gunakan Password Baru]
-
-Setelah digunakan:
-
-Password Baru:
-A7#k29!Q
-✓ Password baru dipilih
-
-Field generated password bersifat read-only.
-
-User tidak dapat mengubah karakter generated password secara manual.
-
----
-
-# 20. CCTV URL INPUT
-
-Field URL CCTV harus membantu user agar tidak perlu mengetik URL berulang kali.
-
-Jangan menggunakan dropdown yang terlihat seperti pilihan biasa jika UX tidak cocok.
-
-Gunakan hint/preset suggestion.
-
-Ketika field URL diklik/focus:
-
-tampilkan pilihan URL yang tersedia.
-
-Preset:
-
-http://10.234.234.8/doc/page/login.asp
-http://10.234.234.8/
-http://10.234.234.8:8899/
-http://10.234.234.8:9090/doc/page/login.asp
-http://10.234.234.8:9090/
-
-User cukup memilih salah satu.
-
-Setelah dipilih:
-
-- URL masuk ke input
-- user tetap dapat melihat value
-- UX harus cepat
-- tidak membuat form terasa rumit
-
-Jika diperlukan, gunakan suggestion/popover yang ringan daripada native select.
-
----
-
-# 21. RESPONSIVE DESIGN
-
-Desktop:
-
-- sidebar
-- topbar
-- dashboard content
-
-Tablet:
-
-- sidebar dapat collapse
-- content menyesuaikan
-
-Mobile:
-
-- bottom navigation
-- full-width content
-- cards menjadi vertical
-- touch target nyaman
-- form full-width
-- table responsive
-- tidak boleh horizontal overflow yang tidak diperlukan
-
-Jangan memaksakan desktop UI ke mobile.
-
----
-
-# 22. MOBILE TABLE
-
-Untuk data seperti CCTV yang banyak:
-
-Pilih pendekatan terbaik:
-
-- horizontal scroll jika table masih efektif
-atau
-- transform menjadi card/list jika lebih nyaman
-
-Prioritas adalah usability.
-
-Nomor urut tetap harus terlihat.
-
-Action tetap mudah disentuh.
-
----
-
-# 23. ICON SYSTEM
-
-Gunakan satu style icon yang konsisten.
-
-Jangan mencampur banyak icon library/style.
-
-Jangan menggunakan emoji sebagai icon utama UI.
-
----
-
-# 24. ANIMATION
-
-Gunakan animation secara subtle.
-
-Contoh:
-
-- fade
-- slide
-- hover
-- skeleton shimmer
-- button loading
-
-Jangan menggunakan animasi berlebihan.
-
-Animation harus membantu UX, bukan mengganggu.
-
----
-
-# 25. ACCESSIBILITY
+Agent boleh mengevaluasi motion, transition, micro-interaction, loading animation, dan efek visual lain.
 
 Perhatikan:
+- Tujuan dan manfaat UX.
+- Durasi dan intensitas.
+- Performa perangkat.
+- Preferensi reduced motion.
+- Jangan menghalangi atau memperlambat pekerjaan pengguna.
 
-- contrast
-- keyboard focus
-- readable text
-- button size
-- touch target
-- semantic HTML
-- aria-label jika diperlukan
+Tidak perlu membatasi semua animasi menjadi subtle jika pendekatan lain lebih tepat.
 
----
+# 20. ACCESSIBILITY DAN USABILITY
 
-# 26. PERFORMANCE
+Pertimbangkan accessibility sejak perancangan, bukan hanya setelah implementasi.
 
-UI yang bagus tidak boleh mengorbankan performance.
+Periksa aspek yang relevan:
+- Contrast dan keterbacaan.
+- Keyboard navigation.
+- Focus visibility dan focus order.
+- Semantic HTML dan accessible name.
+- Screen reader support.
+- Target sentuh.
+- Form labels dan error association.
+- Status yang tidak hanya dibedakan dengan warna.
+- Reduced motion.
+- Zoom dan text resizing.
 
-Hindari:
+Gunakan standar accessibility yang relevan dengan stack dan target aplikasi. Jangan menganggap checklist visual saja cukup untuk membuktikan accessibility.
 
-- rendering data berlebihan
-- DOM terlalu besar
-- request duplicate
-- animation berat
-- asset terlalu besar
+# 21. PERFORMANCE DAN MAINTAINABILITY
 
-Untuk dataset besar:
+Kualitas visual tidak boleh mengabaikan performa dan kemudahan pemeliharaan.
 
-PREFER pagination, filtering, lazy loading, dan server-side processing.
+Pertimbangkan:
+- Ukuran asset dan dependency.
+- Render yang tidak perlu.
+- DOM/component complexity.
+- Duplicate request.
+- Bundle size.
+- Animation cost.
+- Data volume.
+- Reuse komponen secara tepat.
+- Batas antara shared component dan kebutuhan khusus modul.
 
----
+Jangan membuat abstraksi hanya demi mengurangi beberapa baris kode. Jangan pula menduplikasi pola yang seharusnya konsisten. Pilih struktur yang paling mudah dipahami dan dirawat.
 
-# 27. SECURITY BOUNDARY
+# 22. SECURITY DAN DATA BOUNDARY
 
-UI hanya bertanggung jawab terhadap UX.
+UI bukan security boundary.
 
-Authorization sebenarnya tetap dilakukan backend.
+- Menyembunyikan menu bukan authorization.
+- Validasi frontend bukan pengganti validasi backend.
+- Jangan menampilkan credential, secret, token, atau data sensitif yang tidak diperlukan.
+- Jangan menyimpan rahasia pada frontend atau asset publik.
+- Jangan mengubah authentication, authorization, session, atau API contract sebagai efek samping perubahan visual.
+- Perubahan yang menyentuh security harus dianalisis secara terpisah dan mengikuti pedoman keamanan proyek.
+
+# 23. WORKFLOW UI/UX
+
+Gunakan alur yang adaptif. Tidak semua perubahan membutuhkan proses panjang, prototype, atau persetujuan formal.
+
+## Untuk perubahan kecil
+1. Pahami komponen dan konteks.
+2. Periksa skill/referensi yang relevan.
+3. Lakukan perubahan yang terlokalisasi.
+4. Verifikasi fungsi dan tampilan yang terdampak.
+
+## Untuk perubahan sedang atau besar
+1. Audit halaman, komponen, data, dan alur pengguna yang terdampak.
+2. Identifikasi masalah dan peluang peningkatan.
+3. Muat UI UX Pro Max dan gunakan sub-skill relevan.
+4. Gunakan FigCraft MCP untuk eksplorasi/prototype jika bermanfaat dan tersedia.
+5. Susun rekomendasi desain dan jelaskan trade-off penting.
+6. Untuk perubahan besar yang mengubah arah produk atau perilaku pengguna, minta persetujuan sebelum implementasi.
+7. Implementasikan secara bertahap dan jaga fungsi existing.
+8. Uji pada ukuran layar dan state yang relevan.
+9. Perbaiki temuan dari hasil pemeriksaan.
+
+Jangan memaksakan pembagian menjadi dua stage atau jumlah tahap tertentu. Tentukan tahapan sesuai ruang lingkup, risiko, dan manfaat.
+
+# 24. PERSETUJUAN DAN OTONOMI AGENT
+
+Agent boleh mengambil keputusan mandiri untuk:
+- Perbaikan visual kecil dan terlokalisasi.
+- Perbaikan spacing, hierarchy, readability, alignment, dan responsive issue.
+- Perbaikan accessibility yang tidak mengubah kebutuhan bisnis.
+- Konsistensi komponen yang sudah disepakati.
+- Perbaikan bug UI yang jelas.
+
+Agent harus menjelaskan dan meminta persetujuan sebelum:
+- Mengubah arah visual utama atau identitas produk secara menyeluruh.
+- Mengubah alur kerja pengguna atau business behavior.
+- Menghapus atau mengganti fitur yang sudah ada.
+- Mengubah role, permission, route, API contract, database, authentication, atau authorization.
+- Menambahkan dependency besar atau layanan eksternal.
+- Melakukan refactor besar dengan risiko regresi.
+- Mengubah aturan bisnis yang belum dikonfirmasi.
+
+Jika pengguna sudah secara eksplisit menyetujui suatu arah atau jenis perubahan, jangan meminta persetujuan berulang untuk detail implementasi yang masih berada dalam ruang lingkup persetujuan tersebut.
+
+# 25. DOKUMENTASI YANG DAPAT BERKEMBANG
+
+File Markdown proyek adalah dokumentasi hidup. Agent boleh mengusulkan dan memperbarui dokumentasi ketika menemukan keputusan baru, perubahan kebutuhan, atau aturan lama yang tidak lagi relevan.
 
 Contoh:
+- Preferensi UI/UX baru yang disetujui.
+- Perubahan role atau alur kerja yang telah dikonfirmasi.
+- Design system baru yang sudah dipilih.
+- Komponen atau pola interaksi yang telah menjadi standar.
+- Batasan teknis baru yang sudah diverifikasi.
+- Aturan lama yang sudah tidak berlaku.
 
-Menyembunyikan menu CCTV untuk Office/Admin adalah UI behavior.
+Aturan pembaruan:
+1. Jangan mengubah preferensi pengguna berdasarkan asumsi.
+2. Bedakan fakta implementasi, keputusan yang disepakati, rekomendasi, dan ide yang belum disetujui.
+3. Jangan mengubah dokumentasi agar seolah-olah fitur sudah tersedia jika belum diimplementasikan.
+4. Hindari duplikasi atau konflik dengan file dokumentasi lain.
+5. Perbarui bagian yang relevan, bukan menambahkan aturan baru secara acak.
+6. Jika perubahan dokumentasi memengaruhi cara kerja agent di masa depan, jelaskan perubahan tersebut kepada pengguna.
+7. Untuk keputusan besar atau ambigu, ajukan usulan terlebih dahulu.
+8. Pertahankan informasi historis yang masih penting, atau tandai sebagai deprecated jika sudah tidak berlaku.
 
-Namun backend tetap harus menentukan apakah request CCTV diperbolehkan.
+Jika pengguna menyampaikan preferensi baru secara eksplisit, agent dapat memperbarui dokumen terkait dalam ruang lingkup tugas yang diberikan.
 
-Jangan menganggap hidden menu = security.
+# 26. VALIDASI HASIL
 
----
+Setelah perubahan UI/UX, lakukan pemeriksaan yang sesuai dengan dampaknya.
 
-# 28. IMPLEMENTATION PHASE
+Checklist yang relevan:
+- Halaman dan komponen tampil benar.
+- Alur utama tetap bekerja.
+- Tidak ada fungsi atau data yang hilang.
+- Responsive pada ukuran layar relevan.
+- Loading, error, empty, dan success state ditangani.
+- Form, table, navigation, dan action dapat digunakan.
+- Tidak ada overflow atau layout rusak.
+- Accessibility dasar diperiksa.
+- Console/build/test tidak menunjukkan regresi baru yang terkait.
+- Hasil implementasi konsisten dengan prototype jika prototype digunakan.
 
-Perbaikan UI/UX dilakukan hanya dalam 2 tahap agar perubahan tidak terlalu lama dan mudah dikontrol.
+Jika browser preview, screenshot, atau visual inspection tersedia, gunakan untuk menilai hasil nyata. Jangan mengklaim sudah melakukan visual validation jika hanya membaca kode.
 
-## STAGE 1 - CORE UI/UX
+# 27. FINAL PRODUCT PRINCIPLE
 
-Fokus:
+Dashboard_IT_RBG harus berkembang menjadi satu produk yang koheren, bukan kumpulan halaman yang tidak saling berhubungan.
 
-- design tokens
-- global layout
-- sidebar
-- topbar
-- user profile/name
-- login page
-- dashboard visual
-- button
-- card
-- typography
-- loading state
-- success/error/empty state
-- responsive foundation
+Konsistensi tidak berarti semua halaman harus memiliki layout yang identik. Modul yang berbeda boleh memiliki pola visual dan interaksi berbeda jika kebutuhan penggunanya memang berbeda, selama tetap terasa sebagai bagian dari produk yang sama.
 
-Pastikan functionality existing tetap berjalan.
-
-## STAGE 2 - CCTV + MOBILE POLISH
-
-Fokus:
-
-- CCTV UI
-- pagination
-- nomor urut
-- performance/loading CCTV
-- generated password UX
-- URL suggestion
-- role-based menu
-- mobile bottom navigation
-- responsive CCTV
-- final polish
-- hover/focus/transition
-
-Jangan melakukan tahap tambahan besar di luar dua stage ini tanpa persetujuan.
-
----
-
-# 29. CHANGE CONTROL
-
-Sebelum mengubah file:
-
-- pahami existing implementation
-- jangan rewrite tanpa alasan
-- gunakan kembali component/style yang sudah ada jika memungkinkan
-- jangan mengubah API contract hanya untuk UI
-- jangan mengubah backend logic tanpa alasan
-- jangan menghapus functionality existing
-
-Jika terdapat konflik antara UI requirement dan architecture:
-
-1. identifikasi konflik
-2. jelaskan
-3. pilih solusi paling aman
-4. jangan melakukan perubahan architecture besar tanpa persetujuan
-
----
-
-# 30. FINAL UI STANDARD
-
-Setiap module baru di masa depan harus mengikuti design system ini.
-
-Developer tidak perlu membuat style baru dari nol.
-
-Gunakan:
-
-- existing tokens
-- existing components
-- existing spacing
-- existing typography
-- existing button system
-- existing card system
-- existing responsive pattern
-
-Tujuan akhir:
-
-Dashboard_IT_RBG harus terasa sebagai SATU PRODUK.
-
-Bukan kumpulan halaman yang masing-masing memiliki desain sendiri.
+**Tujuan akhir:**
+- Pengguna dapat menyelesaikan pekerjaan dengan lebih mudah dan cepat.
+- Informasi penting mudah ditemukan dan dipahami.
+- Desain terasa profesional dan matang.
+- Sistem tetap stabil, aman, cepat, dan mudah dikembangkan.
+- Agent aktif mencari peluang peningkatan, bukan sekadar mematuhi desain lama.
