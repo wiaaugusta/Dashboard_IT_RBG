@@ -198,13 +198,20 @@ Ketentuan:
 
 ## Dashboard SLA AHO Store
 
-Parent `/aho` menggunakan dashboard operasional light-surface: year selector,
-bulan multi-select, tiga KPI (total waktu, total problem, rata-rata waktu),
-dan tabel per tanggal lengkap (`01 Nov 2026`) dengan bar tren yang dihitung
-dari total waktu aktual. Semua KPI dan rincian mengikuti bulan terpilih.
-Hari tanpa tiket tetap terlihat dengan jumlah problem nol; average yang tidak
-terdefinisi ditampilkan sebagai `—`. Pada layar kecil, baris tabel berubah
-menjadi kartu data ringkas tanpa membuang tanggal atau metrik.
+Parent `/aho` menampilkan dashboard SLA Store dengan satu period picker untuk
+tahun dan multi-select bulan, tiga KPI (total waktu, total problem, rata-rata
+waktu), serta rincian harian berdasarkan tanggal `Tgl Terima`. Hanya tanggal
+dengan problem yang ditampilkan. Bar tren, bila digunakan, harus bersumber dari
+total waktu aktual. Tanggal dengan lebih dari satu problem dapat dibuka untuk
+menampilkan detail tiket termasuk kode/nama toko, penanggung jawab, waktu
+penyelesaian, dan Ach SLA. Semua KPI dan rincian mengikuti periode terpilih.
+Pada layar kecil, rincian tetap mempertahankan tanggal dan metrik penting.
+
+Parent dashboard AHO menjadi contoh eksplorasi visual yang boleh berkembang:
+hierarki kartu, ikon, typography, warna aksen, dan motion tidak dikunci pada
+implementasi historis. Referensi online, aset, font, atau dependency dapat
+digunakan bila meningkatkan pengalaman secara nyata; pertimbangkan lisensi,
+performa, ketersediaan, aksesibilitas, dan fallback.
 
 # 10. TABLE DAN DATA-DENSE INTERFACE
 
@@ -474,7 +481,7 @@ Agent harus menjelaskan dan meminta persetujuan sebelum:
 - Mengubah alur kerja pengguna atau business behavior.
 - Menghapus atau mengganti fitur yang sudah ada.
 - Mengubah role, permission, route, API contract, database, authentication, atau authorization.
-- Menambahkan dependency besar atau layanan eksternal.
+- Menambahkan dependency besar atau layanan eksternal yang mengubah arsitektur, security boundary, biaya, atau proses operasional secara signifikan. Aset UI, font, icon, dan dependency yang telah dipertimbangkan sesuai kebijakan proyek dapat digunakan tanpa meminta persetujuan berulang.
 - Melakukan refactor besar dengan risiko regresi.
 - Mengubah aturan bisnis yang belum dikonfirmasi.
 
