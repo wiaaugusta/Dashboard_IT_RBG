@@ -5577,14 +5577,6 @@
   color: var(--color-primary);
 }
 
-.aho-sla-header__title p {
-  margin: 0 0 3px;
-  color: var(--color-primary);
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: .09em;
-}
-
 .aho-sla-header__title h1 {
   margin: 0;
   color: var(--color-text);
@@ -5820,11 +5812,31 @@
   min-height: 110px;
   padding: 16px 20px;
   border: 1px solid var(--color-border);
-  border-top: 3px solid var(--aho-stat-accent);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+}
+
+.aho-sla-stat--problems {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  --aho-stat-accent: #ea580c;
+  --aho-stat-soft: #ffedd5;
+}
+
+.aho-sla-stat--time {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  --aho-stat-accent: #2563eb;
+  --aho-stat-soft: #eff6ff;
+}
+
+.aho-sla-stat--average {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  --aho-stat-accent: #16a34a;
+  --aho-stat-soft: #dcfce7;
 }
 
 .aho-sla-stat__main {
@@ -5849,49 +5861,23 @@
 .aho-sla-stat__trend {
   display: inline-flex;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 6px;
   font-size: 11px;
   font-weight: 600;
+  z-index: 2;
 }
 
-.aho-sla-stat__trend.is-positive {
-  color: #10b981;
+.aho-sla-stat__trend.is-up {
+  color: #dc2626;
 }
 
-.aho-sla-stat__trend.is-neutral {
+.aho-sla-stat__trend.is-down {
+  color: #16a34a;
+}
+
+.aho-sla-stat__trend.is-flat,
+.aho-sla-stat__trend.is-muted {
   color: var(--color-text-muted);
-}
-
-.aho-sla-stat__chart {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 32px;
-  pointer-events: none;
-  color: var(--aho-stat-accent);
-  opacity: 0.15;
-  z-index: 1;
-}
-
-.aho-sla-stat__chart svg {
-  width: 100%;
-  height: 100%;
-}
-
-.aho-sla-stat--time {
-  --aho-stat-accent: #1d4ed8;
-  --aho-stat-soft: #e7f0ff;
-}
-
-.aho-sla-stat--problems {
-  --aho-stat-accent: #c56b13;
-  --aho-stat-soft: #fff1df;
-}
-
-.aho-sla-stat--average {
-  --aho-stat-accent: #0f8b68;
-  --aho-stat-soft: #e1f7ee;
 }
 
 .aho-sla-stat__content {

@@ -248,7 +248,6 @@ function renderDashboard(state) {
       <div class="aho-sla-header__title">
         <div class="aho-sla-header__icon" aria-hidden="true">${icon("aho", { size: 24, strokeWidth: 1.5 })}</div>
         <div>
-          <p>ASSET &amp; HARDWARE OPERATION</p>
           <h1>SLA AHO Store</h1>
           <span>Ringkasan waktu penyelesaian tiket berdasarkan tanggal diterima.</span>
         </div>
@@ -257,9 +256,29 @@ function renderDashboard(state) {
     </header>
 
     <section class="aho-sla-stats" aria-label="Ringkasan SLA AHO Store">
-      ${renderStatCard("clock", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time", "0,15 10,12 20,18 30,10 40,14 50,8 60,12 70,5 80,10 90,8", "↑ 2.4% vs bln lalu", true)}
-      ${renderStatCard("inbox", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems", "0,20 15,18 30,22 45,15 60,10 75,12 90,5", "↓ 1.1% vs bln lalu", false)}
-      ${renderStatCard("activity", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average", "0,10 20,12 40,8 60,15 80,10 90,12", "— stabil", false)}
+      ${(() => {
+        let probTrend = null;
+        let timeTrend = null;
+        let avgTrend = null;
+        const sparkSource = summary ? summary.rows : null;
+
+        if (selectedMonths.length === 1 && state.table) {
+          const m = selectedMonths[0];
+          const prevM = m === 1 ? 12 : m - 1;
+          const prevY = m === 1 ? state.year - 1 : state.year;
+          const prevSummary = aggregateAhoSlaByDate(state.table, prevY, [prevM]);
+          const prevLabel = "bln lalu";
+          probTrend = getTrendInfo(summary?.totalProblems, prevSummary?.totalProblems, prevLabel);
+          timeTrend = getTrendInfo(summary?.totalMinutes, prevSummary?.totalMinutes, prevLabel);
+          avgTrend = getTrendInfo(summary?.averageMinutes, prevSummary?.averageMinutes, prevLabel);
+        }
+
+        return `
+          ${renderStatCard("inbox", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems", buildSparkline(sparkSource, "problems"), probTrend)}
+          ${renderStatCard("clock", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time", buildSparkline(sparkSource, "totalMinutes"), timeTrend)}
+          ${renderStatCard("activity", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average", buildSparkline(sparkSource, "averageMinutes"), avgTrend)}
+        `;
+      })()}
     </section>
 
     ${state.error ? renderErrorState(state.error) : ""}
@@ -342,24 +361,68 @@ function renderPeriodPicker(state, years, months, periodSummary) {
   `;
 }
 
-function renderStatCard(iconName, label, value, className, sparklinePoints = "0,15 15,12 30,18 45,8 60,14 75,5 90,10", trendText = "+1.2% bln lalu", isPositive = false) {
-  return `
-    <article class="aho-sla-stat ${className}">
-      <div class="aho-sla-stat__main">
-        <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 20, strokeWidth: 1.5 })}</div>
-        <div class="aho-sla-stat__content">
-          <span>${escapeHtml(label)}</span>
-          <strong>${escapeHtml(value)}</strong>
-          <small class="aho-sla-stat__trend ${isPositive ? 'is-positive' : 'is-neutral'}">${escapeHtml(trendText)}</small>
-        </div>
-      </div>
+function renderStatCard(iconName, label, value, className, sparklinePoints, trend) {
+  const trendText = trend?.text || "";
+  const trendType = trend?.type || "muted";
+  const trendMarkup = trendText
+    ? `<small class="aho-sla-stat__trend is-${trendType}">${escapeHtml(trendText)}</small>`
+    : "";
+  const sparkMarkup = sparklinePoints
+    ? `
       <div class="aho-sla-stat__chart" aria-hidden="true">
-        <svg viewBox="0 0 90 24" preserveAspectRatio="none">
-          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg viewBox="0 0 100 28" preserveAspectRatio="none">
+          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
+    `
+    : "";
+
+  return `
+    <article class="aho-sla-stat ${className}">
+      <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 18, strokeWidth: 1.5 })}</div>
+      <div class="aho-sla-stat__content">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(value)}</strong>
+      </div>
+      ${trendMarkup}
+      ${sparkMarkup}
     </article>
   `;
+}
+
+function getTrendInfo(current, previous, monthLabel) {
+  if (current == null || previous == null) return { text: "", type: "muted" };
+  const diff = current - previous;
+  if (Math.abs(diff) < 1e-9) return { text: `Sama dgn ${monthLabel}`, type: "flat" };
+  const percent = Math.abs((diff / (previous || 1)) * 100);
+  const formatted = percent >= 100 ? Math.round(percent) : Math.round(percent * 10) / 10;
+  return { 
+    text: `${diff > 0 ? "↑" : "↓"} ${formatted}% vs ${monthLabel}`, 
+    type: diff > 0 ? "up" : "down" 
+  };
+}
+
+function buildSparkline(rows, key) {
+  if (!Array.isArray(rows) || rows.length < 2) return "";
+  const values = rows
+    .map((row) => row?.[key])
+    .filter((value) => value != null && Number.isFinite(Number(value)))
+    .map(Number);
+  if (values.length < 2) return "";
+
+  const width = 100;
+  const height = 28;
+  const pad = 3;
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const span = max - min || 1;
+  const step = width / (values.length - 1);
+
+  return values.map((value, index) => {
+    const x = (index * step).toFixed(1);
+    const y = (height - pad - ((value - min) / span) * (height - pad * 2)).toFixed(1);
+    return `${x},${y}`;
+  }).join(" ");
 }
 
 function renderLoadingState() {
