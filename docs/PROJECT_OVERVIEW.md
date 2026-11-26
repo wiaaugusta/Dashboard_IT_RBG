@@ -196,8 +196,10 @@ Pada tahap awal modul KPI belum perlu memiliki data.
 
 ## AHO
 
-Modul AHO memiliki submenu. Menu utama AHO juga punya halaman parent
-sendiri (`/aho`) berisi rangkuman kedua submenu-nya.
+Modul AHO memiliki submenu. Parent `/aho` menampilkan dashboard SLA AHO
+Store dengan filter tahun dan multi-select bulan, KPI sesuai periode,
+serta rincian problem dan waktu penyelesaian per tanggal terima. Submenu
+SLA AHO Store dan SLA Form Hardware tetap tersedia sebagai route terpisah.
 
 ### SLA AHO STORE
 

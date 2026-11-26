@@ -299,21 +299,16 @@ AHO memiliki dua sub-modul utama:
 ## 9.1 SLA AHO STORE
 
 Status backend:
-DONE (baca data `MASTER SLA STORE` B2:N500 & R2:AG10000, auth ADMIN/IT_STORE,
-cache server 10 menit) — lihat `docs/modules/SLA_STORE.md`.
+DONE (baca tabel AHO Store `B2:N500`, AHO All `R2:AG10000`, Pending AHO
+`AK2:AT100`; auth ADMIN/IT_STORE; cache server 10 menit) — lihat
+`docs/modules/SLA_STORE.md`.
 
-Task:
+Dashboard parent `/aho`:
 
-- [ ] Overview
-- [ ] Total ticket
-- [ ] Open
-- [ ] Closed
-- [ ] Overdue
-- [ ] SLA percentage
-- [ ] Filter
-- [ ] Search
-- [ ] Detail
-- [ ] Dashboard summary
+- [x] Ringkasan SLA AHO Store: total waktu, total problem, dan rata-rata
+- [x] Filter tahun dan bulan multi-select; rincian harian berbasis Tgl Terima
+- [x] Cache client per sesi `role|NIK` dengan deduplikasi request
+- [ ] Detail tiket/search/sort pada submenu (di luar cakupan dashboard parent)
 
 
 ---

@@ -8,7 +8,7 @@
  * Cache hanya menjadi fallback jika network gagal.
  */
 
-const CACHE_NAME = "it-platform-shell-v88";
+const CACHE_NAME = "it-platform-shell-v89";
 
 const APP_SHELL_FILES = [
   "./index.html",
@@ -27,11 +27,14 @@ const APP_SHELL_FILES = [
   "./js/icons.js",
   "./js/shell.js",
   "./js/manage-pc-cache.js",
+  "./js/aho-sla-cache.js",
+  "./js/aho-sla-data.js",
 
   "./js/pages/login.js",
   "./js/pages/dashboard.js",
   "./js/pages/manage-pc.js",
   "./js/pages/group-summary.js",
+  "./js/pages/aho-summary.js",
   "./js/pages/coming-soon.js",
 
   "./js/modules/cctv.js"

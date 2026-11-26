@@ -196,6 +196,16 @@ Ketentuan:
 - Sediakan loading, error, empty, dan partial-data state yang sesuai.
 - Jangan menyembunyikan informasi penting demi estetika.
 
+## Dashboard SLA AHO Store
+
+Parent `/aho` menggunakan dashboard operasional light-surface: year selector,
+bulan multi-select, tiga KPI (total waktu, total problem, rata-rata waktu),
+dan tabel per tanggal lengkap (`01 Nov 2026`) dengan bar tren yang dihitung
+dari total waktu aktual. Semua KPI dan rincian mengikuti bulan terpilih.
+Hari tanpa tiket tetap terlihat dengan jumlah problem nol; average yang tidak
+terdefinisi ditampilkan sebagai `—`. Pada layar kecil, baris tabel berubah
+menjadi kartu data ringkas tanpa membuang tanggal atau metrik.
+
 # 10. TABLE DAN DATA-DENSE INTERFACE
 
 Pilih format penyajian berdasarkan kebutuhan pengguna dan volume data. Table tidak selalu harus menjadi pilihan, tetapi tetap tepat untuk banyak data operasional.

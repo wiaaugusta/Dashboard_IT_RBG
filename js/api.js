@@ -300,6 +300,12 @@ export async function loadManagePcAjBmData(scope = "office", options = {}) {
   }, options);
 }
 
+export async function loadSlaAhoStore(options = {}) {
+  return apiRequest("getSlaAhoStore", {
+    refresh: options.refresh ? true : undefined
+  }, options);
+}
+
 export async function insertManagePcUsers(scope = "office", options = {}) {
   return apiRequest("insertManagePcUsers", { scope }, options);
 }

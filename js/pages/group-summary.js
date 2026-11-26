@@ -6,11 +6,8 @@
  * ke halaman ini (parent link / clickable dropdown), sedangkan chevron
  * tetap berfungsi membuka/menutup submenu.
  *
- * Isi halaman = RANGKUMAN data submenu:
- * - Satu kartu per submenu (diambil dari NAV_ITEMS, jadi otomatis ikut
- *   nav-config) berisi deskripsi + placeholder angka "Menunggu
- *   integrasi data".
- * - Kartu langsung membuka halaman submenu-nya.
+ * AHO mendelegasikan parent ke dashboard khusus; parent Manage PC dan
+ * Checklist dirender dari metadata NAV_ITEMS.
  *
  * Akses halaman dijaga di app.js (GROUP_SUMMARY_ROLES):
  * - /aho       -> semua role yang sudah login.
@@ -26,6 +23,7 @@ import { getQueryParam } from "../router.js";
 import { NAV_ITEMS, isVisibleForRole } from "../nav-config.js";
 import { icon } from "../icons.js";
 import { initTooltips, showSuccess, showError } from "../ui.js";
+import { renderAhoSummaryPage } from "./aho-summary.js";
 import {
   ensureManagePcDataset,
   getManagePcDataset,
@@ -471,24 +469,6 @@ function renderManagePcSpecPanel(item) {
  * mengubah navigasi.
  */
 const GROUP_META = {
-  aho: {
-    accent: "amber",
-    kicker: "Asset & Hardware Operation",
-    subtitle: "Ringkasan SLA AHO Store dan SLA Form Hardware dalam satu tampilan.",
-    children: {
-      "aho-sla-store": {
-        accent: "amber",
-        description: "Monitoring & rekap SLA AHO seluruh Store.",
-        stats: ["Total Ticket", "SLA Achievement", "Overdue"]
-      },
-      "aho-sla-hardware": {
-        accent: "amber",
-        description: "Pengajuan & pemantauan SLA Form Hardware.",
-        stats: ["Total Request", "Selesai", "Overdue"]
-      }
-    }
-  },
-
   "manage-pc": {
     accent: "purple",
     kicker: "Kaspersky · ITAM · KACE",
@@ -571,12 +551,17 @@ function getScopeNote(role, groupKey) {
 }
 
 /**
- * Render halaman parent (rangkuman submenu).
+ * Render halaman parent (dashboard AHO atau rangkuman submenu).
  * @param {HTMLElement} container
  * @param {{key: string, label: string, path: string, parentKey: string,
  *          parentLabel: string}} routeInfo - item flat route dari nav-config.
  */
 export function renderGroupSummaryPage(container, routeInfo) {
+  if (routeInfo.key === "aho") {
+    renderAhoSummaryPage(container, routeInfo);
+    return;
+  }
+
   const session = getSession();
   if (!session) return;
 

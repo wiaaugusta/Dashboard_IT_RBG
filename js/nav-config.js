@@ -51,8 +51,8 @@ export const NAV_ITEMS = [
   },
 
   {
-    /* Menu utama punya halaman sendiri (/aho) - rangkuman dari submenu
-       SLA AHO Store & SLA Form Hardware (js/pages/group-summary.js). */
+    /* Parent /aho menampilkan dashboard SLA AHO Store; submenu tetap
+       menjadi route terpisah (dispatcher di pages/group-summary.js). */
     key: "aho",
     label: "AHO",
     path: "/aho",

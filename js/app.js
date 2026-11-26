@@ -30,7 +30,7 @@ function registerServiceWorker() {
   window.addEventListener("load", () => {
 
     navigator.serviceWorker
-      .register("./service-worker.js?v=16", { updateViaCache: "none" })
+      .register("./service-worker.js?v=17", { updateViaCache: "none" })
       .then((registration) => {
 
         console.log(

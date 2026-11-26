@@ -178,9 +178,10 @@ Checklist → /checklist (rangkuman Office & Store, khusus ADMIN)
 ├── Office → /checklist/office
 └── Store → /checklist/store
 
-Halaman parent dirender oleh js/pages/group-summary.js - satu
-halaman generik untuk semua menu parent, sumber data submenu
-tetap nav-config.js.
+Parent `/aho` didelegasikan dari `js/pages/group-summary.js` ke
+`js/pages/aho-summary.js` untuk dashboard SLA AHO Store. Parent Manage PC
+dan Checklist tetap menggunakan renderer rangkuman generik; struktur menu
+tetap bersumber dari `nav-config.js`.
 
 Akses Manage PC: semua role IT. ADMIN bebas memilih scope;
 login Office/Store membukanya TANPA pembagian Office/Store -
@@ -215,8 +216,8 @@ Contoh:
 js/pages/
 ├── dashboard.js
 ├── manage-pc.js (Kaspersky / ITAM / KACE + tab Office/Store)
-└── group-summary.js (halaman parent menu bersubmenu:
-    AHO / Manage PC / Checklist - rangkuman data submenu)
+├── group-summary.js (dispatcher halaman parent)
+└── aho-summary.js (dashboard parent SLA AHO Store)
 
 js/modules/
 ├── cctv.js

@@ -1606,26 +1606,28 @@ deep-linkable and survives a refresh or the browser back button.
 
 # SLA AHO STORE (MASTER SLA STORE)
 
-The Store menu reads the `MASTER SLA STORE` tab through two actions:
+Backend `APPSCRIPT/Modules/Sla.js` membaca tiga tabel dari tab
+`MASTER SLA STORE`:
 
-| Action | Range | Isi |
-| --- | --- | --- |
-| `getSlaStoreAhoStore` | `B2:N500` | SLA AHO STORE (13 kolom) |
-| `getSlaStoreAhoAll` | `R2:AG10000` | SLA AHO ALL (16 kolom) |
+| Action | Key | Range | Isi |
+| --- | --- | --- | --- |
+| `getSlaAhoStore` | `ahoStore` | `B2:N500` | SLA AHO Store |
+| `getSlaAhoAll` | `ahoAll` | `R2:AG10000` | SLA AHO All |
+| `getSlaPendingAho` | `pendingAho` | `AK2:AT100` | Pending AHO |
 
-Both actions require a valid session and the `ADMIN` or `IT_STORE` role.
-Request body: `{ action, sessionToken, refresh? }`. `refresh: true` skips the
-server cache and re-reads the sheet.
+Semua action memerlukan sesi valid dan role `ADMIN` atau `IT_STORE`.
+Request body: `{ action, sessionToken, refresh? }`. `refresh: true` melewati
+cache server dan membaca ulang sheet.
 
-Response shape (`api: "sla-store-v1"`, `module: "sla-store"`):
+Response shape (`api: "sla-v1"`, `module: "sla"`):
 
 ```json
 {
   "success": true,
   "message": "SLA AHO STORE berhasil diambil.",
   "data": {
-    "api": "sla-store-v1",
-    "module": "sla-store",
+    "api": "sla-v1",
+    "module": "sla",
     "sheet": "MASTER SLA STORE",
     "table": {
       "table": "ahoStore",
@@ -1643,21 +1645,37 @@ Response shape (`api: "sla-store-v1"`, `module: "sla-store"`):
 }
 ```
 
-The header row is detected as the first-10-rows row with the most filled
-cells, so a header placed in row 1 or row 2 both work. Data rows start after
-the detected header; fully empty rows are skipped. `headerKeys` are camelCase
-keys derived from the header labels (duplicates get `_2`, `_3`, …; empty
-labels fall back to `colN`). `__row` is the spreadsheet row number.
+Header dideteksi sebagai baris dengan sel terisi terbanyak pada 10 baris
+pertama yang dibaca; baris data dimulai sesudah header dan baris kosong
+dilewati. `headerKeys` berupa camelCase dari label header (duplikat mendapat
+akhiran `_2`, `_3`, dan label kosong memakai `colN`). `__row` adalah nomor
+baris spreadsheet. Nilai item dikirim sebagai teks.
 
-Configuration (Script Properties):
+Konfigurasi Script Properties:
 
-- `SPREADSHEET_SLA_STORE_ID` — optional; falls back to
-  `SPREADSHEET_MANAGE_PC_ID` when the tab lives in the Manage PC spreadsheet.
-- `SLA_STORE_SHEET_NAME` — optional; defaults to `MASTER SLA STORE`.
+- Spreadsheet memakai `SPREADSHEET_MANAGE_PC_ID` (fungsi
+  `getSlaSpreadsheetId()` menggunakan ID Manage PC).
+- `SLA_STORE_SHEET_NAME` opsional; default `MASTER SLA STORE`.
 
-Server results are cached for 10 minutes per table (chunked in
-`CacheService`). The frontend is not implemented yet; this section documents
-the backend contract only.
+Hasil backend di-cache 10 menit per tabel dengan `CacheService` chunked.
+
+## Dashboard parent AHO
+
+Parent route `/aho` memakai `getSlaAhoStore` saja. `ahoAll` dan `pendingAho`
+belum digunakan oleh dashboard ini. Frontend memuat data satu kali per owner
+sesi `role|NIK`, menduplikasi request yang sedang berjalan, dan memakai ulang
+dataset saat pengguna kembali ke menu; tidak ada TTL client terpisah.
+
+Year selector dan bulan multi-select menyaring KPI serta rincian harian.
+Setiap tiket dihitung pada tanggal `tglTerima`; durasi bersumber dari
+`waktuPenyelesaian` dalam pecahan hari (contoh `0.0125 × 1440 = 18 menit`).
+Total waktu adalah penjumlahan durasi valid; average adalah rata-rata durasi
+valid pada periode/tanggal; total problem adalah jumlah tiket pada tanggal
+tersebut. Hari tanpa tiket tetap memiliki hitungan problem `0`, total waktu
+`0 Menit`, dan average `—`.
+
+Otorisasi tetap dilakukan backend untuk `ADMIN`/`IT_STORE`. Submenu SLA AHO
+Store dan SLA Form Hardware tidak diubah oleh dashboard parent ini.
 
 ---
 
