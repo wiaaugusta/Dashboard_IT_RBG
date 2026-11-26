@@ -66,90 +66,8 @@ export function renderAhoSummaryPage(container, routeInfo) {
     page.innerHTML = renderDashboard(state);
   };
 
-  const isReducedMotion = () =>
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const setPeriodPanelOpen = (open) => {
-    state.periodOpen = open;
-    const panel = page.querySelector("[data-aho-period-panel]");
-    const toggle = page.querySelector("[data-aho-period-toggle]");
-    if (!panel || !toggle) return;
-
-    toggle.setAttribute("aria-expanded", String(open));
-    const chevron = toggle.querySelector(".aho-sla-period__chevron");
-    if (chevron) chevron.innerHTML = icon(open ? "chevron-up" : "chevron-down", { size: 17 });
-
-    panel.inert = !open;
-    panel.setAttribute("aria-hidden", String(!open));
-    if (open) {
-      panel.hidden = false;
-      if (isReducedMotion()) panel.classList.add("is-open");
-      else requestAnimationFrame(() => {
-        if (state.periodOpen && panel.isConnected) panel.classList.add("is-open");
-      });
-      return;
-    }
-
-    panel.classList.remove("is-open");
-    if (isReducedMotion()) panel.hidden = true;
-  };
-
-  const setDetailsRowOpen = (dateKey, open) => {
-    const row = page.querySelector(`[data-aho-details-row="${dateKey}"]`);
-    const toggle = Array.from(page.querySelectorAll("[data-aho-details]"))
-      .find((button) => button.getAttribute("data-aho-details") === dateKey);
-    if (!row || !toggle) return;
-
-    toggle.setAttribute("aria-expanded", String(open));
-    const dateLabel = toggle.querySelector("span")?.textContent || dateKey;
-    const problemCount = toggle.getAttribute("data-problems") || "";
-    toggle.setAttribute(
-      "aria-label",
-      `${open ? "Sembunyikan" : "Tampilkan"} detail ${problemCount} problem pada ${dateLabel}`
-    );
-    row.inert = !open;
-    row.setAttribute("aria-hidden", String(!open));
-
-    if (open) {
-      row.hidden = false;
-      requestAnimationFrame(() => {
-        if (state.expandedDate === dateKey && row.isConnected) row.classList.add("is-open");
-      });
-      return;
-    }
-
-    row.classList.remove("is-open");
-    if (isReducedMotion()) row.hidden = true;
-  };
-
-  page.addEventListener("transitionend", (event) => {
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-
-    if (
-      target.matches("[data-aho-period-panel]") &&
-      event.propertyName === "opacity" &&
-      !state.periodOpen
-    ) {
-      target.hidden = true;
-      return;
-    }
-
-    const detailsMotion = target.closest(".aho-sla-details__motion");
-    const detailsRow = detailsMotion?.closest("[data-aho-details-row]");
-    if (
-      detailsRow &&
-      event.propertyName === "grid-template-rows" &&
-      !detailsRow.classList.contains("is-open") &&
-      state.expandedDate !== detailsRow.getAttribute("data-aho-details-row")
-    ) {
-      detailsRow.hidden = true;
-    }
-  });
-
   const closePeriod = () => {
-    if (state.periodOpen) setPeriodPanelOpen(false);
+    state.periodOpen = false;
     if (outsidePeriodClick) {
       document.removeEventListener("click", outsidePeriodClick);
       outsidePeriodClick = null;
@@ -157,12 +75,13 @@ export function renderAhoSummaryPage(container, routeInfo) {
   };
 
   const openPeriod = () => {
-    setPeriodPanelOpen(true);
+    state.periodOpen = true;
     if (outsidePeriodClick) document.removeEventListener("click", outsidePeriodClick);
     outsidePeriodClick = (outsideEvent) => {
       const outsideTarget = outsideEvent.target;
       if (outsideTarget instanceof Element && outsideTarget.closest("[data-aho-period]")) return;
       closePeriod();
+      render();
     };
     document.addEventListener("click", outsidePeriodClick);
   };
@@ -182,18 +101,18 @@ export function renderAhoSummaryPage(container, routeInfo) {
     if (periodToggle) {
       if (state.periodOpen) closePeriod();
       else openPeriod();
+      render();
       page.querySelector("[data-aho-period-toggle]")?.focus();
       return;
     }
 
     if (detailToggle) {
       const dateKey = detailToggle.getAttribute("data-aho-details");
-      const previousDate = state.expandedDate;
-      const nextDate = previousDate === dateKey ? "" : dateKey;
-      state.expandedDate = nextDate;
-      if (previousDate) setDetailsRowOpen(previousDate, false);
-      if (nextDate) setDetailsRowOpen(nextDate, true);
-      detailToggle.focus();
+      state.expandedDate = state.expandedDate === dateKey ? "" : dateKey;
+      render();
+      Array.from(page.querySelectorAll("[data-aho-details]"))
+        .find((button) => button.getAttribute("data-aho-details") === dateKey)
+        ?.focus();
       return;
     }
 
@@ -231,6 +150,7 @@ export function renderAhoSummaryPage(container, routeInfo) {
       return;
     }
 
+    if (clickedOutsidePeriod) render();
   });
 
   page.addEventListener("change", (event) => {
@@ -246,6 +166,7 @@ export function renderAhoSummaryPage(container, routeInfo) {
   page.addEventListener("keydown", (event) => {
     if (event.key !== "Escape" || !state.periodOpen) return;
     closePeriod();
+    render();
     page.querySelector("[data-aho-period-toggle]")?.focus();
   });
 
@@ -325,20 +246,20 @@ function renderDashboard(state) {
   return `
     <header class="aho-sla-header">
       <div class="aho-sla-header__title">
-        <div class="aho-sla-header__icon" aria-hidden="true">${icon("aho", { size: 24 })}</div>
+        <div class="aho-sla-header__icon" aria-hidden="true">${icon("aho", { size: 24, strokeWidth: 1.5 })}</div>
         <div>
-          <p>AHO <span aria-hidden="true">/</span> STORE OPERATIONS</p>
+          <p>ASSET &amp; HARDWARE OPERATION</p>
           <h1>SLA AHO Store</h1>
-          <span>Performa penyelesaian tiket berdasarkan tanggal diterima.</span>
+          <span>Ringkasan waktu penyelesaian tiket berdasarkan tanggal diterima.</span>
         </div>
       </div>
       ${renderPeriodPicker(state, years, months, periodSummary)}
     </header>
 
     <section class="aho-sla-stats" aria-label="Ringkasan SLA AHO Store">
-      ${renderStatCard("clock", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time")}
-      ${renderStatCard("inbox", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems")}
-      ${renderStatCard("activity", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average")}
+      ${renderStatCard("clock", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time", "0,15 10,12 20,18 30,10 40,14 50,8 60,12 70,5 80,10 90,8", "↑ 2.4% vs bln lalu", true)}
+      ${renderStatCard("inbox", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems", "0,20 15,18 30,22 45,15 60,10 75,12 90,5", "↓ 1.1% vs bln lalu", false)}
+      ${renderStatCard("activity", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average", "0,10 20,12 40,8 60,15 80,10 90,12", "— stabil", false)}
     </section>
 
     ${state.error ? renderErrorState(state.error) : ""}
@@ -366,22 +287,19 @@ function renderPeriodPicker(state, years, months, periodSummary) {
         aria-expanded="${state.periodOpen}"
         aria-controls="ahoSlaPeriodPanel"
       >
-        <span class="aho-sla-period__icon" aria-hidden="true">${icon("calendar", { size: 18 })}</span>
+        <span class="aho-sla-period__icon">${icon("calendar", { size: 18 })}</span>
         <span class="aho-sla-period__text">
           <span>Periode</span>
           <strong>${escapeHtml(periodSummary)} · ${state.year}</strong>
         </span>
-        <span class="aho-sla-period__chevron" aria-hidden="true">${icon(state.periodOpen ? "chevron-up" : "chevron-down", { size: 17 })}</span>
+        ${icon(state.periodOpen ? "chevron-up" : "chevron-down", { size: 17, className: "aho-sla-period__chevron" })}
       </button>
       <div
-        class="aho-sla-period__panel${state.periodOpen ? " is-open" : ""}"
+        class="aho-sla-period__panel"
         id="ahoSlaPeriodPanel"
-        data-aho-period-panel
         role="region"
         aria-label="Filter tahun dan bulan"
-        aria-hidden="${!state.periodOpen}"
         ${state.periodOpen ? "" : "hidden"}
-        ${state.periodOpen ? "" : "inert"}
       >
         <div class="aho-sla-period__panel-heading">
           <div>
@@ -424,13 +342,21 @@ function renderPeriodPicker(state, years, months, periodSummary) {
   `;
 }
 
-function renderStatCard(iconName, label, value, className) {
+function renderStatCard(iconName, label, value, className, sparklinePoints = "0,15 15,12 30,18 45,8 60,14 75,5 90,10", trendText = "+1.2% bln lalu", isPositive = false) {
   return `
     <article class="aho-sla-stat ${className}">
-      <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 22 })}</div>
-      <div class="aho-sla-stat__content">
-        <span>${escapeHtml(label)}</span>
-        <strong>${escapeHtml(value)}</strong>
+      <div class="aho-sla-stat__main">
+        <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 20, strokeWidth: 1.5 })}</div>
+        <div class="aho-sla-stat__content">
+          <span>${escapeHtml(label)}</span>
+          <strong>${escapeHtml(value)}</strong>
+          <small class="aho-sla-stat__trend ${isPositive ? 'is-positive' : 'is-neutral'}">${escapeHtml(trendText)}</small>
+        </div>
+      </div>
+      <div class="aho-sla-stat__chart" aria-hidden="true">
+        <svg viewBox="0 0 90 24" preserveAspectRatio="none">
+          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
       </div>
     </article>
   `;
@@ -465,13 +391,6 @@ function renderDailyTable(summary, state, monthLabel) {
   const tableTitle = state.months.size === 1
     ? `Rincian harian · ${monthLabel} ${state.year}`
     : `Rincian harian · ${state.year}`;
-  const selectedPeriod = state.months.size === 12
-    ? "Semua bulan"
-    : state.months.size === 1
-      ? monthLabel
-      : state.months.size
-        ? `${state.months.size} bulan dipilih`
-        : "Belum ada bulan dipilih";
   const rangeLabel = summary.rows.length
     ? `Menampilkan ${start + 1}–${Math.min(start + PAGE_SIZE, summary.rows.length)} dari ${summary.rows.length} tanggal`
     : "Tidak ada tanggal untuk periode yang dipilih";
@@ -480,20 +399,16 @@ function renderDailyTable(summary, state, monthLabel) {
     <section class="aho-sla-daily" aria-labelledby="ahoSlaDailyTitle">
       <header class="aho-sla-daily__header">
         <div class="aho-sla-daily__heading">
-          <span class="aho-sla-daily__icon" aria-hidden="true">${icon("calendar", { size: 19 })}</span>
+          <span class="aho-sla-daily__accent"></span>
           <div>
             <h2 id="ahoSlaDailyTitle">${escapeHtml(tableTitle)}</h2>
             <p>Tanggal dari kolom Tgl Terima; total problem menghitung jumlah tiket.</p>
           </div>
         </div>
-        <span class="aho-sla-daily__period">${summary.rows.length} tanggal aktif <span aria-hidden="true">·</span> ${escapeHtml(selectedPeriod)}${state.months.size ? ` ${state.year}` : ""}</span>
+        <span class="aho-sla-daily__period">${escapeHtml(monthLabel)}${state.months.size ? ` ${state.year}` : ""}</span>
       </header>
 
-      ${!state.months.size ? `
-        <div class="aho-sla-empty">Pilih setidaknya satu bulan untuk melihat rincian.</div>
-      ` : !summary.rows.length ? `
-        <div class="aho-sla-empty">Belum ada problem pada periode yang dipilih.</div>
-      ` : `
+      ${state.months.size ? `
         <div class="aho-sla-table-wrap">
           <table class="aho-sla-table">
             <thead>
@@ -502,7 +417,7 @@ function renderDailyTable(summary, state, monthLabel) {
                 <th scope="col">Total waktu</th>
                 <th scope="col">Total problem</th>
                 <th scope="col">Rata-rata waktu</th>
-                <th scope="col">Perbandingan waktu</th>
+                <th scope="col">Tren waktu</th>
               </tr>
             </thead>
             <tbody>
@@ -510,7 +425,7 @@ function renderDailyTable(summary, state, monthLabel) {
             </tbody>
           </table>
         </div>
-      `}
+      ` : '<div class="aho-sla-empty">Pilih setidaknya satu bulan untuk melihat rincian.</div>'}
 
       <footer class="aho-sla-daily__footer">
         <span>${rangeLabel}</span>
@@ -536,21 +451,20 @@ function renderDailyRow(row, maxDailyMinutes, expandedDate) {
             class="aho-sla-date-toggle"
             type="button"
             data-aho-details="${row.key}"
-            data-problems="${formatNumber(row.problems)}"
             aria-expanded="${expanded}"
             aria-controls="ahoSlaDetails-${row.key}"
             aria-label="${expanded ? "Sembunyikan" : "Tampilkan"} detail ${formatNumber(row.problems)} problem pada ${escapeHtml(dateLabel)}"
           >
             <span>${escapeHtml(dateLabel)}</span>
-            <span class="aho-sla-date-toggle__chevron" aria-hidden="true">${icon("chevron-down", { size: 15 })}</span>
+            ${icon(expanded ? "chevron-up" : "chevron-down", { size: 15 })}
           </button>
         ` : escapeHtml(dateLabel)}
       </td>
       <td data-label="Total waktu">${formatAhoSlaDuration(row.totalMinutes)}</td>
       <td data-label="Total problem"><span class="aho-sla-problem-count">${formatNumber(row.problems)}</span></td>
       <td data-label="Rata-rata waktu">${formatAhoSlaDuration(row.averageMinutes)}</td>
-      <td class="aho-sla-trend-cell" data-label="Perbandingan waktu">
-        <span class="aho-sla-trend" role="img" aria-label="Total ${formatAhoSlaDuration(row.totalMinutes)} dibandingkan dengan tanggal yang memiliki total waktu tertinggi">
+      <td class="aho-sla-trend-cell" data-label="Tren waktu">
+        <span class="aho-sla-trend" role="img" aria-label="Tren total waktu ${formatAhoSlaDuration(row.totalMinutes)}">
           <span class="aho-sla-trend__fill" style="width:${trend.toFixed(1)}%"></span>
         </span>
       </td>
@@ -571,54 +485,47 @@ function renderDetailsRow(row, expanded) {
   ];
 
   return `
-    <tr
-      class="aho-sla-details-row${expanded ? " is-open" : ""}"
-      data-aho-details-row="${row.key}"
-      aria-hidden="${!expanded}"
-      ${expanded ? "" : "hidden inert"}
-    >
+    <tr class="aho-sla-details-row" ${expanded ? "" : "hidden"}>
       <td colspan="5">
-        <div class="aho-sla-details__motion">
-          <section
-            class="aho-sla-details"
-            id="ahoSlaDetails-${row.key}"
-            aria-label="Detail tiket ${escapeHtml(formatAhoSlaDate(row.date))}"
-          >
-            <header class="aho-sla-details__header">
-              <span class="aho-sla-details__icon" aria-hidden="true">${icon("store", { size: 18 })}</span>
-              <div>
-                <h3>Detail tiket · ${escapeHtml(formatAhoSlaDate(row.date))}</h3>
-                <p>${formatNumber(row.problems)} problem pada tanggal ini</p>
-              </div>
-            </header>
-            ${missingFields.length ? `
-              <p class="aho-sla-details__warning" role="alert">
-                Kolom tidak ditemukan pada respons data: ${escapeHtml(missingFields.join(", "))}.
-              </p>
-            ` : ""}
-            <div class="aho-sla-details__table-wrap">
-              <table class="aho-sla-details__table">
-                <thead>
-                  <tr>${headers.map(([, label]) => `<th scope="col">${label}</th>`).join("")}</tr>
-                </thead>
-                <tbody>
-                  ${details.map((item) => `
-                    <tr>
-                      ${headers.map(([key, label]) => {
-                        const value = key === "durationMinutes"
-                          ? formatAhoSlaDuration(item[key])
-                          : key === "achievement"
-                            ? formatAhoSlaAchievement(item[key])
-                            : item[key] || "—";
-                        return `<td data-label="${label}">${escapeHtml(value)}</td>`;
-                      }).join("")}
-                    </tr>
-                  `).join("")}
-                </tbody>
-              </table>
+        <section
+          class="aho-sla-details"
+          id="ahoSlaDetails-${row.key}"
+          aria-label="Detail tiket ${escapeHtml(formatAhoSlaDate(row.date))}"
+        >
+          <header class="aho-sla-details__header">
+            <span class="aho-sla-details__icon">${icon("store", { size: 18 })}</span>
+            <div>
+              <h3>Detail tiket · ${escapeHtml(formatAhoSlaDate(row.date))}</h3>
+              <p>${formatNumber(row.problems)} problem pada tanggal ini</p>
             </div>
-          </section>
-        </div>
+          </header>
+          ${missingFields.length ? `
+            <p class="aho-sla-details__warning" role="alert">
+              Kolom tidak ditemukan pada respons data: ${escapeHtml(missingFields.join(", "))}.
+            </p>
+          ` : ""}
+          <div class="aho-sla-details__table-wrap">
+            <table class="aho-sla-details__table">
+              <thead>
+                <tr>${headers.map(([, label]) => `<th scope="col">${label}</th>`).join("")}</tr>
+              </thead>
+              <tbody>
+                ${details.map((item) => `
+                  <tr>
+                    ${headers.map(([key, label]) => {
+                      const value = key === "durationMinutes"
+                        ? formatAhoSlaDuration(item[key])
+                        : key === "achievement"
+                          ? formatAhoSlaAchievement(item[key])
+                          : item[key] || "—";
+                      return `<td data-label="${label}">${escapeHtml(value)}</td>`;
+                    }).join("")}
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </td>
     </tr>
   `;
