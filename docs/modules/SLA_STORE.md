@@ -79,11 +79,17 @@ Detail kontrak lengkap ada di `docs/DATA_AND_API.md` bagian SLA AHO STORE.
 # 5. DASHBOARD PARENT AHO
 
 Parent `/aho` menampilkan SLA AHO Store dari action `getSlaAhoStore`.
-Dashboard menyediakan filter tahun dan bulan multi-select; KPI mengikuti
-bulan terpilih, sedangkan tabel merinci setiap tanggal berdasarkan
-`tglTerima`. `waktuPenyelesaian` adalah durasi pecahan hari (`0.0125` hari =
-18 menit); total dan rata-rata dihitung dari nilai durasi valid. Hari tanpa
-tiket tetap ditampilkan dengan total problem `0`.
+Dashboard menyediakan satu period picker untuk tahun dan bulan multi-select;
+KPI mengikuti periode terpilih, sedangkan tabel merinci tanggal dengan
+problem berdasarkan `tglTerima`. `waktuPenyelesaian` adalah durasi pecahan
+hari (`0.0125` hari = 18 menit); total dan rata-rata tetap dihitung dari nilai
+durasi valid. Tanggal tanpa problem tidak ditampilkan.
+
+Jika total problem pada tanggal lebih dari satu, tanggal dapat dibuka untuk
+menampilkan kode toko, nama toko, nama penanggung, waktu penyelesaian, dan
+Ach SLA. Nilai Ach SLA dibaca sebagai persen langsung (`100` menjadi `100%`).
+Field detail dicocokkan dari header data; header yang tidak tersedia
+ditunjukkan secara eksplisit di area detail.
 
 Frontend cache dimiliki per `role|NIK` selama sesi dan request simultan
 dideduplikasi. Akses tetap dibatasi backend ke `ADMIN` dan `IT_STORE`.
@@ -94,5 +100,6 @@ Submenu AHO lain dan action `getSlaAhoAll`/`getSlaPendingAho` tidak berubah.
 # 6. STATUS
 
 - [x] Backend pembacaan AHO Store, AHO All, dan Pending AHO + cache + auth
-- [x] Dashboard parent AHO: filter tahun/bulan multi-select, KPI, dan rincian harian
+- [x] Dashboard parent AHO: filter tahun/bulan, KPI, dan rincian harian
+- [x] Detail tiket inline pada tanggal dengan lebih dari satu problem
 - [ ] Detail tiket/search/sort pada submenu (di luar cakupan dashboard parent)

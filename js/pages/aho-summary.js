@@ -7,6 +7,7 @@ import {
 } from "../aho-sla-cache.js";
 import {
   aggregateAhoSlaByDate,
+  formatAhoSlaAchievement,
   formatAhoSlaDate,
   formatAhoSlaDuration,
   getAhoSlaAvailableYears,
@@ -42,6 +43,8 @@ export function renderAhoSummaryPage(container, routeInfo) {
   const state = {
     year: now.getFullYear(),
     months: new Set([now.getMonth() + 1]),
+    periodOpen: false,
+    expandedDate: "",
     page: 1,
     table: getAhoSlaStoreCache(session)?.table || null,
     loading: !getAhoSlaStoreCache(session),
@@ -56,25 +59,71 @@ export function renderAhoSummaryPage(container, routeInfo) {
 
   const page = container.querySelector("[data-aho-sla-page]");
   if (!page) return;
+  let outsidePeriodClick = null;
 
   const render = () => {
     if (!container.contains(page)) return;
     page.innerHTML = renderDashboard(state);
   };
 
+  const closePeriod = () => {
+    state.periodOpen = false;
+    if (outsidePeriodClick) {
+      document.removeEventListener("click", outsidePeriodClick);
+      outsidePeriodClick = null;
+    }
+  };
+
+  const openPeriod = () => {
+    state.periodOpen = true;
+    if (outsidePeriodClick) document.removeEventListener("click", outsidePeriodClick);
+    outsidePeriodClick = (outsideEvent) => {
+      const outsideTarget = outsideEvent.target;
+      if (outsideTarget instanceof Element && outsideTarget.closest("[data-aho-period]")) return;
+      closePeriod();
+      render();
+    };
+    document.addEventListener("click", outsidePeriodClick);
+  };
+
   page.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
+    const periodToggle = target?.closest("[data-aho-period-toggle]");
     const monthButton = target?.closest("[data-aho-month]");
     const allMonthsButton = target?.closest("[data-aho-months-all]");
+    const detailToggle = target?.closest("[data-aho-details]");
     const pageButton = target?.closest("[data-aho-page]");
     const retryButton = target?.closest("[data-aho-retry]");
+    const clickedOutsidePeriod = state.periodOpen && !target?.closest("[data-aho-period]");
+
+    if (clickedOutsidePeriod) closePeriod();
+
+    if (periodToggle) {
+      if (state.periodOpen) closePeriod();
+      else openPeriod();
+      render();
+      page.querySelector("[data-aho-period-toggle]")?.focus();
+      return;
+    }
+
+    if (detailToggle) {
+      const dateKey = detailToggle.getAttribute("data-aho-details");
+      state.expandedDate = state.expandedDate === dateKey ? "" : dateKey;
+      render();
+      Array.from(page.querySelectorAll("[data-aho-details]"))
+        .find((button) => button.getAttribute("data-aho-details") === dateKey)
+        ?.focus();
+      return;
+    }
 
     if (monthButton) {
       const month = Number(monthButton.getAttribute("data-aho-month"));
       if (state.months.has(month)) state.months.delete(month);
       else state.months.add(month);
       state.page = 1;
+      state.expandedDate = "";
       render();
+      page.querySelector(`[data-aho-month="${month}"]`)?.focus();
       return;
     }
 
@@ -83,19 +132,25 @@ export function renderAhoSummaryPage(container, routeInfo) {
         ? new Set()
         : new Set(getAhoSlaMonths().map((month) => month.value));
       state.page = 1;
+      state.expandedDate = "";
       render();
+      page.querySelector("[data-aho-months-all]")?.focus();
       return;
     }
 
     if (pageButton) {
       state.page = Number(pageButton.getAttribute("data-aho-page")) || 1;
+      state.expandedDate = "";
       render();
       return;
     }
 
     if (retryButton) {
       loadData(true);
+      return;
     }
+
+    if (clickedOutsidePeriod) render();
   });
 
   page.addEventListener("change", (event) => {
@@ -103,7 +158,16 @@ export function renderAhoSummaryPage(container, routeInfo) {
     if (!target || !target.matches("[data-aho-year]")) return;
     state.year = Number(target.value);
     state.page = 1;
+    state.expandedDate = "";
     render();
+    page.querySelector("[data-aho-year]")?.focus();
+  });
+
+  page.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !state.periodOpen) return;
+    closePeriod();
+    render();
+    page.querySelector("[data-aho-period-toggle]")?.focus();
   });
 
   render();
@@ -171,6 +235,13 @@ function renderDashboard(state) {
     : selectedMonths.length
       ? selectedMonths.map((value) => months[value - 1].label).join(", ")
       : "Belum ada bulan dipilih";
+  const periodSummary = selectedMonths.length === 12
+    ? "Semua bulan"
+    : selectedMonths.length === 1
+      ? months[selectedMonths[0] - 1].label
+      : selectedMonths.length
+        ? `${selectedMonths.length} bulan`
+        : "Pilih bulan";
 
   return `
     <header class="aho-sla-header">
@@ -182,56 +253,92 @@ function renderDashboard(state) {
           <span>Ringkasan waktu penyelesaian tiket berdasarkan tanggal diterima.</span>
         </div>
       </div>
-      <label class="aho-sla-year">
-        <span>${icon("calendar", { size: 17 })} Tahun</span>
-        <select data-aho-year aria-label="Pilih tahun">
-          ${years.map((year) => `
-            <option value="${year}"${year === state.year ? " selected" : ""}>${year}</option>
-          `).join("")}
-        </select>
-      </label>
+      ${renderPeriodPicker(state, years, months, periodSummary)}
     </header>
-
-    <section class="aho-sla-filter" aria-label="Filter bulan">
-      <div class="aho-sla-filter__heading">
-        <div>
-          <h2>Pilih periode</h2>
-          <p>Pilih satu atau beberapa bulan untuk memperbarui ringkasan dan rincian harian.</p>
-        </div>
-        <button
-          class="aho-sla-filter__all${selectedMonths.length === 12 ? " is-active" : ""}"
-          type="button"
-          data-aho-months-all
-          aria-pressed="${selectedMonths.length === 12}"
-        >${selectedMonths.length === 12 ? "Batalkan semua" : "Semua bulan"}</button>
-      </div>
-      <div class="aho-sla-months" role="group" aria-label="Bulan yang ditampilkan">
-        ${months.map((month) => {
-          const selected = state.months.has(month.value);
-          return `
-            <button
-              class="aho-sla-month${selected ? " is-selected" : ""}"
-              type="button"
-              data-aho-month="${month.value}"
-              aria-pressed="${selected}"
-            >${month.label}</button>
-          `;
-        }).join("")}
-      </div>
-      <p class="aho-sla-filter__selection" aria-live="polite">
-        ${escapeHtml(monthLabel)} ${selectedMonths.length ? `· ${state.year}` : ""}
-      </p>
-    </section>
 
     <section class="aho-sla-stats" aria-label="Ringkasan SLA AHO Store">
       ${renderStatCard("clock", "Total waktu", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time")}
-      ${renderStatCard("alert", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems")}
-      ${renderStatCard("bar-chart-2", "Rata-rata waktu / problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average")}
+      ${renderStatCard("inbox", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems")}
+      ${renderStatCard("activity", "Rata-rata waktu / problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average")}
     </section>
 
     ${state.error ? renderErrorState(state.error) : ""}
     ${state.loading ? renderLoadingState() : ""}
     ${summary && !state.loading && !state.error ? renderDailyTable(summary, state, monthLabel) : ""}
+  `;
+}
+
+function renderPeriodPicker(state, years, months, periodSummary) {
+  const monthLabel = state.months.size === 12
+    ? "Semua bulan"
+    : state.months.size
+      ? Array.from(state.months)
+        .sort((a, b) => a - b)
+        .map((month) => months[month - 1].label)
+        .join(", ")
+      : "Belum ada bulan dipilih";
+
+  return `
+    <div class="aho-sla-period" data-aho-period>
+      <button
+        class="aho-sla-period__trigger"
+        type="button"
+        data-aho-period-toggle
+        aria-expanded="${state.periodOpen}"
+        aria-controls="ahoSlaPeriodPanel"
+      >
+        <span class="aho-sla-period__icon">${icon("calendar", { size: 18 })}</span>
+        <span class="aho-sla-period__text">
+          <span>Periode</span>
+          <strong>${escapeHtml(periodSummary)} · ${state.year}</strong>
+        </span>
+        ${icon(state.periodOpen ? "chevron-up" : "chevron-down", { size: 17, className: "aho-sla-period__chevron" })}
+      </button>
+      <div
+        class="aho-sla-period__panel"
+        id="ahoSlaPeriodPanel"
+        role="region"
+        aria-label="Filter tahun dan bulan"
+        ${state.periodOpen ? "" : "hidden"}
+      >
+        <div class="aho-sla-period__panel-heading">
+          <div>
+            <h2>Pilih periode</h2>
+            <p>Tentukan tahun dan satu atau beberapa bulan.</p>
+          </div>
+          <button
+            class="aho-sla-period__all"
+            type="button"
+            data-aho-months-all
+            aria-pressed="${state.months.size === 12}"
+          >${state.months.size === 12 ? "Hapus pilihan" : "Pilih semua"}</button>
+        </div>
+        <label class="aho-sla-period__year">
+          <span>Tahun</span>
+          <select data-aho-year aria-label="Pilih tahun">
+            ${years.map((year) => `
+              <option value="${year}"${year === state.year ? " selected" : ""}>${year}</option>
+            `).join("")}
+          </select>
+        </label>
+        <div class="aho-sla-months" role="group" aria-label="Bulan yang ditampilkan">
+          ${months.map((month) => {
+            const selected = state.months.has(month.value);
+            return `
+              <button
+                class="aho-sla-month${selected ? " is-selected" : ""}"
+                type="button"
+                data-aho-month="${month.value}"
+                aria-pressed="${selected}"
+              >${month.label}</button>
+            `;
+          }).join("")}
+        </div>
+        <p class="aho-sla-period__selection" aria-live="polite">
+          ${escapeHtml(monthLabel)} · ${state.year}
+        </p>
+      </div>
+    </div>
   `;
 }
 
@@ -306,7 +413,7 @@ function renderDailyTable(summary, state, monthLabel) {
               </tr>
             </thead>
             <tbody>
-              ${rows.map((row) => renderDailyRow(row, summary.maxDailyMinutes)).join("")}
+              ${rows.map((row) => renderDailyRow(row, summary.maxDailyMinutes, state.expandedDate)).join("")}
             </tbody>
           </table>
         </div>
@@ -320,14 +427,31 @@ function renderDailyTable(summary, state, monthLabel) {
   `;
 }
 
-function renderDailyRow(row, maxDailyMinutes) {
+function renderDailyRow(row, maxDailyMinutes, expandedDate) {
   const trend = maxDailyMinutes > 0
     ? Math.max(0, Math.min(100, (row.totalMinutes / maxDailyMinutes) * 100))
     : 0;
+  const expandable = row.problems > 1;
+  const expanded = expandable && expandedDate === row.key;
+  const dateLabel = formatAhoSlaDate(row.date);
 
   return `
-    <tr>
-      <td data-label="Tanggal">${formatAhoSlaDate(row.date)}</td>
+    <tr class="${expanded ? "is-expanded" : ""}">
+      <td data-label="Tanggal">
+        ${expandable ? `
+          <button
+            class="aho-sla-date-toggle"
+            type="button"
+            data-aho-details="${row.key}"
+            aria-expanded="${expanded}"
+            aria-controls="ahoSlaDetails-${row.key}"
+            aria-label="${expanded ? "Sembunyikan" : "Tampilkan"} detail ${formatNumber(row.problems)} problem pada ${escapeHtml(dateLabel)}"
+          >
+            <span>${escapeHtml(dateLabel)}</span>
+            ${icon(expanded ? "chevron-up" : "chevron-down", { size: 15 })}
+          </button>
+        ` : escapeHtml(dateLabel)}
+      </td>
       <td data-label="Total waktu">${formatAhoSlaDuration(row.totalMinutes)}</td>
       <td data-label="Total problem"><span class="aho-sla-problem-count">${formatNumber(row.problems)}</span></td>
       <td data-label="Rata-rata waktu">${formatAhoSlaDuration(row.averageMinutes)}</td>
@@ -335,6 +459,65 @@ function renderDailyRow(row, maxDailyMinutes) {
         <span class="aho-sla-trend" role="img" aria-label="Tren total waktu ${formatAhoSlaDuration(row.totalMinutes)}">
           <span class="aho-sla-trend__fill" style="width:${trend.toFixed(1)}%"></span>
         </span>
+      </td>
+    </tr>
+    ${expandable ? renderDetailsRow(row, expanded) : ""}
+  `;
+}
+
+function renderDetailsRow(row, expanded) {
+  const missingFields = row.missingDetailFields || [];
+  const details = row.detailItems || [];
+  const headers = [
+    ["storeCode", "Kode Toko"],
+    ["storeName", "Nama Toko"],
+    ["responsible", "Nama Penanggung"],
+    ["durationMinutes", "Waktu Penyelesaian"],
+    ["achievement", "Ach SLA"]
+  ];
+
+  return `
+    <tr class="aho-sla-details-row" ${expanded ? "" : "hidden"}>
+      <td colspan="5">
+        <section
+          class="aho-sla-details"
+          id="ahoSlaDetails-${row.key}"
+          aria-label="Detail tiket ${escapeHtml(formatAhoSlaDate(row.date))}"
+        >
+          <header class="aho-sla-details__header">
+            <span class="aho-sla-details__icon">${icon("store", { size: 18 })}</span>
+            <div>
+              <h3>Detail tiket · ${escapeHtml(formatAhoSlaDate(row.date))}</h3>
+              <p>${formatNumber(row.problems)} problem pada tanggal ini</p>
+            </div>
+          </header>
+          ${missingFields.length ? `
+            <p class="aho-sla-details__warning" role="alert">
+              Kolom tidak ditemukan pada respons data: ${escapeHtml(missingFields.join(", "))}.
+            </p>
+          ` : ""}
+          <div class="aho-sla-details__table-wrap">
+            <table class="aho-sla-details__table">
+              <thead>
+                <tr>${headers.map(([, label]) => `<th scope="col">${label}</th>`).join("")}</tr>
+              </thead>
+              <tbody>
+                ${details.map((item) => `
+                  <tr>
+                    ${headers.map(([key, label]) => {
+                      const value = key === "durationMinutes"
+                        ? formatAhoSlaDuration(item[key])
+                        : key === "achievement"
+                          ? formatAhoSlaAchievement(item[key])
+                          : item[key] || "—";
+                      return `<td data-label="${label}">${escapeHtml(value)}</td>`;
+                    }).join("")}
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </td>
     </tr>
   `;

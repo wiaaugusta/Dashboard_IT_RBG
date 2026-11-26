@@ -1666,13 +1666,16 @@ belum digunakan oleh dashboard ini. Frontend memuat data satu kali per owner
 sesi `role|NIK`, menduplikasi request yang sedang berjalan, dan memakai ulang
 dataset saat pengguna kembali ke menu; tidak ada TTL client terpisah.
 
-Year selector dan bulan multi-select menyaring KPI serta rincian harian.
-Setiap tiket dihitung pada tanggal `tglTerima`; durasi bersumber dari
-`waktuPenyelesaian` dalam pecahan hari (contoh `0.0125 × 1440 = 18 menit`).
-Total waktu adalah penjumlahan durasi valid; average adalah rata-rata durasi
-valid pada periode/tanggal; total problem adalah jumlah tiket pada tanggal
-tersebut. Hari tanpa tiket tetap memiliki hitungan problem `0`, total waktu
-`0 Menit`, dan average `—`.
+Satu period picker berisi pilihan tahun dan multi-select bulan menyaring KPI
+serta rincian harian. Setiap tiket dihitung pada tanggal `tglTerima`; durasi
+bersumber dari `waktuPenyelesaian` dalam pecahan hari (contoh
+`0.0125 × 1440 = 18 menit`). Total waktu adalah penjumlahan durasi valid;
+average adalah rata-rata durasi valid pada periode/tanggal; total problem
+adalah jumlah tiket pada tanggal tersebut. Tanggal tanpa problem tidak
+ditampilkan. Jika suatu tanggal memiliki lebih dari satu problem, tanggal
+dapat dibuka untuk melihat kode toko, nama toko, nama penanggung, waktu
+penyelesaian, dan Ach SLA. Ach SLA ditampilkan sebagai persen langsung
+(nilai `100` menjadi `100%`).
 
 Otorisasi tetap dilakukan backend untuk `ADMIN`/`IT_STORE`. Submenu SLA AHO
 Store dan SLA Form Hardware tidak diubah oleh dashboard parent ini.

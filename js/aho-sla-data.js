@@ -30,6 +30,28 @@ const MONTH_LOOKUP = new Map([
 
 const DATE_FIELD_NAMES = new Set(["tglterima", "tanggalterima"]);
 const DURATION_FIELD_NAMES = new Set(["waktupenyelesaian"]);
+const DETAIL_FIELDS = [
+  {
+    key: "storeCode",
+    label: "Kode Toko",
+    names: new Set(["kodetoko", "kodestore", "kodeoutlet", "storecode", "outletcode"])
+  },
+  {
+    key: "storeName",
+    label: "Nama Toko",
+    names: new Set(["namatoko", "namastore", "namaoutlet", "storename", "outletname"])
+  },
+  {
+    key: "responsible",
+    label: "Nama Penanggung",
+    names: new Set(["namapenanggung", "namapenanggungjawab", "penanggungjawab", "namapic", "picname", "personincharge"])
+  },
+  {
+    key: "achievement",
+    label: "Ach SLA",
+    names: new Set(["achsla", "achslaachievement", "achievementsla", "slaachievement", "slaachievementpercentage", "pencapaiansla"])
+  }
+];
 
 export function getAhoSlaMonths() {
   return MONTHS.map((month) => ({ ...month }));
@@ -62,7 +84,8 @@ export function resolveAhoSlaFields(table) {
   };
   const fields = {
     date: findKey(DATE_FIELD_NAMES),
-    duration: findKey(DURATION_FIELD_NAMES)
+    duration: findKey(DURATION_FIELD_NAMES),
+    ...Object.fromEntries(DETAIL_FIELDS.map(({ key, names }) => [key, findKey(names)]))
   };
 
   if (!fields.date) {
@@ -167,6 +190,16 @@ export function formatAhoSlaDate(parts) {
   return `${String(parts.day).padStart(2, "0")} ${month.label} ${parts.year}`;
 }
 
+export function formatAhoSlaAchievement(value) {
+  const text = String(value == null ? "" : value).trim();
+  if (!text) return "—";
+  if (text.endsWith("%")) return text;
+
+  const numeric = Number(text.replace(",", "."));
+  if (!Number.isFinite(numeric)) return text;
+  return `${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(numeric)}%`;
+}
+
 export function getAhoSlaAvailableYears(table, currentYear = new Date().getFullYear()) {
   const fields = resolveAhoSlaFields(table);
   const years = new Set([currentYear]);
@@ -195,7 +228,8 @@ export function aggregateAhoSlaByDate(table, year, selectedMonths) {
         date: { year, month, day },
         exactMinutes: 0,
         problems: 0,
-        durationCount: 0
+        durationCount: 0,
+        tickets: []
       });
     }
   });
@@ -213,6 +247,10 @@ export function aggregateAhoSlaByDate(table, year, selectedMonths) {
     totalProblems++;
 
     const durationDays = parseAhoSlaDurationDays(item?.[fields.duration]);
+    day.tickets.push({
+      item,
+      durationMinutes: durationDays == null ? null : durationDays * 1440
+    });
     if (durationDays == null) return;
     const exactMinutes = durationDays * 1440;
     day.exactMinutes += exactMinutes;
@@ -222,15 +260,34 @@ export function aggregateAhoSlaByDate(table, year, selectedMonths) {
   });
 
   const rows = Array.from(daily.values())
+    .filter((day) => day.problems > 0)
     .sort((a, b) => dateKey(a.date).localeCompare(dateKey(b.date)))
-    .map((day) => ({
-      date: day.date,
-      totalMinutes: Math.round(day.exactMinutes),
-      problems: day.problems,
-      averageMinutes: day.durationCount
-        ? Math.round(day.exactMinutes / day.durationCount)
-        : null
-    }));
+    .map((day) => {
+      const detailItems = day.problems > 1
+        ? day.tickets.map(({ item, durationMinutes }) => ({
+          storeCode: fields.storeCode ? item?.[fields.storeCode] : "",
+          storeName: fields.storeName ? item?.[fields.storeName] : "",
+          responsible: fields.responsible ? item?.[fields.responsible] : "",
+          durationMinutes,
+          achievement: fields.achievement ? item?.[fields.achievement] : ""
+        }))
+        : [];
+      const missingDetailFields = day.problems > 1
+        ? DETAIL_FIELDS.filter(({ key }) => !fields[key]).map(({ label }) => label)
+        : [];
+
+      return {
+        date: day.date,
+        key: dateKey(day.date),
+        totalMinutes: Math.round(day.exactMinutes),
+        problems: day.problems,
+        averageMinutes: day.durationCount
+          ? Math.round(day.exactMinutes / day.durationCount)
+          : null,
+        detailItems,
+        missingDetailFields
+      };
+    });
 
   return {
     totalMinutes: Math.round(totalExactMinutes),
