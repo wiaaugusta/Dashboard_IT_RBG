@@ -108,11 +108,31 @@ export function renderAhoSummaryPage(container, routeInfo) {
 
     if (detailToggle) {
       const dateKey = detailToggle.getAttribute("data-aho-details");
-      state.expandedDate = state.expandedDate === dateKey ? "" : dateKey;
-      render();
-      Array.from(page.querySelectorAll("[data-aho-details]"))
-        .find((button) => button.getAttribute("data-aho-details") === dateKey)
-        ?.focus();
+      const willExpand = state.expandedDate !== dateKey;
+      state.expandedDate = willExpand ? dateKey : "";
+
+      // Smooth DOM-only toggle without full page re-render
+      const buttonRow = detailToggle.closest("tr");
+      const detailsRow = buttonRow?.nextElementSibling;
+      const allRows = page.querySelectorAll(".aho-sla-table tbody tr.aho-sla-details-row");
+      const allButtons = page.querySelectorAll("[data-aho-details]");
+
+      allRows.forEach((row) => {
+        row.classList.remove("is-expanded");
+        const svg = row.previousElementSibling?.querySelector(".aho-sla-date-toggle svg");
+        if (svg) svg.style.transform = "";
+      });
+      allButtons.forEach((btn) => btn.setAttribute("aria-expanded", "false"));
+
+      if (willExpand && detailsRow && detailsRow.classList.contains("aho-sla-details-row")) {
+        detailToggle.setAttribute("aria-expanded", "true");
+        const svg = detailToggle.querySelector("svg");
+        if (svg) svg.style.transform = "rotate(180deg)";
+
+        detailsRow.classList.add("is-expanded");
+      }
+
+      detailToggle.focus();
       return;
     }
 

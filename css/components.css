@@ -5975,7 +5975,7 @@
   display: table-row;
 }
 
-.aho-sla-details-row.is-collapsed {
+.aho-sla-details-row:not(.is-expanded) {
   display: none;
 }
 
@@ -5995,7 +5995,7 @@
 
 .aho-sla-details {
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s ease 0.05s;
   padding: 0;
   border-top: 0;
 }
@@ -6005,6 +6005,10 @@
   padding-top: 14px;
   padding-bottom: 18px;
   border-top: 1px solid #dfe6f0;
+}
+
+.aho-sla-date-toggle svg {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .aho-sla-skeleton {
