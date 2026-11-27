@@ -188,5 +188,5 @@ Jangan berhenti pada rencana jika pengguna meminta implementasi dan ruang lingku
 
 ## Status Terakhir
 - Ikon Lucide lokal: 83 ikon, opsi `size`/`strokeWidth`/`color`/`label`, fallback `dashboard`; semua 36 nama ikon yang dipakai tersedia dan galeri 83/83 render.
-- Frontend commit terakhir: `3d90d29` (`feat(aho): fix card layout, curved sparkline gradient, icon alignment`), sudah di-push ke `origin/main`; service-worker v95.
+- Frontend commit terakhir: `34249f0` (`feat(aho): refine stat cards with IBM Plex Sans, bar-chart, and detail table title`), sudah di-push ke `origin/main`; service-worker v96.
 - opencode-mem 2.34.0: cache native Windows diperbaiki, model embedding `Xenova/nomic-embed-text-v1` sudah ter-warmup, auto-capture aktif memakai `9router/inherit`.
