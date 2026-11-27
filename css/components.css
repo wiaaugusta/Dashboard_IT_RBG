@@ -5806,16 +5806,18 @@
 .aho-sla-stat {
   position: relative;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
   min-width: 0;
-  min-height: 110px;
-  padding: 16px 20px;
+  min-height: 76px;
+  padding: 12px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
+  gap: 12px;
 }
 
 .aho-sla-stat--problems {
@@ -5839,23 +5841,22 @@
   --aho-stat-soft: #dcfce7;
 }
 
-.aho-sla-stat__main {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  min-width: 0;
-  z-index: 2;
-}
-
 .aho-sla-stat__icon {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 34px;
+  height: 34px;
   flex: none;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--aho-stat-soft);
   color: var(--aho-stat-accent);
+  z-index: 1;
+  position: relative;
+}
+
+.aho-sla-stat__icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 .aho-sla-stat__trend {
@@ -5864,7 +5865,8 @@
   margin-top: 6px;
   font-size: 11px;
   font-weight: 600;
-  z-index: 2;
+  z-index: 1;
+  position: relative;
 }
 
 .aho-sla-stat__trend.is-up {
@@ -5880,16 +5882,36 @@
   color: var(--color-text-muted);
 }
 
+.aho-sla-stat__chart {
+  position: absolute;
+  width: 58%;
+  height: 44px;
+  right: -8px;
+  bottom: -6px;
+  opacity: 0.13;
+  transform: rotate(-6deg);
+  transform-origin: right bottom;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.aho-sla-stat__chart svg {
+  width: 100%;
+  height: 100%;
+}
+
 .aho-sla-stat__content {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  gap: 5px;
+  gap: 2px;
+  z-index: 1;
+  position: relative;
 }
 
 .aho-sla-stat__content > span {
   color: var(--color-text-secondary);
-  font-size: var(--font-size-caption);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .035em;
   text-transform: uppercase;
@@ -5897,7 +5919,7 @@
 
 .aho-sla-stat__content strong {
   color: #14213d;
-  font-size: clamp(18px, 1.8vw, 22px);
+  font-size: 17px;
   font-weight: 750;
   line-height: 1.2;
   font-variant-numeric: tabular-nums;
@@ -6285,11 +6307,11 @@
   }
 
   .aho-sla-stat {
-    min-height: 82px;
+    min-height: 68px;
   }
 
   .aho-sla-stat__content strong {
-    font-size: 23px;
+    font-size: 19px;
   }
 }
 
@@ -6326,31 +6348,23 @@
   }
 
   .aho-sla-stat {
-    min-height: 88px;
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-  }
-
-  .aho-sla-stat:last-child {
-    grid-column: 1 / -1;
-    align-items: center;
-    flex-direction: row;
+    min-height: 64px;
+    gap: 10px;
+    padding: 10px 12px;
   }
 
   .aho-sla-stat__icon {
-    width: 36px;
-    height: 36px;
+    width: 30px;
+    height: 30px;
   }
 
   .aho-sla-stat__icon svg {
-    width: 19px;
-    height: 19px;
+    width: 16px;
+    height: 16px;
   }
 
   .aho-sla-stat__content {
-    gap: 2px;
+    gap: 1px;
   }
 
   .aho-sla-stat__content > span {
@@ -6359,7 +6373,12 @@
   }
 
   .aho-sla-stat__content strong {
-    font-size: 17px;
+    font-size: 15px;
+  }
+
+  .aho-sla-stat__trend {
+    margin-top: 3px;
+    font-size: 10px;
   }
 
   .aho-sla-daily__header {

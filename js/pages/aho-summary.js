@@ -267,16 +267,16 @@ function renderDashboard(state) {
           const prevM = m === 1 ? 12 : m - 1;
           const prevY = m === 1 ? state.year - 1 : state.year;
           const prevSummary = aggregateAhoSlaByDate(state.table, prevY, [prevM]);
-          const prevLabel = "bln lalu";
+          const prevLabel = months[prevM - 1].label;
           probTrend = getTrendInfo(summary?.totalProblems, prevSummary?.totalProblems, prevLabel);
           timeTrend = getTrendInfo(summary?.totalMinutes, prevSummary?.totalMinutes, prevLabel);
           avgTrend = getTrendInfo(summary?.averageMinutes, prevSummary?.averageMinutes, prevLabel);
         }
 
         return `
-          ${renderStatCard("inbox", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems", buildSparkline(sparkSource, "problems"), probTrend)}
-          ${renderStatCard("clock", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time", buildSparkline(sparkSource, "totalMinutes"), timeTrend)}
-          ${renderStatCard("activity", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average", buildSparkline(sparkSource, "averageMinutes"), avgTrend)}
+          ${renderStatCard("ticket", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems", buildSparkline(sparkSource, "problems"), probTrend)}
+          ${renderStatCard("timer", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time", buildSparkline(sparkSource, "totalMinutes"), timeTrend)}
+          ${renderStatCard("gauge", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average", buildSparkline(sparkSource, "averageMinutes"), avgTrend)}
         `;
       })()}
     </section>
@@ -371,7 +371,7 @@ function renderStatCard(iconName, label, value, className, sparklinePoints, tren
     ? `
       <div class="aho-sla-stat__chart" aria-hidden="true">
         <svg viewBox="0 0 100 28" preserveAspectRatio="none">
-          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
     `
@@ -383,8 +383,8 @@ function renderStatCard(iconName, label, value, className, sparklinePoints, tren
       <div class="aho-sla-stat__content">
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(value)}</strong>
+        ${trendMarkup}
       </div>
-      ${trendMarkup}
       ${sparkMarkup}
     </article>
   `;

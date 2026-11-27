@@ -71,6 +71,11 @@ const PATHS = {
   "trending-down": '<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
   activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
 
+  /* ---------- AHO metrik (Phosphor semantik, gaya stroke) ---------- */
+  ticket: '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="7" y2="20"/><line x1="17" y1="8" x2="17" y2="20"/><line x1="5" y1="6" x2="7" y2="8"/><line x1="7" y1="6" x2="5" y2="8"/><line x1="17" y1="6" x2="19" y2="8"/><line x1="19" y1="6" x2="17" y2="8"/>',
+  timer: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="4" x2="12" y2="12"/><line x1="12" y1="12" x2="15.5" y2="13.5"/><circle cx="12" cy="12" r="1"/>',
+  gauge: '<path d="M4 12a8 8 0 0 1 16 0"/><line x1="12" y1="4" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="8"/>',
+
   /* ---------- Lokasi & peta ---------- */
   "map-pin": '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/>',
   navigation: '<polygon points="3 11 22 2 13 21 11 13 3 11"/>',
