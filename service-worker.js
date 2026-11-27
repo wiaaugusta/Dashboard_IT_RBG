@@ -8,7 +8,7 @@
  * Cache hanya menjadi fallback jika network gagal.
  */
 
-const CACHE_NAME = "it-platform-shell-v101";
+const CACHE_NAME = "it-platform-shell-v102";
 
 const APP_SHELL_FILES = [
   "./index.html",
