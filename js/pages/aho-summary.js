@@ -619,7 +619,7 @@ function renderDetailsRow(row, expanded) {
   ];
 
   return `
-    <tr class="aho-sla-details-row ${expanded ? "is-expanded" : ""}">
+    <tr class="aho-sla-details-row ${expanded ? "is-expanded" : "is-collapsed"}">
       <td colspan="5">
         <div class="aho-sla-details-clip">
           <section
