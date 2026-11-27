@@ -600,38 +600,40 @@ function renderDetailsRow(row, expanded) {
           aria-label="Detail tiket ${escapeHtml(formatAhoSlaDate(row.date))}"
           aria-hidden="${!expanded}"
         >
-          <header class="aho-sla-details__header">
-            <span class="aho-sla-details__icon">${icon("store", { size: 18 })}</span>
-            <div>
-              <h3>Detail tiket · ${escapeHtml(formatAhoSlaDate(row.date))}</h3>
-              <p>${formatNumber(row.problems)} problem pada tanggal ini</p>
+          <div class="aho-sla-details__inner">
+            <header class="aho-sla-details__header">
+              <span class="aho-sla-details__icon">${icon("store", { size: 18 })}</span>
+              <div>
+                <h3>Detail tiket · ${escapeHtml(formatAhoSlaDate(row.date))}</h3>
+                <p>${formatNumber(row.problems)} problem pada tanggal ini</p>
+              </div>
+            </header>
+            ${missingFields.length ? `
+              <p class="aho-sla-details__warning" role="alert">
+                Kolom tidak ditemukan pada respons data: ${escapeHtml(missingFields.join(", "))}.
+              </p>
+            ` : ""}
+            <div class="aho-sla-details__table-wrap">
+              <table class="aho-sla-details__table">
+                <thead>
+                  <tr>${headers.map(([, label]) => `<th scope="col">${label}</th>`).join("")}</tr>
+                </thead>
+                <tbody>
+                  ${details.map((item) => `
+                    <tr>
+                      ${headers.map(([key, label]) => {
+                        const value = key === "durationMinutes"
+                          ? formatAhoSlaDuration(item[key])
+                          : key === "achievement"
+                            ? formatAhoSlaAchievement(item[key])
+                            : item[key] || "—";
+                        return `<td data-label="${label}">${escapeHtml(value)}</td>`;
+                      }).join("")}
+                    </tr>
+                  `).join("")}
+                </tbody>
+              </table>
             </div>
-          </header>
-          ${missingFields.length ? `
-            <p class="aho-sla-details__warning" role="alert">
-              Kolom tidak ditemukan pada respons data: ${escapeHtml(missingFields.join(", "))}.
-            </p>
-          ` : ""}
-          <div class="aho-sla-details__table-wrap">
-            <table class="aho-sla-details__table">
-              <thead>
-                <tr>${headers.map(([, label]) => `<th scope="col">${label}</th>`).join("")}</tr>
-              </thead>
-              <tbody>
-                ${details.map((item) => `
-                  <tr>
-                    ${headers.map(([key, label]) => {
-                      const value = key === "durationMinutes"
-                        ? formatAhoSlaDuration(item[key])
-                        : key === "achievement"
-                          ? formatAhoSlaAchievement(item[key])
-                          : item[key] || "—";
-                      return `<td data-label="${label}">${escapeHtml(value)}</td>`;
-                    }).join("")}
-                  </tr>
-                `).join("")}
-              </tbody>
-            </table>
           </div>
         </section>
       </td>
