@@ -6127,7 +6127,18 @@
   padding: 9px 11px;
   border-top: 1px solid #e8edf5;
   color: var(--color-text);
-  vertical-align: top;
+  vertical-align: middle;
+  max-width: 220px;
+}
+
+.aho-sla-details__table td .mpc-kav-marquee {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  position: relative;
 }
 
 .aho-sla-daily {

@@ -633,6 +633,7 @@ function renderDetailsRow(row, expanded) {
     ["storeCode", "Kode Toko"],
     ["storeName", "Nama Toko"],
     ["responsible", "Nama Penanggung"],
+    ["issue", "Masalah"],
     ["durationMinutes", "Waktu Penyelesaian"],
     ["targetDays", "Target Hari"],
     ["achievement", "Ach SLA"]
@@ -669,12 +670,21 @@ function renderDetailsRow(row, expanded) {
                   ${details.map((item) => `
                     <tr>
                       ${headers.map(([key, label]) => {
-                        const value = key === "durationMinutes"
-                          ? formatAhoSlaDuration(item[key])
-                          : key === "achievement"
-                            ? formatAhoSlaAchievement(item[key])
-                            : item[key] || "—";
-                        return `<td data-label="${label}">${escapeHtml(value)}</td>`;
+                        let value = "";
+                        if (key === "durationMinutes") value = formatAhoSlaDuration(item[key]);
+                        else if (key === "achievement") value = formatAhoSlaAchievement(item[key]);
+                        else value = item[key] || "—";
+                        
+                        const isIssue = key === "issue";
+                        const displayValue = isIssue ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : value;
+                        
+                        return `<td data-label="${label}">
+                          ${isIssue ? `
+                            <div class="mpc-kav-marquee" onmouseenter="this.querySelector('.mpc-kav-marquee__text').classList.add('is-scrolling')" onmouseleave="this.querySelector('.mpc-kav-marquee__text').classList.remove('is-scrolling')">
+                              <span class="mpc-kav-marquee__text">${escapeHtml(displayValue)}</span>
+                            </div>
+                          ` : escapeHtml(displayValue)}
+                        </td>`;
                       }).join("")}
                     </tr>
                   `).join("")}

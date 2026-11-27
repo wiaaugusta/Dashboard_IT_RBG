@@ -47,6 +47,16 @@ const DETAIL_FIELDS = [
     names: new Set(["namapenanggung", "namapenanggungjawab", "penanggungjawab", "namapic", "picname", "personincharge"])
   },
     {
+      key: "issue",
+      label: "Masalah",
+      names: new Set(["masalah", "issue", "keterangan", "deskripsi", "problem"])
+    },
+    {
+      key: "durationMinutes",
+      label: "Waktu Penyelesaian",
+      names: new Set(["waktupenyelesaian", "waktupenyelesaianit", "durasi", "duration"])
+    },
+    {
       key: "targetDays",
       label: "Target Hari",
       names: new Set(["targethari", "target", "targetsla", "targethari"])
@@ -54,9 +64,9 @@ const DETAIL_FIELDS = [
     {
       key: "achievement",
       label: "Ach SLA",
-    names: new Set(["achsla", "achslaachievement", "achievementsla", "slaachievement", "slaachievementpercentage", "pencapaiansla"])
-  }
-];
+      names: new Set(["achsla", "achslaachievement", "achievementsla", "slaachievement", "slaachievementpercentage", "pencapaiansla"])
+    }
+  ];
 
 export function getAhoSlaMonths() {
   return MONTHS.map((month) => ({ ...month }));
@@ -272,6 +282,7 @@ export function aggregateAhoSlaByDate(table, year, selectedMonths) {
         storeCode: fields.storeCode ? item?.[fields.storeCode] : "",
         storeName: fields.storeName ? item?.[fields.storeName] : "",
         responsible: fields.responsible ? item?.[fields.responsible] : "",
+        issue: fields.issue ? item?.[fields.issue] : "",
         durationMinutes,
         targetDays: fields.targetDays ? item?.[fields.targetDays] : "",
         achievement: fields.achievement ? item?.[fields.achievement] : ""
