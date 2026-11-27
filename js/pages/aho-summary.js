@@ -619,15 +619,15 @@ function renderDetailsRow(row, expanded) {
   ];
 
   return `
-    <tr class="aho-sla-details-row ${expanded ? "" : "is-collapsed"}">
+    <tr class="aho-sla-details-row ${expanded ? "is-expanded" : ""}">
       <td colspan="5">
-        <section
-          class="aho-sla-details"
-          id="ahoSlaDetails-${row.key}"
-          aria-label="Detail tiket ${escapeHtml(formatAhoSlaDate(row.date))}"
-          aria-hidden="${!expanded}"
-        >
-          <div class="aho-sla-details__inner">
+        <div class="aho-sla-details-clip">
+          <section
+            class="aho-sla-details"
+            id="ahoSlaDetails-${row.key}"
+            aria-label="Detail tiket ${escapeHtml(formatAhoSlaDate(row.date))}"
+            aria-hidden="${!expanded}"
+          >
             <header class="aho-sla-details__header">
               <span class="aho-sla-details__icon">${icon("store", { size: 18 })}</span>
               <div>
@@ -661,8 +661,8 @@ function renderDetailsRow(row, expanded) {
                 </tbody>
               </table>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </td>
     </tr>
   `;
