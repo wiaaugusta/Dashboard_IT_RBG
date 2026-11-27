@@ -6108,10 +6108,10 @@
   font-size: var(--font-size-caption);
 }
 
-.aho-sla-details__table th {
+.aho-sla-table .aho-sla-details__table th {
   padding: 9px 11px;
-  background: #797c80;
-  color: #ffffff;
+  background: #797c80 !important;
+  color: #ffffff !important;
   font-size: 10px;
   font-weight: 750;
   text-align: left;
