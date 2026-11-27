@@ -596,6 +596,7 @@ function renderDailyRow(row, maxDailyMinutes, expandedDate) {
   const expandable = true;
   const expanded = expandedDate === row.key;
   const singleProblem = row.problems === 1;
+  const hasLongDuration = row.detailItems?.some(item => item.durationMinutes != null && item.durationMinutes > 30);
   const dateLabel = formatAhoSlaDate(row.date);
 
   return `
@@ -613,7 +614,7 @@ function renderDailyRow(row, maxDailyMinutes, expandedDate) {
           ${!singleProblem ? icon(expanded ? "chevron-up" : "chevron-down", { size: 15 }) : ""}
         </button>
       </td>
-      <td data-label="Total waktu">${formatAhoSlaDuration(row.totalMinutes)}</td>
+      <td data-label="Total waktu"${hasLongDuration ? ' class="text-danger"' : ''}>${formatAhoSlaDuration(row.totalMinutes)}</td>
       <td data-label="Total problem"><span class="aho-sla-problem-count">${formatNumber(row.problems)}</span></td>
       <td data-label="Rata-rata waktu">${formatAhoSlaDuration(row.averageMinutes)}</td>
       <td class="aho-sla-trend-cell" data-label="Tren waktu">
@@ -676,9 +677,11 @@ function renderDetailsRow(row, expanded) {
                         else value = item[key] || "—";
                         
                         const isIssue = key === "issue";
+                        const isDuration = key === "durationMinutes";
+                        const isLong = isDuration && item[key] > 30;
                         const displayValue = isIssue ? value.charAt(0).toUpperCase() + value.slice(1).toLowerCase() : value;
                         
-                        return `<td data-label="${label}">
+                        return `<td data-label="${label}" class="${isLong ? 'text-danger' : ''}">
                           ${isIssue ? `
                             <div class="mpc-kav-marquee" onmouseenter="this.querySelector('.mpc-kav-marquee__text').classList.add('is-scrolling')" onmouseleave="this.querySelector('.mpc-kav-marquee__text').classList.remove('is-scrolling')">
                               <span class="mpc-kav-marquee__text">${escapeHtml(displayValue)}</span>
