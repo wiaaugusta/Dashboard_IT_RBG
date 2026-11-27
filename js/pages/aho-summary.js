@@ -246,9 +246,9 @@ function renderDashboard(state) {
   return `
     <header class="aho-sla-header">
       <div class="aho-sla-header__title">
-        <div class="aho-sla-header__icon" aria-hidden="true">${icon("aho", { size: 24, strokeWidth: 1.5 })}</div>
+        <div class="aho-sla-header__icon" aria-hidden="true">${icon("store", { size: 24, strokeWidth: 1.5 })}</div>
         <div>
-          <h1>SLA AHO Store</h1>
+          <h1 style="text-transform: uppercase;">SLA AHO Store</h1>
           <span>Ringkasan waktu penyelesaian tiket berdasarkan tanggal diterima.</span>
         </div>
       </div>
@@ -283,7 +283,7 @@ function renderDashboard(state) {
 
     ${state.error ? renderErrorState(state.error) : ""}
     ${state.loading ? renderLoadingState() : ""}
-    ${summary && !state.loading && !state.error ? renderDailyTable(summary, state) : ""}
+    ${summary && !state.loading && !state.error ? renderDailyTable(summary, state, monthLabel) : ""}
   `;
 }
 
@@ -467,10 +467,15 @@ function buildSmoothPath(points) {
 
 function renderLoadingState() {
   return `
-    <div class="aho-sla-state" role="status" aria-live="polite">
-      <span class="aho-sla-spinner" aria-hidden="true"></span>
-      <span>Memuat data SLA AHO Store...</span>
-    </div>
+    <section class="aho-sla-stats" aria-label="Memuat ringkasan SLA AHO Store">
+      <div class="aho-sla-skeleton aho-sla-stat-skeleton"></div>
+      <div class="aho-sla-skeleton aho-sla-stat-skeleton"></div>
+      <div class="aho-sla-skeleton aho-sla-stat-skeleton"></div>
+    </section>
+    <section class="aho-sla-daily" aria-label="Memuat rincian harian">
+      <div class="aho-sla-skeleton aho-sla-table-skeleton"></div>
+      <div class="aho-sla-skeleton aho-sla-table-skeleton"></div>
+    </section>
   `;
 }
 
@@ -486,12 +491,14 @@ function renderErrorState(message) {
   `;
 }
 
-function renderDailyTable(summary, state) {
+function renderDailyTable(summary, state, monthLabel) {
   const pageCount = Math.ceil(summary.rows.length / PAGE_SIZE);
   const page = Math.min(Math.max(state.page, 1), Math.max(pageCount, 1));
   const start = (page - 1) * PAGE_SIZE;
   const rows = summary.rows.slice(start, start + PAGE_SIZE);
-  const tableTitle = "Detail per tanggal waktu penyelesaian IT";
+  const tableTitle = state.months.size === 1
+    ? `Rincian harian · ${monthLabel} ${state.year}`
+    : `Rincian harian · ${state.year}`;
   const rangeLabel = summary.rows.length
     ? `Menampilkan ${start + 1}–${Math.min(start + PAGE_SIZE, summary.rows.length)} dari ${summary.rows.length} tanggal`
     : "Tidak ada tanggal untuk periode yang dipilih";
@@ -503,7 +510,7 @@ function renderDailyTable(summary, state) {
           <span class="aho-sla-daily__icon" aria-hidden="true">${icon("bar-chart-2", { size: 22, strokeWidth: 1.8 })}</span>
           <div>
             <h2 id="ahoSlaDailyTitle">${escapeHtml(tableTitle)}</h2>
-            <p>Tanggal mengikuti waktu penyelesaian IT; total problem menghitung jumlah tiket.</p>
+            <p>Detail per tanggal waktu penyelesaian IT</p>
           </div>
         </div>
       </header>
@@ -585,12 +592,13 @@ function renderDetailsRow(row, expanded) {
   ];
 
   return `
-    <tr class="aho-sla-details-row" ${expanded ? "" : "hidden"}>
+    <tr class="aho-sla-details-row ${expanded ? "" : "is-collapsed"}">
       <td colspan="5">
         <section
           class="aho-sla-details"
           id="ahoSlaDetails-${row.key}"
           aria-label="Detail tiket ${escapeHtml(formatAhoSlaDate(row.date))}"
+          aria-hidden="${!expanded}"
         >
           <header class="aho-sla-details__header">
             <span class="aho-sla-details__icon">${icon("store", { size: 18 })}</span>
