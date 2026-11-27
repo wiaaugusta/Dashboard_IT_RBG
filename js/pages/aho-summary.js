@@ -361,24 +361,28 @@ function renderPeriodPicker(state, years, months, periodSummary) {
   `;
 }
 
-function renderStatCard(iconName, label, value, className, sparklinePoints, trend) {
+function renderStatCard(iconName, label, value, className, sparkPoints, trend) {
   const trendText = trend?.text || "";
   const trendType = trend?.type || "muted";
   const trendMarkup = trendText
     ? `<small class="aho-sla-stat__trend is-${trendType}">${escapeHtml(trendText)}</small>`
     : "";
-  const sparkMarkup = sparklinePoints
+  const gradientId = `aho-spark-${className.replace(/^aho-sla-stat--/, "")}`;
+  const linePath = buildSmoothPath(sparkPoints);
+  const firstX = sparkPoints?.length ? sparkPoints[0].x.toFixed(1) : "0";
+  const lastX = sparkPoints?.length ? sparkPoints[sparkPoints.length - 1].x.toFixed(1) : "100";
+  const sparkMarkup = linePath
     ? `
       <div class="aho-sla-stat__chart" aria-hidden="true">
-        <svg viewBox="0 0 100 28" preserveAspectRatio="none">
+        <svg viewBox="0 0 100 40" preserveAspectRatio="none" focusable="false">
           <defs>
-            <linearGradient id="grad-${className}" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+            <linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="currentColor" stop-opacity="0.24"/>
               <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
             </linearGradient>
           </defs>
-          <path d="M0 28 L${sparklinePoints} L100 28 Z" fill="url(#grad-${className})"/>
-          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="${linePath} L${lastX} 40 L${firstX} 40 Z" fill="url(#${gradientId})"/>
+          <path d="${linePath}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6" vector-effect="non-scaling-stroke"/>
         </svg>
       </div>
     `
@@ -386,7 +390,7 @@ function renderStatCard(iconName, label, value, className, sparklinePoints, tren
 
   return `
     <article class="aho-sla-stat ${className}">
-      <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 18, strokeWidth: 1.5 })}</div>
+      <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 20, strokeWidth: 1.5 })}</div>
       <div class="aho-sla-stat__content">
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(value)}</strong>
@@ -410,28 +414,47 @@ function getTrendInfo(current, previous, monthLabel) {
 }
 
 function buildSparkline(rows, key) {
-  if (!Array.isArray(rows) || rows.length < 2) return "";
+  if (!Array.isArray(rows) || rows.length < 2) return null;
   const values = rows
     .map((row) => row?.[key])
     .filter((value) => value != null && Number.isFinite(Number(value)))
     .map(Number);
-  if (values.length < 2) return "";
+  if (values.length < 2) return null;
 
   const width = 100;
-  const height = 28;
-  const pad = 3;
+  const height = 40;
+  const padTop = 10;
+  const padBottom = 8;
   const max = Math.max(...values);
   const min = Math.min(...values);
   const span = max - min || 1;
   const step = width / (values.length - 1);
 
-  const points = values.map((value, index) => {
-    const x = (index * step).toFixed(1);
-    const y = (height - pad - ((value - min) / span) * (height - pad * 2)).toFixed(1);
-    return `${x},${y}`;
-  });
+  return values.map((value, index) => ({
+    x: index * step,
+    y: height - padBottom - ((value - min) / span) * (height - padTop - padBottom),
+  }));
+}
 
-  return points.join(" ");
+function buildSmoothPath(points) {
+  if (!Array.isArray(points) || points.length < 2) return "";
+  const clampY = (value) => Math.min(38, Math.max(2, value));
+  const tension = 0.18;
+  let path = `M${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const previous = points[index - 1] || points[index];
+    const start = points[index];
+    const end = points[index + 1];
+    const next = points[index + 2] || end;
+    const control1x = start.x + (end.x - previous.x) * tension;
+    const control1y = clampY(start.y + (end.y - previous.y) * tension);
+    const control2x = end.x - (next.x - start.x) * tension;
+    const control2y = clampY(end.y - (next.y - start.y) * tension);
+    path += ` C${control1x.toFixed(1)} ${control1y.toFixed(1)} ${control2x.toFixed(1)} ${control2y.toFixed(1)} ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
+  }
+
+  return path;
 }
 
 function renderLoadingState() {

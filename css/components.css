@@ -5810,14 +5810,14 @@
   align-items: center;
   justify-content: flex-start;
   min-width: 0;
-  min-height: 76px;
-  padding: 12px 16px;
+  min-height: 80px;
+  padding: 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
   overflow: hidden;
-  gap: 14px;
+  gap: 16px;
 }
 
 .aho-sla-stat--problems {
@@ -5844,8 +5844,8 @@
 .aho-sla-stat__icon {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   flex: none;
   border-radius: 10px;
   background: var(--aho-stat-soft);
@@ -5855,8 +5855,8 @@
 }
 
 .aho-sla-stat__icon svg {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
 }
 
 .aho-sla-stat__trend {
@@ -5884,19 +5884,19 @@
 
 .aho-sla-stat__chart {
   position: absolute;
-  bottom: -4px;
-  right: -4px;
-  width: 55%;
-  height: 48px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 44%;
   color: var(--aho-stat-accent);
-  opacity: 0.25;
-  transform: rotate(-4deg);
-  transform-origin: right bottom;
   pointer-events: none;
   z-index: 0;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 24%, #000 86%, transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0%, #000 24%, #000 86%, transparent 100%);
 }
 
 .aho-sla-stat__chart svg {
+  display: block;
   width: 100%;
   height: 100%;
 }
@@ -5904,26 +5904,32 @@
 .aho-sla-stat__content {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-width: 0;
-  gap: 2px;
+  gap: 3px;
   z-index: 1;
   position: relative;
 }
 
 .aho-sla-stat__content > span {
   color: var(--color-text-secondary);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: .035em;
+  font-size: clamp(10px, 0.55vw + 5px, 11px);
+  font-weight: 600;
+  letter-spacing: .03em;
   text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .aho-sla-stat__content strong {
   color: #14213d;
-  font-size: 17px;
-  font-weight: 750;
-  line-height: 1.2;
+  font-size: clamp(16px, 0.55vw + 10px, 20px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .aho-sla-date-toggle {
@@ -6286,6 +6292,12 @@
   background: var(--color-background-offwhite);
 }
 
+@media (max-width: 900px) {
+  .aho-sla-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 700px) {
   .aho-sla-header {
     align-items: flex-start;
@@ -6344,37 +6356,37 @@
   }
 
   .aho-sla-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 9px;
   }
 
   .aho-sla-stat {
-    min-height: 64px;
+    min-height: 66px;
     gap: 10px;
     padding: 10px 12px;
   }
 
   .aho-sla-stat__icon {
-    width: 30px;
-    height: 30px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
   }
 
   .aho-sla-stat__icon svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
   }
 
   .aho-sla-stat__content {
-    gap: 1px;
+    gap: 2px;
   }
 
   .aho-sla-stat__content > span {
-    font-size: 9px;
+    font-size: 10px;
     letter-spacing: .01em;
   }
 
   .aho-sla-stat__content strong {
-    font-size: 15px;
+    font-size: 17px;
   }
 
   .aho-sla-stat__trend {
