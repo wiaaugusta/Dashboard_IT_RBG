@@ -283,7 +283,7 @@ function renderDashboard(state) {
 
     ${state.error ? renderErrorState(state.error) : ""}
     ${state.loading ? renderLoadingState() : ""}
-    ${summary && !state.loading && !state.error ? renderDailyTable(summary, state, monthLabel) : ""}
+    ${summary && !state.loading && !state.error ? renderDailyTable(summary, state) : ""}
   `;
 }
 
@@ -364,9 +364,17 @@ function renderPeriodPicker(state, years, months, periodSummary) {
 function renderStatCard(iconName, label, value, className, sparkPoints, trend) {
   const trendText = trend?.text || "";
   const trendType = trend?.type || "muted";
-  const trendMarkup = trendText
-    ? `<small class="aho-sla-stat__trend is-${trendType}">${escapeHtml(trendText)}</small>`
-    : "";
+  let trendMarkup = "";
+  if (trendText) {
+    const [trendValue, ...compareParts] = trendText.split(" vs ");
+    const compareLabel = compareParts.join(" vs ");
+    trendMarkup = `
+      <small class="aho-sla-stat__trend is-${trendType}">
+        <span class="aho-sla-stat__trend-value">${escapeHtml(trendValue)}</span>
+        ${compareLabel ? `<span class="aho-sla-stat__trend-compare">vs ${escapeHtml(compareLabel)}</span>` : ""}
+      </small>
+    `;
+  }
   const gradientId = `aho-spark-${className.replace(/^aho-sla-stat--/, "")}`;
   const linePath = buildSmoothPath(sparkPoints);
   const firstX = sparkPoints?.length ? sparkPoints[0].x.toFixed(1) : "0";
@@ -390,7 +398,7 @@ function renderStatCard(iconName, label, value, className, sparkPoints, trend) {
 
   return `
     <article class="aho-sla-stat ${className}">
-      <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 20, strokeWidth: 1.5 })}</div>
+      <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 22, strokeWidth: 1.5 })}</div>
       <div class="aho-sla-stat__content">
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(value)}</strong>
@@ -478,14 +486,12 @@ function renderErrorState(message) {
   `;
 }
 
-function renderDailyTable(summary, state, monthLabel) {
+function renderDailyTable(summary, state) {
   const pageCount = Math.ceil(summary.rows.length / PAGE_SIZE);
   const page = Math.min(Math.max(state.page, 1), Math.max(pageCount, 1));
   const start = (page - 1) * PAGE_SIZE;
   const rows = summary.rows.slice(start, start + PAGE_SIZE);
-  const tableTitle = state.months.size === 1
-    ? `Rincian harian · ${monthLabel} ${state.year}`
-    : `Rincian harian · ${state.year}`;
+  const tableTitle = "Detail per tanggal waktu penyelesaian IT";
   const rangeLabel = summary.rows.length
     ? `Menampilkan ${start + 1}–${Math.min(start + PAGE_SIZE, summary.rows.length)} dari ${summary.rows.length} tanggal`
     : "Tidak ada tanggal untuk periode yang dipilih";
@@ -494,13 +500,12 @@ function renderDailyTable(summary, state, monthLabel) {
     <section class="aho-sla-daily" aria-labelledby="ahoSlaDailyTitle">
       <header class="aho-sla-daily__header">
         <div class="aho-sla-daily__heading">
-          <span class="aho-sla-daily__accent"></span>
+          <span class="aho-sla-daily__icon" aria-hidden="true">${icon("bar-chart-2", { size: 22, strokeWidth: 1.8 })}</span>
           <div>
             <h2 id="ahoSlaDailyTitle">${escapeHtml(tableTitle)}</h2>
-            <p>Tanggal dari kolom Tgl Terima; total problem menghitung jumlah tiket.</p>
+            <p>Tanggal mengikuti waktu penyelesaian IT; total problem menghitung jumlah tiket.</p>
           </div>
         </div>
-        <span class="aho-sla-daily__period">${escapeHtml(monthLabel)}${state.months.size ? ` ${state.year}` : ""}</span>
       </header>
 
       ${state.months.size ? `
