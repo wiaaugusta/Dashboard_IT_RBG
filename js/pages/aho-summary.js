@@ -274,16 +274,52 @@ function renderDashboard(state) {
         }
 
         return `
-          ${renderStatCard("ticket", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems", buildSparkline(sparkSource, "problems"), probTrend)}
-          ${renderStatCard("timer", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time", buildSparkline(sparkSource, "totalMinutes"), timeTrend)}
-          ${renderStatCard("gauge", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average", buildSparkline(sparkSource, "averageMinutes"), avgTrend)}
+          ${renderStatCard("ticket", "Total problem", summary ? formatNumber(summary.totalProblems) : "—", "aho-sla-stat--problems", buildSparkline(sparkSource, "problems"), probTrend, state.loading)}
+          ${renderStatCard("timer", "Total waktu penyelesaian", summary ? formatAhoSlaDuration(summary.totalMinutes) : "—", "aho-sla-stat--time", buildSparkline(sparkSource, "totalMinutes"), timeTrend, state.loading)}
+          ${renderStatCard("gauge", "Rata-rata per problem", summary ? formatAhoSlaDuration(summary.averageMinutes) : "—", "aho-sla-stat--average", buildSparkline(sparkSource, "averageMinutes"), avgTrend, state.loading)}
         `;
       })()}
     </section>
 
     ${state.error ? renderErrorState(state.error) : ""}
     ${state.loading ? renderLoadingState() : ""}
-    ${summary && !state.loading && !state.error ? renderDailyTable(summary, state, monthLabel) : ""}
+    ${summary && !state.loading && !state.error ? renderDailyTable(summary, state, monthLabel) : state.loading ? `
+      <section class="aho-sla-daily" aria-labelledby="ahoSlaDailyTitle">
+        <header class="aho-sla-daily__header">
+          <div class="aho-sla-daily__heading">
+            <span class="aho-sla-daily__icon" aria-hidden="true">${icon("bar-chart-2", { size: 22, strokeWidth: 1.8 })}</span>
+            <div>
+              <h2 id="ahoSlaDailyTitle">Memuat rincian harian...</h2>
+              <p>Detail per tanggal waktu penyelesaian IT</p>
+            </div>
+          </div>
+        </header>
+        <div class="aho-sla-table-wrap">
+          <table class="aho-sla-table">
+            <thead>
+              <tr>
+                <th scope="col">Tanggal</th>
+                <th scope="col">Total waktu</th>
+                <th scope="col">Total problem</th>
+                <th scope="col">Rata-rata waktu</th>
+                <th scope="col">Tren waktu</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Array.from({ length: 5 }).map(() => `
+                <tr>
+                  <td><span class="aho-sla-skeleton aho-sla-skeleton--cell" style="width: 100px;"></span></td>
+                  <td><span class="aho-sla-skeleton aho-sla-skeleton--cell" style="width: 90px;"></span></td>
+                  <td><span class="aho-sla-skeleton aho-sla-skeleton--cell" style="width: 60px;"></span></td>
+                  <td><span class="aho-sla-skeleton aho-sla-skeleton--cell" style="width: 90px;"></span></td>
+                  <td><span class="aho-sla-skeleton aho-sla-skeleton--cell" style="width: 120px;"></span></td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    ` : ""}
   `;
 }
 
@@ -361,11 +397,11 @@ function renderPeriodPicker(state, years, months, periodSummary) {
   `;
 }
 
-function renderStatCard(iconName, label, value, className, sparkPoints, trend) {
+function renderStatCard(iconName, label, value, className, sparkPoints, trend, isLoading = false) {
   const trendText = trend?.text || "";
   const trendType = trend?.type || "muted";
   let trendMarkup = "";
-  if (trendText) {
+  if (!isLoading && trendText) {
     const [trendValue, ...compareParts] = trendText.split(" vs ");
     const compareLabel = compareParts.join(" vs ");
     trendMarkup = `
@@ -374,11 +410,12 @@ function renderStatCard(iconName, label, value, className, sparkPoints, trend) {
         ${compareLabel ? `<span class="aho-sla-stat__trend-compare">vs ${escapeHtml(compareLabel)}</span>` : ""}
       </small>
     `;
+  } else if (isLoading) {
+    trendMarkup = `<span class="aho-sla-skeleton aho-sla-skeleton--trend"></span>`;
   }
+  
   const gradientId = `aho-spark-${className.replace(/^aho-sla-stat--/, "")}`;
-  const linePath = buildSmoothPath(sparkPoints);
-  const firstX = sparkPoints?.length ? sparkPoints[0].x.toFixed(1) : "0";
-  const lastX = sparkPoints?.length ? sparkPoints[sparkPoints.length - 1].x.toFixed(1) : "100";
+  const linePath = !isLoading ? buildSmoothPath(sparkPoints) : "";
   const sparkMarkup = linePath
     ? `
       <div class="aho-sla-stat__chart" aria-hidden="true">
@@ -389,7 +426,7 @@ function renderStatCard(iconName, label, value, className, sparkPoints, trend) {
               <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
             </linearGradient>
           </defs>
-          <path d="${linePath} L${lastX} 40 L${firstX} 40 Z" fill="url(#${gradientId})"/>
+          <path d="${linePath} L${sparkPoints[sparkPoints.length - 1].x.toFixed(1)} 40 L${sparkPoints[0].x.toFixed(1)} 40 Z" fill="url(#${gradientId})"/>
           <path d="${linePath}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.6" vector-effect="non-scaling-stroke"/>
         </svg>
       </div>
@@ -401,7 +438,7 @@ function renderStatCard(iconName, label, value, className, sparkPoints, trend) {
       <div class="aho-sla-stat__icon" aria-hidden="true">${icon(iconName, { size: 22, strokeWidth: 1.5 })}</div>
       <div class="aho-sla-stat__content">
         <span>${escapeHtml(label)}</span>
-        <strong>${escapeHtml(value)}</strong>
+        <strong>${isLoading ? `<span class="aho-sla-skeleton aho-sla-skeleton--value"></span>` : escapeHtml(value)}</strong>
         ${trendMarkup}
       </div>
       ${sparkMarkup}
@@ -466,17 +503,7 @@ function buildSmoothPath(points) {
 }
 
 function renderLoadingState() {
-  return `
-    <section class="aho-sla-stats" aria-label="Memuat ringkasan SLA AHO Store">
-      <div class="aho-sla-skeleton aho-sla-stat-skeleton"></div>
-      <div class="aho-sla-skeleton aho-sla-stat-skeleton"></div>
-      <div class="aho-sla-skeleton aho-sla-stat-skeleton"></div>
-    </section>
-    <section class="aho-sla-daily" aria-label="Memuat rincian harian">
-      <div class="aho-sla-skeleton aho-sla-table-skeleton"></div>
-      <div class="aho-sla-skeleton aho-sla-table-skeleton"></div>
-    </section>
-  `;
+  return "";
 }
 
 function renderErrorState(message) {

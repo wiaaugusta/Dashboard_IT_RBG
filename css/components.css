@@ -6005,8 +6005,28 @@
   100% { background-position: -200% 0; }
 }
 
-.aho-sla-stat-skeleton { height: 80px; }
-.aho-sla-table-skeleton { height: 40px; margin-top: 10px; }
+.aho-sla-skeleton--value {
+  display: block;
+  width: 70%;
+  max-width: 130px;
+  height: 18px;
+  margin: 6px 0;
+}
+
+.aho-sla-skeleton--trend {
+  display: block;
+  width: 40%;
+  max-width: 80px;
+  height: 10px;
+  margin-top: 8px;
+}
+
+.aho-sla-skeleton--cell {
+  display: block;
+  height: 14px;
+  width: 80%;
+  margin: 2px 0;
+}
 
 .aho-sla-table .aho-sla-details-row > td {
   padding: 0;
