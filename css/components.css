@@ -5828,10 +5828,10 @@
 }
 
 .aho-sla-stat--time {
-  border-color: var(--color-border);
-  background: var(--color-surface);
+  border-color: #bfdbfe;
+  background: #eff6ff;
   --aho-stat-accent: #2563eb;
-  --aho-stat-soft: #eff6ff;
+  --aho-stat-soft: #dbeafe;
 }
 
 .aho-sla-stat--average {
