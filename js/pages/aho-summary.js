@@ -371,7 +371,14 @@ function renderStatCard(iconName, label, value, className, sparklinePoints, tren
     ? `
       <div class="aho-sla-stat__chart" aria-hidden="true">
         <svg viewBox="0 0 100 28" preserveAspectRatio="none">
-          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="grad-${className}" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+              <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <path d="M0 28 L${sparklinePoints} L100 28 Z" fill="url(#grad-${className})"/>
+          <polyline points="${sparklinePoints}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
     `
@@ -418,11 +425,13 @@ function buildSparkline(rows, key) {
   const span = max - min || 1;
   const step = width / (values.length - 1);
 
-  return values.map((value, index) => {
+  const points = values.map((value, index) => {
     const x = (index * step).toFixed(1);
     const y = (height - pad - ((value - min) / span) * (height - pad * 2)).toFixed(1);
     return `${x},${y}`;
-  }).join(" ");
+  });
+
+  return points.join(" ");
 }
 
 function renderLoadingState() {
