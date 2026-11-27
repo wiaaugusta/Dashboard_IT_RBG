@@ -108,31 +108,31 @@ export function renderAhoSummaryPage(container, routeInfo) {
 
     if (detailToggle) {
       const dateKey = detailToggle.getAttribute("data-aho-details");
-      const willExpand = state.expandedDate !== dateKey;
-      state.expandedDate = willExpand ? dateKey : "";
+      const row = detailToggle.closest("tr");
+      const detailsRow = row.nextElementSibling;
+      const willExpand = !detailsRow.classList.contains("is-expanded");
 
-      // Smooth DOM-only toggle without full page re-render
-      const buttonRow = detailToggle.closest("tr");
-      const detailsRow = buttonRow?.nextElementSibling;
-      const allRows = page.querySelectorAll(".aho-sla-table tbody tr.aho-sla-details-row");
-      const allButtons = page.querySelectorAll("[data-aho-details]");
-
-      allRows.forEach((row) => {
-        row.classList.remove("is-expanded");
-        const svg = row.previousElementSibling?.querySelector(".aho-sla-date-toggle svg");
-        if (svg) svg.style.transform = "";
+      // Tutup semua row lainnya
+      page.querySelectorAll(".aho-sla-details-row.is-expanded").forEach((r) => {
+        if (r !== detailsRow) {
+          r.classList.remove("is-expanded");
+          r.previousElementSibling?.querySelector(".aho-sla-date-toggle")?.setAttribute("aria-expanded", "false");
+          r.previousElementSibling?.querySelector(".aho-sla-date-toggle svg").style.transform = "";
+        }
       });
-      allButtons.forEach((btn) => btn.setAttribute("aria-expanded", "false"));
 
-      if (willExpand && detailsRow && detailsRow.classList.contains("aho-sla-details-row")) {
-        detailToggle.setAttribute("aria-expanded", "true");
-        const svg = detailToggle.querySelector("svg");
-        if (svg) svg.style.transform = "rotate(180deg)";
-
+      // Toggle row saat ini
+      if (willExpand) {
         detailsRow.classList.add("is-expanded");
+        detailToggle.setAttribute("aria-expanded", "true");
+        detailToggle.querySelector("svg").style.transform = "rotate(180deg)";
+        state.expandedDate = dateKey;
+      } else {
+        detailsRow.classList.remove("is-expanded");
+        detailToggle.setAttribute("aria-expanded", "false");
+        detailToggle.querySelector("svg").style.transform = "";
+        state.expandedDate = "";
       }
-
-      detailToggle.focus();
       return;
     }
 

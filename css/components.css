@@ -5973,10 +5973,18 @@
 
 .aho-sla-details-row {
   display: table-row;
+  visibility: hidden;
+  height: 0;
 }
 
-.aho-sla-details-row:not(.is-expanded) {
-  display: none;
+.aho-sla-details-row.is-expanded {
+  visibility: visible;
+  height: auto;
+}
+
+.aho-sla-details-row > td {
+  padding: 0 !important;
+  border: 0 !important;
 }
 
 .aho-sla-details-clip {
