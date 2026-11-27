@@ -46,9 +46,14 @@ const DETAIL_FIELDS = [
     label: "Nama Penanggung",
     names: new Set(["namapenanggung", "namapenanggungjawab", "penanggungjawab", "namapic", "picname", "personincharge"])
   },
-  {
-    key: "achievement",
-    label: "Ach SLA",
+    {
+      key: "targetDays",
+      label: "Target Hari",
+      names: new Set(["targethari", "target", "targetsla", "targethari"])
+    },
+    {
+      key: "achievement",
+      label: "Ach SLA",
     names: new Set(["achsla", "achslaachievement", "achievementsla", "slaachievement", "slaachievementpercentage", "pencapaiansla"])
   }
 ];
@@ -263,18 +268,15 @@ export function aggregateAhoSlaByDate(table, year, selectedMonths) {
     .filter((day) => day.problems > 0)
     .sort((a, b) => dateKey(a.date).localeCompare(dateKey(b.date)))
     .map((day) => {
-      const detailItems = day.problems > 1
-        ? day.tickets.map(({ item, durationMinutes }) => ({
-          storeCode: fields.storeCode ? item?.[fields.storeCode] : "",
-          storeName: fields.storeName ? item?.[fields.storeName] : "",
-          responsible: fields.responsible ? item?.[fields.responsible] : "",
-          durationMinutes,
-          achievement: fields.achievement ? item?.[fields.achievement] : ""
-        }))
-        : [];
-      const missingDetailFields = day.problems > 1
-        ? DETAIL_FIELDS.filter(({ key }) => !fields[key]).map(({ label }) => label)
-        : [];
+      const detailItems = day.tickets.map(({ item, durationMinutes }) => ({
+        storeCode: fields.storeCode ? item?.[fields.storeCode] : "",
+        storeName: fields.storeName ? item?.[fields.storeName] : "",
+        responsible: fields.responsible ? item?.[fields.responsible] : "",
+        durationMinutes,
+        targetDays: fields.targetDays ? item?.[fields.targetDays] : "",
+        achievement: fields.achievement ? item?.[fields.achievement] : ""
+      }));
+      const missingDetailFields = DETAIL_FIELDS.filter(({ key }) => !fields[key]).map(({ label }) => label);
 
       return {
         date: day.date,

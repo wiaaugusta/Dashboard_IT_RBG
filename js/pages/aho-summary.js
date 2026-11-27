@@ -593,26 +593,25 @@ function renderDailyRow(row, maxDailyMinutes, expandedDate) {
   const trend = maxDailyMinutes > 0
     ? Math.max(0, Math.min(100, (row.totalMinutes / maxDailyMinutes) * 100))
     : 0;
-  const expandable = row.problems > 1;
-  const expanded = expandable && expandedDate === row.key;
+  const expandable = true;
+  const expanded = expandedDate === row.key;
+  const singleProblem = row.problems === 1;
   const dateLabel = formatAhoSlaDate(row.date);
 
   return `
     <tr class="${expanded ? "is-expanded" : ""}">
       <td data-label="Tanggal">
-        ${expandable ? `
-          <button
-            class="aho-sla-date-toggle"
-            type="button"
-            data-aho-details="${row.key}"
-            aria-expanded="${expanded}"
-            aria-controls="ahoSlaDetails-${row.key}"
-            aria-label="${expanded ? "Sembunyikan" : "Tampilkan"} detail ${formatNumber(row.problems)} problem pada ${escapeHtml(dateLabel)}"
-          >
-            <span>${escapeHtml(dateLabel)}</span>
-            ${icon(expanded ? "chevron-up" : "chevron-down", { size: 15 })}
-          </button>
-        ` : escapeHtml(dateLabel)}
+        <button
+          class="aho-sla-date-toggle ${singleProblem ? "is-plain" : ""}"
+          type="button"
+          data-aho-details="${row.key}"
+          aria-expanded="${expanded}"
+          aria-controls="ahoSlaDetails-${row.key}"
+          aria-label="${expanded ? "Sembunyikan" : "Tampilkan"} detail ${formatNumber(row.problems)} problem pada ${escapeHtml(dateLabel)}"
+        >
+          <span>${escapeHtml(dateLabel)}</span>
+          ${!singleProblem ? icon(expanded ? "chevron-up" : "chevron-down", { size: 15 }) : ""}
+        </button>
       </td>
       <td data-label="Total waktu">${formatAhoSlaDuration(row.totalMinutes)}</td>
       <td data-label="Total problem"><span class="aho-sla-problem-count">${formatNumber(row.problems)}</span></td>
@@ -623,7 +622,7 @@ function renderDailyRow(row, maxDailyMinutes, expandedDate) {
         </span>
       </td>
     </tr>
-    ${expandable ? renderDetailsRow(row, expanded) : ""}
+    ${renderDetailsRow(row, expanded)}
   `;
 }
 
@@ -635,6 +634,7 @@ function renderDetailsRow(row, expanded) {
     ["storeName", "Nama Toko"],
     ["responsible", "Nama Penanggung"],
     ["durationMinutes", "Waktu Penyelesaian"],
+    ["targetDays", "Target Hari"],
     ["achievement", "Ach SLA"]
   ];
 

@@ -5961,6 +5961,11 @@
   cursor: pointer;
 }
 
+.aho-sla-date-toggle.is-plain {
+  color: #17233f;
+  font-weight: 400;
+}
+
 .aho-sla-date-toggle:hover {
   color: #173a8c;
   text-decoration: underline;
